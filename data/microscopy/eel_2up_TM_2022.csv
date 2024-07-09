@@ -1,0 +1,4 @@
+field_date,site,reach,sample_type,slide_rep,date_analyzed,method,microcoleus,non_algal,non_e_diatoms,e_diatoms,coccoids,green_algae,anabaena,oscillatoria,scytonema,geitlerinema,gloeotrichia,cylindrospermum,calothrix,rivularia,nostoc,unknown,leptolyngbya,lyngbya,rhopalodia,chroococcus_toxin_producing_coccoid,pct_cover_check
+6/29/2022,EEL,2UP,TM,Final,10/25/2023,preserved,54,2,11,5,3,5,,,,,,,,,20,,,,,,100
+8/10/2022,EEL,2UP,TM,Final,10/25/2023,preserved,33.7,6,4,25,3,7,10,0.1,,5,,,,,1,,5,0.1,0.1,,100
+8/23/2022,EEL,2UP,TM,Final,10/31/2023,preserved,58.9,6,4,8,5,12,1,3,,2,,,,,,,,,,0.1,100
