@@ -39,6 +39,31 @@ tm_2023 <- full_join(tm_2023, sal_3_2023)
 library(plyr)
 TM_samples <- ldply(list.files(path = "./data/microscopy/raw/", pattern = "TM"), function(filename) {
   d <- read.csv(paste("data/microscopy/raw/", filename, sep = ""))
-  d$site_year = filename %>% stringr::str_remove("TM")
   return(d)
 })
+
+# NEED TO CHECK THAT THEY SUM TO 100
+
+TM_samples <- replace(TM_samples, is.na(TM_samples), 0)
+
+totals <- rowSums(TM_samples[8:29])
+
+TM_samples$total <- totals
+
+which(TM_samples$total != 100)
+
+TA_samples <- ldply(list.files(path = "./data/microscopy/raw/", pattern = "TA"), function(filename) {
+  d <- read.csv(paste("data/microscopy/raw/", filename, sep = ""))
+  return(d)
+})
+# leaving in phormidium unknown instead of moving it into unknown because amounts are >1
+
+TA_samples <- replace(TA_samples, is.na(TA_samples), 0)
+
+colnames(TA_samples[8:28])
+
+totals_TA <- rowSums(TA_samples[8:28])
+
+TA_samples$total <- totals_TA
+
+which(TA_samples$total != 100)
