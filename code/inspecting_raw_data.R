@@ -57,6 +57,8 @@ TA_samples <- ldply(list.files(path = "./data/microscopy/raw/", pattern = "TA"),
   return(d)
 })
 # leaving in phormidium unknown instead of moving it into unknown because amounts are >1
+# waiting for Taryn till adding SFE-M-1S!! #############################
+# also deciding to potentially include Rophalodia for TA and NT....
 
 TA_samples <- replace(TA_samples, is.na(TA_samples), 0)
 
@@ -67,3 +69,10 @@ totals_TA <- rowSums(TA_samples[8:28])
 TA_samples$total <- totals_TA
 
 which(TA_samples$total != 100)
+
+## NT samples
+
+NT_samples <- ldply(list.files(path = "./data/microscopy/raw/", pattern = "NT"), function(filename) {
+  d <- read.csv(paste("data/microscopy/raw/", filename, sep = ""))
+  return(d)
+})
