@@ -1,44 +1,6 @@
-#### TM data 2022
+#### microscopy data check and read in
 
 library(tidyverse)
-# can full join to join everything
-
-# function to make reach a character
-change_df <- function(df) {
-  df$reach <- as.character(df$reach)
-  return(df)
-}
-
-##### OLD CODE #####
-
-# salmon 2022
-sal_1s_2022 <- read.csv("data/morphological/raw/2022_TM_sal-1s.csv")
-sal_2_2022 <- change_df(read.csv("data/morphological/raw/2022_TM_sal-2.csv"))
-sal_3_2022 <- change_df(read.csv("data/morphological/raw/2022_TM_sal-3.csv"))
-
-tm_2022 <- full_join(sal_1s_2022, sal_2_2022)
-tm_2022 <- full_join(tm_2022, sal_3_2022)
-
-# south fork eel 2022
-sfe_1s_2022 <- read.csv("data/morphological/raw/2022_TM_sfe-m-1s.csv")
-sfe_3_2022 <- change_df(read.csv("data/morphological/raw/2022_TM_sfe-m-3.csv"))
-sfe_4_2022 <- change_df(read.csv("data/morphological/raw/2022_TM_sfe-m-4.csv"))
-
-tm_2022 <- full_join(tm_2022, sfe_1s_2022)
-tm_2022 <- full_join(tm_2022, sfe_3_2022)
-tm_2022 <- full_join(tm_2022, sfe_4_2022)
-
-
-## checking 2023 TM data
-sal_1s_2023 <-read.csv("data/morphological/raw/2023_TM_sal-1s.csv")
-sal_2_2023 <- change_df(read.csv("data/morphological/raw/2023_TM_sal-3.csv"))
-sal_3_2023 <- change_df(read.csv("data/morphological/raw/2023_TM_sal-3.csv"))
-
-tm_2023 <- full_join(sal_1s_2023, sal_2_2023)
-tm_2023 <- full_join(tm_2023, sal_3_2023)
-
-### USE CODE STARTING HERE #####
-
 library(plyr)
 TM_samples <- ldply(list.files(path = "./data/morphological/raw/", pattern = "TM"), function(filename) {
   d <- read.csv(paste("data/morphological/raw/", filename, sep = ""))
@@ -77,3 +39,16 @@ NT_samples <- ldply(list.files(path = "./data/morphological/raw/", pattern = "NT
   d <- read.csv(paste("data/morphological/raw/", filename, sep = ""))
   return(d)
 })
+# q for taryn on desmodesmus_spines and scenedesmus_no_spines
+# also change coccoid label to exclude microcystis, chrocconous, aphanthene, etc.
+# other_coccoid_cyanos??? label name?
+
+NT_samples <- replace(NT_samples, is.na(NT_samples), 0)
+
+colnames(NT_samples[8:57]) # some issue with aphanothece but will fix later after talking w/ taryn
+
+totals_NT <- rowSums(NT_samples[8:57])
+
+NT_samples$total <- totals_NT
+
+which(NT_samples$total != 100)
