@@ -9,18 +9,20 @@ change_df <- function(df) {
   return(df)
 }
 
+##### OLD CODE #####
+
 # salmon 2022
-sal_1s_2022 <- read.csv("data/microscopy/raw/2022_TM_sal-1s.csv")
-sal_2_2022 <- change_df(read.csv("data/microscopy/raw/2022_TM_sal-2.csv"))
-sal_3_2022 <- change_df(read.csv("data/microscopy/raw/2022_TM_sal-3.csv"))
+sal_1s_2022 <- read.csv("data/morphological/raw/2022_TM_sal-1s.csv")
+sal_2_2022 <- change_df(read.csv("data/morphological/raw/2022_TM_sal-2.csv"))
+sal_3_2022 <- change_df(read.csv("data/morphological/raw/2022_TM_sal-3.csv"))
 
 tm_2022 <- full_join(sal_1s_2022, sal_2_2022)
 tm_2022 <- full_join(tm_2022, sal_3_2022)
 
 # south fork eel 2022
-sfe_1s_2022 <- read.csv("data/microscopy/raw/2022_TM_sfe-m-1s.csv")
-sfe_3_2022 <- change_df(read.csv("data/microscopy/raw/2022_TM_sfe-m-3.csv"))
-sfe_4_2022 <- change_df(read.csv("data/microscopy/raw/2022_TM_sfe-m-4.csv"))
+sfe_1s_2022 <- read.csv("data/morphological/raw/2022_TM_sfe-m-1s.csv")
+sfe_3_2022 <- change_df(read.csv("data/morphological/raw/2022_TM_sfe-m-3.csv"))
+sfe_4_2022 <- change_df(read.csv("data/morphological/raw/2022_TM_sfe-m-4.csv"))
 
 tm_2022 <- full_join(tm_2022, sfe_1s_2022)
 tm_2022 <- full_join(tm_2022, sfe_3_2022)
@@ -28,23 +30,25 @@ tm_2022 <- full_join(tm_2022, sfe_4_2022)
 
 
 ## checking 2023 TM data
-sal_1s_2023 <-read.csv("data/microscopy/raw/2023_TM_sal-1s.csv")
-sal_2_2023 <- change_df(read.csv("data/microscopy/raw/2023_TM_sal-3.csv"))
-sal_3_2023 <- change_df(read.csv("data/microscopy/raw/2023_TM_sal-3.csv"))
+sal_1s_2023 <-read.csv("data/morphological/raw/2023_TM_sal-1s.csv")
+sal_2_2023 <- change_df(read.csv("data/morphological/raw/2023_TM_sal-3.csv"))
+sal_3_2023 <- change_df(read.csv("data/morphological/raw/2023_TM_sal-3.csv"))
 
 tm_2023 <- full_join(sal_1s_2023, sal_2_2023)
 tm_2023 <- full_join(tm_2023, sal_3_2023)
 
+### USE CODE STARTING HERE #####
 
 library(plyr)
-TM_samples <- ldply(list.files(path = "./data/microscopy/raw/", pattern = "TM"), function(filename) {
-  d <- read.csv(paste("data/microscopy/raw/", filename, sep = ""))
+TM_samples <- ldply(list.files(path = "./data/morphological/raw/", pattern = "TM"), function(filename) {
+  d <- read.csv(paste("data/morphological/raw/", filename, sep = ""))
   return(d)
 })
-
-# NEED TO CHECK THAT THEY SUM TO 100
+# need to decide on chroococuss and aphanothene toxin producing coccoids
 
 TM_samples <- replace(TM_samples, is.na(TM_samples), 0)
+
+colnames(TM_samples[8:29])
 
 totals <- rowSums(TM_samples[8:29])
 
@@ -52,27 +56,24 @@ TM_samples$total <- totals
 
 which(TM_samples$total != 100)
 
-TA_samples <- ldply(list.files(path = "./data/microscopy/raw/", pattern = "TA"), function(filename) {
-  d <- read.csv(paste("data/microscopy/raw/", filename, sep = ""))
+TAC_samples <- ldply(list.files(path = "./data/morphological/raw/", pattern = "TAC"), function(filename) {
+  d <- read.csv(paste("data/morphological/raw/", filename, sep = ""))
   return(d)
 })
-# leaving in phormidium unknown instead of moving it into unknown because amounts are >1
-# waiting for Taryn till adding SFE-M-1S!! #############################
-# also deciding to potentially include Rophalodia for TA and NT....
 
-TA_samples <- replace(TA_samples, is.na(TA_samples), 0)
+TAC_samples <- replace(TAC_samples, is.na(TAC_samples), 0)
 
-colnames(TA_samples[8:28])
+colnames(TAC_samples[8:32]) # need to fix chroococcus label
 
-totals_TA <- rowSums(TA_samples[8:28])
+totals_TAC <- rowSums(TAC_samples[8:32])
 
-TA_samples$total <- totals_TA
+TAC_samples$total <- totals_TAC
 
-which(TA_samples$total != 100)
+which(TAC_samples$total != 100)
 
 ## NT samples
 
-NT_samples <- ldply(list.files(path = "./data/microscopy/raw/", pattern = "NT"), function(filename) {
-  d <- read.csv(paste("data/microscopy/raw/", filename, sep = ""))
+NT_samples <- ldply(list.files(path = "./data/morphological/raw/", pattern = "NT"), function(filename) {
+  d <- read.csv(paste("data/morphological/raw/", filename, sep = ""))
   return(d)
 })
