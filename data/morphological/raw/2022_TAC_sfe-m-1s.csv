@@ -1,4 +1,4 @@
-﻿field_date,site,reach,sample_type,slide_rep,date_analyzed,method,anabaena_and_cylindrospermum,non_algal,non_e_diatoms,e_diatoms,coccoids,green_algae,microcoleus,oscillatoria,scytonema,geitlerinema,gloeotrichia,nodularia,calothrix,nostoc,unknown
+﻿field_date,site,reach,sample_type,slide_rep,date_analyzed,method,anabaena_and_cylindrospermum,non_algal,non_e_diatoms,e_diatoms,other_coccoids,green_algae,microcoleus,oscillatoria,scytonema,geitlerinema,gloeotrichia,nodularia,calothrix,nostoc,unknown
 7/14/2022,SFE-M,1S,TAC,1,11/7/2023,preserved,30,3,14,15,1,35.8,0.1,,,1,,0.1,,,
 ,,,,2,,,25,4,14,15,2,37.9,0.1,,,2,,,,,
 ,,,,3,,,23,4,15,16,5,34.8,,,,2,,0.1,,0.1,

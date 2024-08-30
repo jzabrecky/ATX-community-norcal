@@ -45,9 +45,9 @@ NT_samples <- ldply(list.files(path = "./data/morphological/raw/", pattern = "NT
 
 NT_samples <- replace(NT_samples, is.na(NT_samples), 0)
 
-colnames(NT_samples[8:57]) # some issue with aphanothece but will fix later after talking w/ taryn
+colnames(NT_samples[8:58]) # some issue with aphanothece but will fix later after talking w/ taryn
 
-totals_NT <- rowSums(NT_samples[8:57])
+totals_NT <- rowSums(NT_samples[8:58])
 
 NT_samples$total <- totals_NT
 

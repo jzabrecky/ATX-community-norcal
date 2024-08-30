@@ -1,4 +1,4 @@
-﻿field_date,site,reach,sample_type,slide_rep,date_analyzed,method,microcoleus,non_algal,non_e_diatoms,e_diatoms,coccoids,green_algae,anabaena_and_cylindrospermum,oscillatoria,scytonema,geitlerinema,gloeotrichia,calothrix,rivularia,nostoc,leptolyngbya,chroococcus_toxin_producing_coccoid,unknown
+﻿field_date,site,reach,sample_type,slide_rep,date_analyzed,method,microcoleus,non_algal,non_e_diatoms,e_diatoms,other_coccoids,green_algae,anabaena_and_cylindrospermum,oscillatoria,scytonema,geitlerinema,gloeotrichia,calothrix,rivularia,nostoc,leptolyngbya,chroococcus,unknown
 6/29/2022,SFE-M,1S,TM,Final,10/3/2023,preserved,80,2,2,3,1,2,,,,5,,,,5,,,
 7/14/2022,SFE-M,1S,TM,Final,10/23/2023,preserved,69.9,6,5,5,2,2,5,,,,,,,5,,0.1,
 7/28/2022,SFE-M,1S,TM,Final,10/24/2023,preserved,60,2,2,12,4,5,10,,,3,,,,2,,,
