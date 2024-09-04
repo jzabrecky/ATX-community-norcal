@@ -1,4 +1,9 @@
+# ignore R session & data files
 .Rproj.user
 .Rhistory
 .RData
+.RDataTmp
 .Ruserdata
+# ignore large data files
+# (this will likely be renamed and reorganized later)
+data/molecular/Bac_counts_taxonomy_cleanedup.csv
