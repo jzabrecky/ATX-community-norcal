@@ -25,9 +25,9 @@ TAC_samples <- ldply(list.files(path = "./data/morphological/raw/", pattern = "T
 
 TAC_samples <- replace(TAC_samples, is.na(TAC_samples), 0)
 
-colnames(TAC_samples[8:32]) # need to fix chroococcus label
+colnames(TAC_samples[8:31]) # need to fix chroococcus label
 
-totals_TAC <- rowSums(TAC_samples[8:32])
+totals_TAC <- rowSums(TAC_samples[8:31])
 
 TAC_samples$total <- totals_TAC
 
@@ -45,9 +45,9 @@ NT_samples <- ldply(list.files(path = "./data/morphological/raw/", pattern = "NT
 
 NT_samples <- replace(NT_samples, is.na(NT_samples), 0)
 
-colnames(NT_samples[8:58]) # some issue with aphanothece but will fix later after talking w/ taryn
+colnames(NT_samples[8:55]) # some issue with aphanothece but will fix later after talking w/ taryn
 
-totals_NT <- rowSums(NT_samples[8:58])
+totals_NT <- rowSums(NT_samples[8:55])
 
 NT_samples$total <- totals_NT
 
