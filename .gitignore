@@ -8,4 +8,4 @@
 # (this will likely be renamed and reorganized later)
 data/molecular/Bac_counts_taxonomy_cleanedup.csv
 # will delete this folder later, but for now hosts random images
-data/misc_to_ignore/
+misc_to_ignore/
