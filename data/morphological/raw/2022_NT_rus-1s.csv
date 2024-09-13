@@ -1,27 +1,27 @@
-field_date	site	reach	sample_type	date_analyzed	method	slide_rep	non_algal	non_e_r_diatoms	other_coccoids	aphanothece	chroococcus	epithemia	rhopalodia	nostoc	mougeotia	scenedesmus_no_spines	desmodesmus_spines	ankistrodesmus	lacunastrum	anabaena_and_cylindrospermum	geitlerinema	spirogyra	cladophora	leptolyngbya	homoeothrix	microcoleus	stigeoclonium	oedegonium	lyngbya	oscillatoria	chantransia	tetraedron	oocystis	gloeocystis	phormidium_unknown
-6/24/2022	RUS	1S	NT	2/19/2024	preserved	1	25.8	30	3			3				0.3	0.7					18	10	4	0.1		0.1	5							
-6/24/2022	RUS	1S	NT	2/19/2024	preserved	2	15	15	3			5			4		0.5					17	10	2			19.5	9							
-6/24/2022	RUS	1S	NT	2/19/2024	preserved	3	20	22	3			6			4							18	12	5				10							
-7/6/2022	RUS	1S	NT	2/13/2024	preserved	1	7	25	1			13			3	0.1						12	25.7	5				8	0.1					0.1	
-7/6/2022	RUS	1S	NT	2/13/2024	preserved	2	9	22	1			12			6	0.1						10	21.9	5			3	10							
-7/6/2022	RUS	1S	NT	2/13/2024	preserved	3	8	22	1			13			6						1	10	21	6				12							
-7/20/2022	RUS	1S	NT	2/20/2024	preserved	1	8	17	2			12	6		3	0.5	0.5			5	1	23	13	2				7							
-7/20/2022	RUS	1S	NT	2/20/2024	preserved	2	11	15	3			12	8		3	1	1			5	3	13.9	9	1	0.1		4	10							
-7/20/2022	RUS	1S	NT	2/20/2024	preserved	3	11	13	3			10			4	0.5	0.5			7	3	29.8	3	2	0.1	0.1	5	8							
-8/2/2022	RUS	1S	NT	1/30/2024	preserved	1	12	10	2			10	4				0.1				2	45.9		1			5	7	1						
-8/2/2022	RUS	1S	NT	1/30/2024	preserved	2	9	15	1		1	8	3		3		0.5			0.1	2	44.4		3				10							
-8/2/2022	RUS	1S	NT	1/30/2024	preserved	3	5	10	1			8	5		3					0.1	2	63.7		2			0.1		0.1						
-8/2/2022	RUS	1S	NT	1/30/2024	preserved	4	5	15	1		1	12	5		6		0.5			1		38.3			0.1		5	10	0.1						
-8/17/2022	RUS	1S	NT	2/2/2024	preserved	1	8	23.9	1		1	5	3		7	0.1				2	4	12	6	5	1		11	10							
-8/17/2022	RUS	1S	NT	2/2/2024	preserved	2	9	22	2		1	3			7					1		29.8	5	5	0.1			15	0.1						
-8/17/2022	RUS	1S	NT	2/2/2024	preserved	3	7	15	1		2	7	4		8	0.1				3		35.8		3	1			13	0.1						
-8/17/2022	RUS	1S	NT	2/2/2024	preserved	4	9	16	2		0.1	8	3		10		0.1			3	2	26.7			5		3	12	0.1						
-9/1/2022	RUS	1S	NT	2/2/2024	preserved	1	15	8	1		1	6	4		12					4	2	35.7				0.1		10	1	0.1					0.1
-9/1/2022	RUS	1S	NT	2/2/2024	preserved	2	18	10	1			8	3							6	2	34.7		4		0.1		12	0.1	0.1					1
-9/1/2022	RUS	1S	NT	2/2/2024	preserved	3	16	13	1			7			5	0.1	0.1			6	2	40.6						9		0.1					0.1
-9/1/2022	RUS	1S	NT	2/2/2024	preserved	4	15	15	1		2	10	4		6					10	2	31		3					1						
-9/15/2022	RUS	1S	NT	1/4/2024	preserved	1	5	3	2			15	1		5		0.8			10	3	20	27.9			0.1	0.5		5	1	0.5		0.2		
-9/15/2022	RUS	1S	NT	1/4/2024	preserved	2	15	3	5			8	2		3					10	2	18	25.5	1			1		5	1			0.5		
-9/15/2022	RUS	1S	NT	1/4/2024	preserved	3	15	5	3			5	3		2					7	4	15	38.9			0.1	2								
-9/15/2022	RUS	1S	NT	1/4/2024	preserved	4	10	10	1	1		5	2							5	1	58.9	3						3						0.1
-9/15/2022	RUS	1S	NT	1/4/2024	preserved	5	24.8	17	2	1		10	3		5					10	2		5	0.1				2	15	3				0.1	
+﻿field_date,site,reach,sample_type,date_analyzed,method,slide_rep,non_algal,non_e_r_diatoms,other_coccoids,aphanothece,chroococcus,epithemia,rhopalodia,nostoc,mougeotia,scenedesmus_no_spines,desmodesmus_spines,ankistrodesmus,lacunastrum,anabaena_and_cylindrospermum,geitlerinema,spirogyra,cladophora,leptolyngbya,homoeothrix,microcoleus,stigeoclonium,oedegonium,lyngbya,oscillatoria,chantransia,tetraedron,oocystis,gloeocystis,phormidium_unknown
+6/24/2022,RUS,1S,NT,2/19/2024,preserved,1,25.8,30,3,,,3,,,,0.3,0.7,,,,,18,10,4,0.1,,0.1,5,,,,,,,
+6/24/2022,RUS,1S,NT,2/19/2024,preserved,2,15,15,3,,,5,,,4,,0.5,,,,,17,10,2,,,19.5,9,,,,,,,
+6/24/2022,RUS,1S,NT,2/19/2024,preserved,3,20,22,3,,,6,,,4,,,,,,,18,12,5,,,,10,,,,,,,
+7/6/2022,RUS,1S,NT,2/13/2024,preserved,1,7,25,1,,,13,,,3,0.1,,,,,,12,25.7,5,,,,8,0.1,,,,,0.1,
+7/6/2022,RUS,1S,NT,2/13/2024,preserved,2,9,22,1,,,12,,,6,0.1,,,,,,10,21.9,5,,,3,10,,,,,,,
+7/6/2022,RUS,1S,NT,2/13/2024,preserved,3,8,22,1,,,13,,,6,,,,,,1,10,21,6,,,,12,,,,,,,
+7/20/2022,RUS,1S,NT,2/20/2024,preserved,1,8,17,2,,,12,6,,3,0.5,0.5,,,5,1,23,13,2,,,,7,,,,,,,
+7/20/2022,RUS,1S,NT,2/20/2024,preserved,2,11,15,3,,,12,8,,3,1,1,,,5,3,13.9,9,1,0.1,,4,10,,,,,,,
+7/20/2022,RUS,1S,NT,2/20/2024,preserved,3,11,13,3,,,10,,,4,0.5,0.5,,,7,3,29.8,3,2,0.1,0.1,5,8,,,,,,,
+8/2/2022,RUS,1S,NT,1/30/2024,preserved,1,12,10,2,,,10,4,,,,0.1,,,,2,45.9,,1,,,5,7,1,,,,,,
+8/2/2022,RUS,1S,NT,1/30/2024,preserved,2,9,15,1,,1,8,3,,3,,0.5,,,0.1,2,44.4,,3,,,,10,,,,,,,
+8/2/2022,RUS,1S,NT,1/30/2024,preserved,3,5,10,1,,,8,5,,3,,,,,0.1,2,63.7,,2,,,0.1,,0.1,,,,,,
+8/2/2022,RUS,1S,NT,1/30/2024,preserved,4,5,15,1,,1,12,5,,6,,0.5,,,1,,38.3,,,0.1,,5,10,0.1,,,,,,
+8/17/2022,RUS,1S,NT,2/2/2024,preserved,1,8,23.9,1,,1,5,3,,7,0.1,,,,2,4,12,6,5,1,,11,10,,,,,,,
+8/17/2022,RUS,1S,NT,2/2/2024,preserved,2,9,22,2,,1,3,,,7,,,,,1,,29.8,5,5,0.1,,,15,0.1,,,,,,
+8/17/2022,RUS,1S,NT,2/2/2024,preserved,3,7,15,1,,2,7,4,,8,0.1,,,,3,,35.8,,3,1,,,13,0.1,,,,,,
+8/17/2022,RUS,1S,NT,2/2/2024,preserved,4,9,16,2,,0.1,8,3,,10,,0.1,,,3,2,26.7,,,5,,3,12,0.1,,,,,,
+9/1/2022,RUS,1S,NT,2/2/2024,preserved,1,15,8,1,,1,6,4,,12,,,,,4,2,35.7,,,,0.1,,10,1,0.1,,,,,0.1
+9/1/2022,RUS,1S,NT,2/2/2024,preserved,2,18,10,1,,,8,3,,,,,,,6,2,34.7,,4,,0.1,,12,0.1,0.1,,,,,1
+9/1/2022,RUS,1S,NT,2/2/2024,preserved,3,16,13,1,,,7,,,5,0.1,0.1,,,6,2,40.6,,,,,,9,,0.1,,,,,0.1
+9/1/2022,RUS,1S,NT,2/2/2024,preserved,4,15,15,1,,2,10,4,,6,,,,,10,2,31,,3,,,,,1,,,,,,
+9/15/2022,RUS,1S,NT,1/4/2024,preserved,1,5,3,2,,,15,1,,5,,0.8,,,10,3,20,27.9,,,0.1,0.5,,5,1,0.5,,0.2,,
+9/15/2022,RUS,1S,NT,1/4/2024,preserved,2,15,3,5,,,8,2,,3,,,,,10,2,18,25.5,1,,,1,,5,1,,,0.5,,
+9/15/2022,RUS,1S,NT,1/4/2024,preserved,3,15,5,3,,,5,3,,2,,,,,7,4,15,38.9,,,0.1,2,,,,,,,,
+9/15/2022,RUS,1S,NT,1/4/2024,preserved,4,10,10,1,1,,5,2,,,,,,,5,1,58.9,3,,,,,,3,,,,,,0.1
+9/15/2022,RUS,1S,NT,1/4/2024,preserved,5,24.8,17,2,1,,10,3,,5,,,,,10,2,,5,0.1,,,,2,15,3,,,,0.1,
