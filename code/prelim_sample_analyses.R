@@ -24,8 +24,7 @@ library(lubridate)
 ## Read in data
 
 # taxonomy data
-taxonomy <- read.csv("./data/molecular/Bac_counts_taxonomy_cleanedup.csv")
-# taxonomy <- read.csv("Bac_counts_taxonomy_cleanedup.csv")
+taxonomy <- read.csv("Bac_counts_taxonomy_cleanedup.csv")
 
 # mutation from other code...
 Bac_counts_taxonomy<- taxonomy %>%
@@ -77,7 +76,7 @@ ggplot(rus_NT, aes(x = site_reach_date, y = counts)) +
 rus_fakes <- russian %>% 
   filter(sample_type == "TM") %>% 
   filter(fake_target == "y") %>% 
-  filter(Phylum == "Cyanobacteria")
+  filter(Phylum == "Cyanobacteriota")
 
 ggplot(rus_fakes, aes(x = site_reach_date, y = counts)) + 
   geom_col(aes(x = site_reach_date, y = counts, fill = Genus)) + 
@@ -98,7 +97,7 @@ rus_fakes_metdata <- metadata %>%
 # target anabaena & cylindrospermum
 rus_anacylin <- russian %>% 
   filter(sample_type == "TAC") %>% 
-  filter(Phylum == "Cyanobacteria")
+  filter(Phylum == "Cyanobacteriota")
 
 ggplot(rus_anacylin, aes(x = site_reach_date, y = counts)) + 
   geom_col(aes(x = site_reach_date, y = counts, fill = Genus)) + 
@@ -125,7 +124,7 @@ ggplot(sfk_NT, aes(x = site_reach_date, y = counts)) +
 sfk_TAC <- sfkeel %>% 
   filter(sample_type == "TAC") %>% 
   filter(fake_target == "n") %>% # need to specify fake here bc they took "fake" a week I was gone
-  filter(Phylum == "Cyanobacteria")
+  filter(Phylum == "Cyanobacteriota")
 
 ggplot(sfk_TAC, aes(x = site_reach_date, y = counts)) + 
   geom_col(aes(x = site_reach_date, y = counts, fill = Genus)) + 
@@ -140,7 +139,7 @@ ggplot(sfk_TAC, aes(x = site_reach_date, y = counts)) +
 # TM, microcoleus
 sfk_TM <- sfkeel %>% 
   filter(sample_type == "TM") %>% 
-  filter(Phylum == "Cyanobacteria")
+  filter(Phylum == "Cyanobacteriota")
 
 ggplot(sfk_TM, aes(x = site_reach_date, y = counts)) + 
   geom_col(aes(x = site_reach_date, y = counts, fill = Genus)) + 
@@ -165,7 +164,7 @@ ggplot(salmon_NT, aes(x = site_reach_date, y = counts)) +
 
 salmon_TM <- salmon %>% 
   filter(sample_type == "TM") %>% 
-  filter(Phylum == "Cyanobacteria") 
+  filter(Phylum == "Cyanobacteriota") 
 
 ggplot(salmon_TM, aes(x = site_reach_date, y = counts)) + 
   geom_col(aes(x = site_reach_date, y = counts, fill = Genus)) + 
@@ -177,7 +176,7 @@ ggplot(salmon_TM, aes(x = site_reach_date, y = counts)) +
 # we had one TAC sample
 salmon_TAC <- salmon %>% 
   filter(sample_type == "TAC") %>% 
-  filter(Phylum == "Cyanobacteria")
+  filter(Phylum == "Cyanobacteriota")
 
 ggplot(salmon_TAC, aes(x = site_reach_date, y = counts)) + 
   geom_col(aes(x = site_reach_date, y = counts, fill = Genus)) + 
@@ -197,12 +196,12 @@ ggplot(sample_1000_108, aes(x = site_reach_date, y = counts)) +
 # lots of cyanobacteria and proteobacteria; >60000 counts
 
 sample_1000_108_cyano <- sample_1000_108 %>% 
-  filter(Phylum == "Cyanobacteria")
+  filter(Phylum == "Cyanobacteriota")
 
 ggplot(sample_1000_108_cyano, aes(x = site_reach_date, y = counts)) + 
   geom_col(aes(x = site_reach_date, y = counts, fill = Genus)) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-# mostly synechoccus or trichormus???
+# mostly synechoccus or trichormus??? almost 30,000 counts
 
 sample_1001_108 <- all %>% 
   filter(Sample_name == 1001)
@@ -213,12 +212,13 @@ ggplot(sample_1001_108, aes(x = site_reach_date, y = counts)) +
 # more cyanobacteria and proteobacteria; >100,000 counts
 
 sample_1000_108_cyano <- sample_1001_108 %>% 
-  filter(Phylum == "Cyanobacteria")
+  filter(Phylum == "Cyanobacteriota")
 
 ggplot(sample_1000_108_cyano, aes(x = site_reach_date, y = counts)) + 
   geom_col(aes(x = site_reach_date, y = counts, fill = Genus)) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-# mostly SIO2C1
+# mostly SIO2C1 (identified as Zarconia in cyanoseq- a member of oscillatoria)
+# more than 60000 counts
 
 sample_801 <- all %>% 
   filter(Sample_name == 801)
@@ -226,10 +226,10 @@ sample_801 <- all %>%
 ggplot(sample_801, aes(x = site_reach_date, y = counts)) + 
   geom_col(aes(x = site_reach_date, y = counts, fill = Phylum)) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-# more cyanobacteria and proteobacteria
+# more cyanobacteria and proteobacteria; almost 30000 reads
 
 sample_801_cyano <- sample_801 %>% 
-  filter(Phylum == "Cyanobacteria")
+  filter(Phylum == "Cyanobacteriota")
 
 ggplot(sample_801_cyano, aes(x = site_reach_date, y = counts)) + 
   geom_col(aes(x = site_reach_date, y = counts, fill = Genus)) + 
@@ -240,7 +240,21 @@ sample_552 <- all %>%
   filter(Sample_name == 552) # sample not found
 
 sample_554 <- all %>% 
-  filter(Sample_name == 554) # sample not found
+  filter(Sample_name == 554)
+
+ggplot(sample_554, aes(x = site_reach_date, y = counts)) + 
+  geom_col(aes(x = site_reach_date, y = counts, fill = Phylum)) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+# mostly cyanobacteria; 15000 reads
+
+sample_554_cyano <- sample_554 %>% 
+  filter(Phylum == "Cyanobacteriota")
+
+ggplot(sample_554_cyano, aes(x = site_reach_date, y = counts)) + 
+  geom_col(aes(x = site_reach_date, y = counts, fill = Genus)) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+# mostly tychonema which makes me think it is a TM or microcoleus rock
+# (probably meaghan's microcoleus rock)
 
 sample_931 <- all %>% 
   filter(Sample_name == 931)
@@ -251,12 +265,15 @@ ggplot(sample_931, aes(x = site_reach_date, y = counts)) +
 # mostly cyanobacteria; not as diverse (i.e. less total phyla)
 
 sample_931_cyano <- sample_931 %>% 
-  filter(Phylum == "Cyanobacteria")
+  filter(Phylum == "Cyanobacteriota")
 
 ggplot(sample_931_cyano, aes(x = site_reach_date, y = counts)) + 
   geom_col(aes(x = site_reach_date, y = counts, fill = Genus)) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 # okay this is almost certainly the microcoleus rock from the other study!!
+
+## okay stll weirded out that sample 552 seems to be missing
+## we have two that are like microcoleus rocks lol
 
 # need to look at ther samples (552 and 554) that are missing to confirm
 
