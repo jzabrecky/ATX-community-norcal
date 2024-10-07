@@ -1,6 +1,6 @@
 #### Code to process and organize miscellaneous rock scrape/NT for EDI data package
 ### Jordan Zabrecky
-## last edited 10.04.2024
+## last edited 10.07.2024
 
 # This code gathers miscellaneous rock scrape data that is not currently used for 
 # either ATX projects. Data includes total area scraped, total volume of sample, 
@@ -35,6 +35,7 @@ metadata <- read.csv("./data/NT_rock_scrapes_misc/raw/SUNY_ESF_metadata.csv")
 area_volume$field_date <- mdy(area_volume$field_date)
 afdm$field_date <- ymd(afdm$field_date)
 metadata$field_date <- mdy(metadata$field_date)
+chla$field_date <- ymd(chla$field_date)
 
 #### (2) Processing ash-free dry mass data ####
 
@@ -62,6 +63,9 @@ afdm_processing <- left_join(afdm_processing, afdm_blanks, by = "field_date")
 # we didn't do a blank for sampling that occurred on 6/27/2024 so 
 # let's just assume it's similar to the blank from the next sampling on the Salmon
 afdm_processing$blank_afdm_g[2:3] <- afdm_processing$blank_afdm_g[12]
+
+# also sample from 7/7/2024 was processed the same day (7/7/2024) as those on 7/6/2024
+afdm_processing$blank_afdm_g[11] <- afdm_processing$blank_afdm_g[10]
 
 # subtract blank from afdm measurement
 afdm_processing$ash_free_dry_mass_g <- afdm_processing$ash_free_dry_mass_g_raw - 
@@ -167,17 +171,32 @@ combined <- combined[-which(combined$sample_type == "BLANK"),]
 # all from 2022 and all but one from South Fork Eel (one was from Russian)
 # no MCY, HTX-a, or dhHTX-a detected
 anatoxins_final <- combined %>% 
-  select(site_reach, field_date, MCY_det_limit, ATXa_ug_g, dhATXa_ug_g, ATX_det_limit)
+  select(site_reach, field_date, MCY_ug_g, MCY_det_limit, ATXa_ug_g, dhATXa_ug_g, ATX_det_limit)
 
 #### (4) Converting chl-a and afdm per mL to per area ####
 
 # calculate ratio of mL of sample to area sampled
 area_volume$vol_mL_to_area_cm_2 <- area_volume$volume_scraped_sample_mL / area_volume$area_scraped_cm_2
 
-# LEFT OFF HERE
-
 # merge afdm and chla data into area_volume
 all <- left_join(area_volume, afdm_final, by = c("field_date", "site_reach"))
-# 7/13 date issue and 7/7 check
+all <- left_join(all, chla, by = c("field_date", "site_reach"))
+# no chl-a data for samples RUS-3 7/20/2022 and SAL-3 7/26/2022; forgot to acidify
 
-## change field_date to year_month_day format before saving!!
+# calculate afdm, chla, & pheophytin per area
+all$afdm_g_cm_2 <- all$afdm_g_mL * all$vol_mL_to_area_cm_2
+all$Chla_ug_cm_2 <- all$Chla_ug_mL * all$vol_mL_to_area_cm_2
+all$Pheo_ug_cm_2 <- all$Pheo_ug_mL * all$vol_mL_to_area_cm_2
+
+# merge in anatoxin data
+all <- left_join(all, anatoxins_final, by = c("field_date", "site_reach"))
+
+# keep only columns we care about
+all_final <- all %>%
+  mutate(afdm_mg_cm_2 = afdm_g_cm_2 * 1000) %>%  # convert g/cm^2 to mg/cm^2
+  select(field_date, site_reach, macroalgal_displacement_mL, area_scraped_cm_2, volume_scraped_sample_mL,
+         vol_mL_to_area_cm_2, afdm_mg_cm_2, Chla_ug_cm_2, Pheo_ug_cm_2, flag_Pheo, MCY_ug_g,
+         MCY_det_limit, ATXa_ug_g, dhATXa_ug_g, ATX_det_limit)
+
+# save final dataset
+write.csv(all_final, "./data/NT_rock_scrapes_misc/NT_misc_data.csv", row.names = FALSE)
