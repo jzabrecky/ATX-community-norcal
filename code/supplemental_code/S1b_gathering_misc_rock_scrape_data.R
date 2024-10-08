@@ -1,6 +1,6 @@
 #### Code to process and organize miscellaneous rock scrape/NT for EDI data package
 ### Jordan Zabrecky
-## last edited 10.07.2024
+## last edited 10.08.2024
 
 # This code gathers miscellaneous rock scrape data that is not currently used for 
 # either ATX projects. Data includes total area scraped, total volume of sample, 

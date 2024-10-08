@@ -1,6 +1,6 @@
 #### Processing chlorophyll-a and pheophytin concentrations for freeze-dried cyanobacteria mass
 ### Jordan Zabrecky (modified from Joanna Blaszczak)
-## last modified 10.04.2024
+## last modified 10.08.2024
 
 # This code calculates chlorophyll-a and pheophytin concentrations for filtered
 # non-target/rock scrape from RFUs obtained from the Blaszczak Lab's Trilogy 
@@ -100,11 +100,11 @@ chla_pheo_calc <- function(ex){
   Int_A_high <- high_std_C1*((ex[which(ex$Unacidified_acidified == "A"),]$RFU - high_blank)/(high_Fb - high_blank))
   
   # apply interpolation based on whether its a high or low curve
-  ex$Chla_ug_mL_raw <- ifelse(ex$curve_type == "low",
-                              yes = (low_Fm/(low_Fm - 1))*(Int_B_low - Int_A_low)*(vol_solvent/vol_sample),
+  ex$Chla_ug_L_raw <- ifelse(ex$curve_type == "low",
+                              yes = (low_Fm/(low_Fm - 1))*(Int_B_low - Int_A_low)*(vol_solvent/vol_sample), # (vol mL/vol mL is unitless factor)
                               no = (high_Fm/(high_Fm - 1))*(Int_B_high - Int_A_high)*(vol_solvent/vol_sample))
   
-  ex$Pheo_ug_mL_raw <- ifelse(ex$curve_type == "low",
+  ex$Pheo_ug_L_raw <- ifelse(ex$curve_type == "low",
                               yes = (low_Fm/(low_Fm - 1))*((low_Fm*Int_A_low) - Int_B_low)*(vol_solvent/vol_sample),
                               no = (high_Fm/(high_Fm - 1))*((high_Fm*Int_A_high) - Int_B_high)*(vol_solvent/vol_sample))
   
@@ -112,7 +112,7 @@ chla_pheo_calc <- function(ex){
   ex$RFU_bdl <- ifelse(ex$RFU_bdl_sep[1] == TRUE | ex$RFU_bdl_sep[2] == TRUE, TRUE, FALSE)
   
   # preserve dilution information to potentially adjust for future chlorophyll-a runs
-  output <- as.data.frame(cbind(ex$Chla_ug_mL[1], ex$Pheo_ug_mL[1], ex$RFU_bdl[1]))
+  output <- as.data.frame(cbind(ex$Chla_ug_L[1], ex$Pheo_ug_L[1], ex$RFU_bdl[1]))
   
   return(output)
 }
@@ -124,7 +124,7 @@ chla_pheo_processing <- function(dat){
   # apply chlorophyll-a and pheophytin calculation function
   chla_Pheo_df <- ldply(lapply(df_rack_split, function(x) chla_pheo_calc(x)), data.frame)
   # column names for output
-  colnames(chla_Pheo_df) <- c("Rack_ID", "Chla_ug_mL","Pheo_ug_mL", "RFU_bdl")
+  colnames(chla_Pheo_df) <- c("Rack_ID", "Chla_ug_L","Pheo_ug_L", "RFU_bdl")
   
   return(chla_Pheo_df)
 }
@@ -145,6 +145,10 @@ chla_pheo_calculations <- left_join(na.omit(processed_data),
 #### (4) Final processing of chlorophyll-a and pheophytin calculations ####
 
 ## (a) checking that blanks are below detection limit
+
+# convert chlorophyll-a & pheophytin in ug/L to ug/mL
+chla_pheo_calculations$Chla_ug_mL <- chla_pheo_calculations$Chla_ug_L / 1000
+chla_pheo_calculations$Pheo_ug_mL <- chla_pheo_calculations$Pheo_ug_L / 1000
 
 # check blanks to see if they had detected chlorophyll-a
 chla_pheo_calculations$RFU_bdl[which(chla_pheo_calculations$site_reach == "blank")]
