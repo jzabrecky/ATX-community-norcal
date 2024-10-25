@@ -9,5 +9,7 @@
 data/molecular/Mat_counts_taxonomy_cyanoseq_clean.csv
 data/molecular/Mat_counts_unfiltered_all.csv
 data/molecular/Bac_counts_taxonomy_cleanedup.csv
+data/molecular/dilimgreengenes_cymats.csv
 # will delete this folder later, but for now hosts random images
 misc_to_ignore/
+unknown_sample_investigation/

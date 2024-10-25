@@ -26,7 +26,7 @@ library(phyloseq)
 
 
 ## and then we need to import the .biom file and the taxonomy file and the metadata file:
-Cyt1 <- read_biom('feature-tablej1.biom')
+Cyt1 <- read_biom('../data/molecular/feature-tablej1.biom')
 Cyt1 <- biom_data(Cyt1)
 
 Cyt2 <- read_biom('feature-table2.biom')
@@ -34,8 +34,8 @@ Cyt2 <- biom_data(Cyt2)
 
 Cyt3 <- read_biom('feature-table3.biom')
 Cyt3 <- biom_data(Cyt3)
-sampnames1<- read_table("plate1_metadata.txt")##to merge sample names to the sequencing file
-sampnames2<- read_table("plate2_metadata.txt")
+sampnames1<- read_table("../data/plate1_metadata.txt")##to merge sample names to the sequencing file
+sampnames2<- read_table("../data/molecular/plate2_metadata.txt")
 sampnames3<- read_table("plate3_metadata.txt")
 view(sampnames1)
 sampnames1<- rename(sampnames1, seq_SampleID = `#SampleID`)
@@ -47,7 +47,7 @@ sampnames2<-as.data.frame(sampnames2)
 sampnames3<- rename(sampnames3, seq_SampleID = `#SampleID`)
 sampnames3<-as.data.frame(sampnames3)
 
-taxonomy1<- read_tsv("taxonomyj1.tsv")
+taxonomy1<- read_tsv("../data/molecular/taxonomyj1.tsv")
 taxonomy1<- rename(taxonomy1, feature_id = `Feature ID`)
 names(taxonomy1)
 
