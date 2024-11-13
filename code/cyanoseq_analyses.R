@@ -3,6 +3,8 @@
 
 library(tidyverse)
 
+# get rid of any potential dplyr masking
+filter <- dplyr::filter
 
 ### looking at cyanoseq results
 cyanoseq <- read.csv("./data/molecular/Mat_counts_taxonomy_cyanoseq_clean.csv")
@@ -48,7 +50,7 @@ ggplot(rus_NT, aes(x = site_reach_date, y = counts)) +
 rus_fakes <- russian %>% 
   filter(sample_type == "TM") %>% 
   filter(fake_target == "y") %>% 
-  filter(Phylum == "Cyanobacteria")
+  filter(Phylum == "Cyanobacteriota")
 
 ggplot(rus_fakes, aes(x = site_reach_date, y = counts)) + 
   geom_col(aes(x = site_reach_date, y = counts, fill = Genus)) + 
@@ -69,8 +71,74 @@ rus_fakes_metdata <- metadata %>%
 # target anabaena & cylindrospermum
 rus_anacylin <- russian %>% 
   filter(sample_type == "TAC") %>% 
-  filter(Phylum == "Cyanobacteria")
+  filter(Phylum == "Cyanobacteriota")
 
 ggplot(rus_anacylin, aes(x = site_reach_date, y = counts)) + 
   geom_col(aes(x = site_reach_date, y = counts, fill = Genus)) + 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+## south fork eel 
+
+# NT/ reach community composition
+sfk_NT <- sfkeel %>% 
+  filter(sample_type == "NT")
+
+ggplot(sfk_NT, aes(x = site_reach_date, y = counts)) + 
+  geom_col(aes(x = site_reach_date, y = counts, fill = Phylum)) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+# seeing a lot more cyanobacteria here than at the Russian!
+# again, feel like I'm missing samples
+
+# TAC, anabaena & cylindrospermum
+sfk_TAC <- sfkeel %>% 
+  filter(sample_type == "TAC") %>% 
+  filter(fake_target == "n") %>% # need to specify fake here bc they took "fake" a week I was gone
+  filter(Phylum == "Cyanobacteriota")
+
+ggplot(sfk_TAC, aes(x = site_reach_date, y = counts)) + 
+  geom_col(aes(x = site_reach_date, y = counts, fill = Genus)) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+# lots of ... nostoc?
+
+# TM, microcoleus
+sfk_TM <- sfkeel %>% 
+  filter(sample_type == "TM") %>% 
+  filter(Phylum == "Cyanobacteriota")
+
+ggplot(sfk_TM, aes(x = site_reach_date, y = counts)) + 
+  geom_col(aes(x = site_reach_date, y = counts, fill = Genus)) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+# defintely seems to be reading microcoleus as tychonema
+# keith said he had an issue and would look at the other hits
+
+# let's look at the one sample that was a maybe????
+sfk_TM_maybe <- sfk_TM %>% 
+  filter(fake_target == "maybe")
+# okay this is one of the mysteriously missing samples
+
+## Lastly, the Salmon
+salmon_NT <- salmon %>% 
+  filter(sample_type == "NT")
+
+ggplot(salmon_NT, aes(x = site_reach_date, y = counts)) + 
+  geom_col(aes(x = site_reach_date, y = counts, fill = Phylum)) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+salmon_TM <- salmon %>% 
+  filter(sample_type == "TM") %>% 
+  filter(Phylum == "Cyanobacteriota") 
+
+ggplot(salmon_TM, aes(x = site_reach_date, y = counts)) + 
+  geom_col(aes(x = site_reach_date, y = counts, fill = Genus)) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+# again tychnema issue
+
+# we had one TAC sample
+salmon_TAC <- salmon %>% 
+  filter(sample_type == "TAC") %>% 
+  filter(Phylum == "Cyanobacteriota")
+
+ggplot(salmon_TAC, aes(x = site_reach_date, y = counts)) + 
+  geom_col(aes(x = site_reach_date, y = counts, fill = Genus)) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+# mostly trichormus like other TACs
+
