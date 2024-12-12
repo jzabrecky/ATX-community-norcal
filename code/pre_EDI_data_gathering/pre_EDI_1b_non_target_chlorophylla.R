@@ -16,7 +16,7 @@
 lapply(c("plyr","dplyr", "tidyverse", "lubridate"), require, character.only=T)
 
 # set working directory to lead in data
-setwd("./data/NT_misc/chla")
+setwd("./data/NT_misc/raw/chla")
 
 # RFU data
 rawRFU <- ldply(list.files(pattern = "_RFUdata.csv"), function(filename) {
@@ -152,5 +152,7 @@ chla_pheo_final <- chla_pheo_calculations %>%
                                     TRUE ~ "n")) %>% 
   select(field_date, site_reach, triplicate, Chla_ug_L, Pheo_ug_L, Chla_Pheo_flag, neg_Pheo_flag, volume_filtered_mL)
 
+# note: no chl-a data for samples RUS-3 7/20/2022 and SAL-3 7/26/2022; forgot to acidify
+
 # save final csv
-write.csv(chla_pheo_final, "../../NT_misc/NT_chlorophylla_notprocessed.csv", row.names = FALSE)
+write.csv(chla_pheo_final, "../../../NT_misc/NT_chlorophylla_notprocessed.csv", row.names = FALSE)
