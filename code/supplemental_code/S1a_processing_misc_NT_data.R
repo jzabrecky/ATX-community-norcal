@@ -1,6 +1,6 @@
 #### Processing miscellaneous Non-target data
 ### Jordan Zabrecky
-## last edited 12.10.2024
+## last edited 01.25.2024
 
 # This code analyzes the triplicates and blanks of non-target data
 # to create a more processed final csv that may or may not be used
@@ -21,7 +21,7 @@ samples <- nt_misc %>%
   select(site_reach, field_date, area_scraped_cm_2, volume_scraped_mL, macroalgal_displacement_mL) %>% 
   na.omit()
 afdm <- nt_misc %>% 
-  select(site_reach, field_date, triplicate, dry_sample_filter_tin_g, ash_filter_tin_g, afdm_filter_g,
+  select(site_reach, field_date, triplicate, dry_sample_filter_tin_g, ash_filter_tin_g, afdm_g,
          afdm_sample_filtered_mL)
 chla <- nt_misc %>% 
   select(site_reach, field_date, triplicate, Chla_ug_L, Pheo_ug_L, Chla_Pheo_flag, neg_Pheo_flag,
@@ -35,7 +35,7 @@ chla <- nt_misc %>%
 afdm_blanks <- afdm %>% 
   filter(site_reach == "blank") %>% 
   dplyr::rename(lab_date = field_date,
-                blank_afdm_g = afdm_filter_g) %>% 
+                blank_afdm_g = afdm_g) %>% 
   select(lab_date, blank_afdm_g) %>% 
   mutate(field_date = lab_date - 1)
 
@@ -54,7 +54,7 @@ afdm_processing$blank_afdm_g[2:3] <- afdm_processing$blank_afdm_g[12]
 afdm_processing$blank_afdm_g[11] <- afdm_processing$blank_afdm_g[10]
 
 # subtract blank from afdm measurement
-afdm_processing$ash_free_dry_mass_g <- afdm_processing$afdm_filter_g - 
+afdm_processing$ash_free_dry_mass_g <- afdm_processing$afdm_g - 
   afdm_processing$blank_afdm_g
 
 # calculate afdm per milliters of sample

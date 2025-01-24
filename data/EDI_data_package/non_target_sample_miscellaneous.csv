@@ -1,4 +1,4 @@
-"site_reach","field_date","triplicate","triplicate_no","area_scraped_cm_2","volume_scraped_mL","macroalgal_displacement_mL","dry_sample_filter_tin_g","ash_filter_tin_g","afdm_filter_g","afdm_sample_filtered_mL","Chla_ug_L","Pheo_ug_L","Chla_Pheo_flag","neg_Pheo_flag","chla_sample_filtered_mL"
+"site_reach","field_date","triplicate","triplicate_no","area_scraped_cm_2","volume_scraped_mL","macroalgal_displacement_mL","dry_sample_filter_tin_g","ash_filter_tin_g","afdm_g","afdm_sample_filtered_mL","Chla_ug_L","Pheo_ug_L","Chla_Pheo_flag","neg_Pheo_flag","chla_sample_filtered_mL"
 "RUS-1S",2022-06-24,"n",0,173.27,362,0.5,1.4774,1.46314,0.0142599999999999,23,1010.22711663101,285.817810545339,"n","n",18
 "blank",2022-06-25,"n",0,NA,NA,NA,1.3964,1.39468,0.00172000000000017,NA,0.346398416534062,3.11712544377469,"y","n",15
 "SAL-1S",2022-06-27,"n",0,275,299,0.2,1.41683,1.40867,0.00815999999999995,21,522.763230253492,80.299775592602,"n","n",29
