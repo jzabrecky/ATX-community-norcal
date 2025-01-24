@@ -6,7 +6,7 @@ library(tidyverse)
 # get rid of any potential dplyr masking
 filter <- dplyr::filter
 
-### looking at cyanoseq results
+### looking at cyanoseq results // silva
 cyanoseq <- read.csv("./data/molecular/Mat_counts_taxonomy_cyanoseq_clean.csv")
 
 # metadata
@@ -15,7 +15,7 @@ metadata <- read.csv("./data/molecular/16s_sample_metadata.csv")
 
 ## merge with metadata...
 metadata <- metadata %>% 
-  rename(Sample_name = vial_ID) %>% 
+  dplyr::rename(Sample_name = vial_ID) %>% 
   mutate(site_reach_date = paste(site_reach, field_date, sep = " "))
 all <- left_join(cyanoseq, metadata, by = "Sample_name")
 all$field_date <- mdy(all$field_date)
@@ -50,7 +50,7 @@ ggplot(rus_NT, aes(x = site_reach_date, y = counts)) +
 rus_fakes <- russian %>% 
   filter(sample_type == "TM") %>% 
   filter(fake_target == "y") %>% 
-  filter(Phylum == "Cyanobacteriota")
+  filter(Phylum == "Cyanobacteria")
 
 ggplot(rus_fakes, aes(x = site_reach_date, y = counts)) + 
   geom_col(aes(x = site_reach_date, y = counts, fill = Genus)) + 
@@ -71,7 +71,7 @@ rus_fakes_metdata <- metadata %>%
 # target anabaena & cylindrospermum
 rus_anacylin <- russian %>% 
   filter(sample_type == "TAC") %>% 
-  filter(Phylum == "Cyanobacteriota")
+  filter(Phylum == "Cyanobacteria")
 
 ggplot(rus_anacylin, aes(x = site_reach_date, y = counts)) + 
   geom_col(aes(x = site_reach_date, y = counts, fill = Genus)) + 
@@ -92,7 +92,7 @@ ggplot(sfk_NT, aes(x = site_reach_date, y = counts)) +
 sfk_TAC <- sfkeel %>% 
   filter(sample_type == "TAC") %>% 
   filter(fake_target == "n") %>% # need to specify fake here bc they took "fake" a week I was gone
-  filter(Phylum == "Cyanobacteriota")
+  filter(Phylum == "Cyanobacteria")
 
 ggplot(sfk_TAC, aes(x = site_reach_date, y = counts)) + 
   geom_col(aes(x = site_reach_date, y = counts, fill = Genus)) + 
@@ -102,7 +102,7 @@ ggplot(sfk_TAC, aes(x = site_reach_date, y = counts)) +
 # TM, microcoleus
 sfk_TM <- sfkeel %>% 
   filter(sample_type == "TM") %>% 
-  filter(Phylum == "Cyanobacteriota")
+  filter(Phylum == "Cyanobacteria")
 
 ggplot(sfk_TM, aes(x = site_reach_date, y = counts)) + 
   geom_col(aes(x = site_reach_date, y = counts, fill = Genus)) + 

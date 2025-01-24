@@ -1,6 +1,6 @@
 ## greengenes full sample analyses
 
-# 10.24.2022
+# 10.24.2024
 
 ### loading libraries & data ###
 
@@ -14,17 +14,18 @@ metadata <- read.csv("./data/molecular/16s_sample_metadata.csv")
 # in this data, the sample number has already been reassigned to the plate
 data <- read.csv("data/molecular/mat_counts_unfiltered_all.csv")
 
-# separating out taxonomic ranks
-data$phylum <- str_match(data$Taxon, "p__\\s*(.*?)\\s*; c__")[,2]
-data$class <- str_match(data$Taxon, "c__\\s*(.*?)\\s*; o__")[,2]
-data$order <- str_match(data$Taxon, "o__\\s*(.*?)\\s*; f__")[,2]
-data$family <- str_match(data$Taxon, "f__\\s*(.*?)\\s*; g__")[,2]
-data$genus <- str_match(data$Taxon, "g__\\s*(.*?)\\s*; s__")[,2]
+# separating out taxonomic ranks--
+# removing numbers??? may be helpful for ID though in many cases
+data$phylum <- str_match(data$Taxon, "p__\\s*(.*?)\\s*;")[,2]
+data$class <- str_match(data$Taxon, "c__\\s*(.*?)\\s*;")[,2]
+data$order <- str_match(data$Taxon, "o__\\s*(.*?)\\s*;")[,2]
+data$family <- str_match(data$Taxon, "f__\\s*(.*?)\\s*;")[,2]
+data$genus <- str_match(data$Taxon, "g__\\s*(.*?)\\s*;")[,2]
 data$species <- str_extract(data$Taxon, "(?<=s__).*")
 
 # get rid of columns we no longer care about
-data <- data %>% 
-  dplyr::select(!X & !feature_id & !Taxon)
+#data <- data %>% 
+  #dplyr::select(!X & !feature_id & !Taxon)
 
 # get rid of counts = NA
 data <- data %>% 
@@ -32,7 +33,7 @@ data <- data %>%
 
 ## merge with metadata...
 metadata <- metadata %>% 
-  rename(Sample_name = vial_ID) %>% 
+  dplyr::rename(Sample_name = vial_ID) %>% 
   mutate(site_reach_date = paste(site_reach, field_date, sep = " "))
 all <- left_join(data, metadata, by = "Sample_name")
 all$field_date <- mdy(all$field_date)
@@ -103,6 +104,10 @@ rus_fakes_metdata <- metadata %>%
 rus_anacylin <- russian %>% 
   filter(sample_type == "TAC") %>% 
   filter(phylum == "Cyanobacteria")
+
+single_sample <- rus_anacylin %>% 
+  filter(site_reach == "RUS-1S") %>% 
+  filter(field_date == "2022-09-01")
 
 ggplot(rus_anacylin, aes(x = site_reach_date, y = counts)) + 
   geom_col(aes(x = site_reach_date, y = counts, fill = genus)) + 
@@ -195,7 +200,13 @@ ggplot(salmon_TAC, aes(x = site_reach_date, y = counts)) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 # mostly trichormus like other TACs
 
-#### INVESTIGATING UNKNOWN ID SAMPLES
+
+# get feature ID's for taxa of interest
+unique(data$feature_id[which(data$Taxon == sfk_TAC$Taxon[2123])]) # symploca; literally over 1,000
+unique(data$feature_id[which(grepl("Trichormus", data$genus, fixed = TRUE))])
+unique(data$feature_id[which(grepl("Dolichospermum", data$genus, fixed = TRUE))])
+
+#### INVESTIGATING UNKNOWN ID SAMPLES-- not going to be able to parse these out
 
 # either 1000 or 1001 is a fake RUS TM- seems like more likely 1001
 
