@@ -1,4 +1,4 @@
-﻿field_date,site,reach,sample_type,slide_rep,date_analyzed,method,anabaena_and_cylindrospermum,non_algal,non_e_diatoms,e_diatoms,other_coccoids,green_algae,microcoleus,oscillatoria,scytonema,geitlerinema,nodularia,rivularia,calothrix,homoeothrix,nostoc,gloeotrichia,tolypothrix,leptoplyngbya,chroococcus,unknown
+﻿field_date,site,reach,sample_type,slide_rep,date_analyzed,method,anabaena_and_cylindrospermum,non_algal,non_e_diatoms,e_diatoms,other_coccoids,green_algae,microcoleus,oscillatoria,scytonema,geitlerinema,nodularia,rivularia,calothrix,homoeothrix,nostoc,gloeotrichia,tolypothrix,leptolyngbya,chroococcus,unknown
 7/24/2023,SFE-SH,1S,TAC,1,12/6/2023,preserved,25,10,11,12,2,31.9,0.1,,,3,,5,,,,,,,,
 7/24/2023,SFE-SH,1S,TAC,2,12/6/2023,preserved,30,15,13,11,5,20.8,0.1,0.1,,5,,,,,,,,,,
 7/24/2023,SFE-SH,1S,TAC,3,12/6/2023,preserved,33,12,10,9,3,25,,,,3,,5,,,,,,,,

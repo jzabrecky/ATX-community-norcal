@@ -1,6 +1,6 @@
 #### putting together microscopy data for EDI data package
 ### Jordan Zabrecky
-## last edited: 01.23.2025
+## last edited: 01.27.2025
 
 # This code reads in microscopy data for each sample type, makes sure the data
 # is complete, and then saves as combined csvs
@@ -8,7 +8,7 @@
 #### (1) Loading packages and reading in data #### 
 
 # loading libraries
-lapply(c("tidyverse", "plyr"), require, character.only = T)
+lapply(c("tidyverse", "plyr", "gtools"), require, character.only = T)
 
 ## loading raw microscopy data by sample type
 
@@ -34,12 +34,12 @@ NT_samples <- ldply(list.files(path = "./data/morphological/raw/", pattern = "NT
 
 # checking no multiples of column with mispellings, repeats, etc.
 colnames(TM_samples[8:29])
-colnames(TAC_samples[8:31])
+colnames(TAC_samples[8:30])
 colnames(NT_samples[8:54])
 
 # checking the each sample (row) adds up to 100%
 which(rowSums(TM_samples[8:29]) != 100)
-which(rowSums(TAC_samples[8:31]) != 100)
+which(rowSums(TAC_samples[8:30]) != 100)
 which(rowSums(NT_samples[8:54]) != 100)
 # all add up to 100!
 
