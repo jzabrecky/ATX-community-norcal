@@ -1,6 +1,6 @@
 #### putting together microscopy data for EDI data package
 ### Jordan Zabrecky
-## last edited: 01.27.2025
+## last edited: 03.06.2025
 
 # This code reads in microscopy data for each sample type, makes sure the data
 # is complete, and then saves as combined csvs

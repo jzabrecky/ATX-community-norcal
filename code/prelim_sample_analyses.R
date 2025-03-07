@@ -24,7 +24,7 @@ library(lubridate)
 ## Read in data
 
 # taxonomy data -- replace with data including plate 3
-taxonomy <- read.csv("./data/molecular/Bac_counts_taxonomy_cleanedup.csv")
+taxonomy <- read.csv("./data/molecular/Mat_counts_taxonomy_silva.csv")
 
 # mutation from other code...
 Bac_counts_taxonomy<- taxonomy %>%
@@ -97,7 +97,7 @@ rus_fakes_metdata <- metadata %>%
 # target anabaena & cylindrospermum
 rus_anacylin <- russian %>% 
   filter(sample_type == "TAC") %>% 
-  filter(Phylum == "Cyanobacteriota")
+  filter(Phylum == "Cyanobacteria")
 
 ggplot(rus_anacylin, aes(x = site_reach_date, y = counts)) + 
   geom_col(aes(x = site_reach_date, y = counts, fill = Genus)) + 
