@@ -11,9 +11,6 @@
 ## https://github.com/jzabrecky/ATX-synchrony-norcal/blob/main/code/2b_water_chemistry.R
 ## https://github.com/jzabrecky/ATX-synchrony-norcal/blob/main/code/2e_target_sample_anatoxins.R
 
-## need to make another script to process NT anatoxins :)
-## maybe do it in S1a?
-
 #### (1) Loading in libraries & data ####
 
 # loading libraries
