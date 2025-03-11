@@ -1,6 +1,6 @@
 #### Processing microscopy data and adding in environmental & atx data
 ### Jordan Zabrecky
-## last edited 03.06.2025
+## last edited 03.10.2025
 
 ## This code processes microscopy data from the EDI data release 
 ## (averaging across slides and evaluting rsd) and adds in water 
@@ -23,10 +23,10 @@ lapply(c("tidyverse", "lubridate"), require, character.only = T)
 target <- read.csv("./data/EDI_data_package/microscopy_target_samples.csv")
 nontarget <- read.csv("./data/EDI_data_package/microscopy_non_target_samples.csv")
 
-# read in anatoxin & water chemistry data
-atx_target <- read.csv("./data/field_and_lab/cyano_atx.csv")
+# read in processed anatoxin & water chemistry data
+atx_target <- read.csv("./data/field_and_lab/cyano_atx.csv") # processed version
 water_chemistry <- read.csv("./data/field_and_lab/water_chemistry.csv") %>% 
-  select(!time)
+  select(!c(time, reach))
 
 #### (2) Analyzing microscopy data (w/ multiple slides) ####
 
@@ -107,19 +107,43 @@ tac_processed <- target_processed %>%
 # replace 2022-09-06 microcoleus sample with one from 2022-09-08
 # (substitute technician accidentally took 2022-09-06 with different methods)
 tm_processed$field_date[which(tm_processed$field_date == "2022-09-08")] <- "2022-09-06"
+atx_target$field_date[which(atx_target$field_date == "2022-09-08")] <- "2022-09-06"
 
 # put all processed data into a list
 processed <- list(tm_processed, tac_processed, nt_processed)
+names(processed) <- c("tm", "tac", "nt")
 
 # left join in water data and change column organization
 for(i in 1:length(processed)) {
-  processed[[i]] <- left_join(processed[[i]], water_chemistry, by = c("site_reach", "field_date")) %>%  
-    dplyr::select(!reach) # don't need a column that just has reach
+  processed[[i]] <- left_join(processed[[i]], water_chemistry, 
+                              by = c("site_reach", "field_date")) %>%  
+    relocate(site, .after = site_reach)
 }
 
-# left join in water chemistry data
-tm_processed <- left_join(tm_processed, water_chemistry, by = c("site_reach", "field_date")) %>% 
-  dplyr::relocate(site, .after = site_reach)
-tac_processed <- left_join(tac_processed, water_chemistry, by = c("site_reach", "field_date"))
-nt_processed <- left_join(nt_processed, water_chemistry, by = c("site_reach", "field_date"))
-# also want to add in TM and TAC ATX to NT dataframe
+# left join in anatoxin data (TM gets TM, TAC gets TAC, and NT gets both)
+processed$tm <- left_join(processed$tm, atx_target %>% filter(sample_type == "TM"), 
+                          by = c("site_reach", "field_date", "sample_type"))
+processed$tac <- left_join(processed$tac, atx_target %>% filter(sample_type == "TAC"), 
+                           by = c("site_reach", "field_date", "sample_type"))
+processed$nt <- left_join(processed$nt, atx_target %>% filter (sample_type == "TM") 
+                          %>% select(!sample_type),
+                          by = c("site_reach", "field_date")) %>% 
+  rename(TM_ATX_all_ug_chla_ug = ATX_all_ug_chla_ug,
+         TM_ATX_all_ug_orgmat_g = ATX_all_ug_orgmat_g) %>% 
+  select(!(ATXa_ug_g:percent_organic_matter))
+processed$nt <- left_join(processed$nt, atx_target %>% filter (sample_type == "TAC") 
+                       %>% select(!sample_type),
+                       by = c("site_reach", "field_date")) %>% 
+  rename(TAC_ATX_all_ug_chla_ug = ATX_all_ug_chla_ug,
+         TAC_ATX_all_ug_orgmat_g = ATX_all_ug_orgmat_g) %>% 
+  select(!(ATXa_ug_g:percent_organic_matter))
+
+# turns out we don't have ATX data for TM SFE-M-4 08-23-2022
+# I think we weren't clear if it would be Microcoleus and did not have enough
+# so let's just remove that row
+processed$tm <- processed$tm[-22,]
+
+# saving csv's
+path <- paste(getwd(), "/data/morphological/", sep = "")
+lapply(names(processed), function(x) write.csv(processed[[x]], file = paste(path, x, "_microscopy_with_covar.csv", 
+                                                                              sep = ""), row.names = FALSE))
