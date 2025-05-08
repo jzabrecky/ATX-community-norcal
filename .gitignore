@@ -6,11 +6,7 @@
 .Ruserdata
 # ignore large data files
 # (this will likely be renamed and reorganized later)
-data/molecular/Mat_counts_taxonomy_cyanoseq_clean.csv
-data/molecular/Mat_counts_unfiltered_all.csv
-data/molecular/Bac_counts_taxonomy_cleanedup.csv
-data/molecular/dilimgreengenes_cymats.csv
-data/molecular/Mat_counts_taxonomy_silva.csv
+misc_to_ignore/fasta_biom_qza_files/
 # will delete this folder later, but for now hosts random images
-misc_to_ignore/
 unknown_sample_investigation/
+code/old_code
