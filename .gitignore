@@ -6,7 +6,7 @@
 .Ruserdata
 # ignore large data files
 # (this will likely be renamed and reorganized later)
-misc_to_ignore/fasta_biom_qza_files/
+data/molecular/raw_files
 # will delete this folder later, but for now hosts random images
 unknown_sample_investigation/
 code/old_code
