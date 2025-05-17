@@ -5,8 +5,8 @@
 .RDataTmp
 .Ruserdata
 # ignore large data files
-# (this will likely be renamed and reorganized later)
 data/molecular/raw_files
+data/molecular/16s_nochimera.csv
 # will delete this folder later, but for now hosts random images
 unknown_sample_investigation/
 code/old_code
