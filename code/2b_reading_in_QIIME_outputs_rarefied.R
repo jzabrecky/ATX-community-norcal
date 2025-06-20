@@ -1,6 +1,6 @@
 #### Reading in and putting together QIIME2 output that were rarefied
 ### Jordan Zabrecky
-## last edited 05.16.2025
+## last edited 06.20.2025
 
 ## NOTE CURRENTLY SEEMS TO BE AN ISSUE WITH FEATURE TABLE 1 FOR RAREFIED PROCESSING
 
@@ -68,8 +68,12 @@ for(i in 1:length(taxonomy_files)) {
   colnames(df) <- c("feature_ID", "taxon_full", "confidence")
   # break down full taxonomy assignment
   df <- df %>% 
-    # if class is given, take phrase between p and c, else take entire phrase after c
-    mutate(phylum = case_when(grepl("c__", taxon_full) ~ 
+    # if phylum is given, take phrase between d and p, else take entire phrase after d
+    mutate(domain = case_when(grepl("c__", taxon_full) ~ 
+                                str_match(taxon_full, "d__\\s*(.*?)\\s*; p__")[,2],
+                              TRUE ~ str_extract(taxon_full, "(?<=d__).*")),
+           # if class is given, take phrase between p and c, else take entire phrase after c
+           phylum = case_when(grepl("c__", taxon_full) ~ 
                                 str_match(taxon_full, "p__\\s*(.*?)\\s*; c__")[,2],
                               TRUE ~ str_extract(taxon_full, "(?<=p__).*")),
            # if order is given, take phrase between c and o, else take entire phrase after c
@@ -193,8 +197,8 @@ setdiff(metadata$vial_ID, unique(final$vial_ID)) # 18, 34, 104, 108, 115, 135, 2
 # using select on dataframe to quickly reorganize columns
 final_tosave <- final %>% 
   select(site_reach, site, field_date, sample_type, material, triplicate, fake_target,
-         container, plate_ID, vial_ID, abundance, feature_ID, taxon_full, phylum, class,
-         order, family, genus, species, confidence)
+         container, plate_ID, vial_ID, abundance, feature_ID, taxon_full, domain, 
+         phylum, class, order, family, genus, species, confidence)
 
 # saving outputs
-write.csv(final_tosave, "./data/molecular/16s_nochimera.csv", row.names = FALSE)
+write.csv(final_tosave, "./data/molecular/16s_nochimera_rarefied.csv", row.names = FALSE)

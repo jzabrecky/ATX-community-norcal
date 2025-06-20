@@ -1,6 +1,6 @@
 #### Further processing of QIIME2 outputs
 ### Jordan Zabrecky
-## last edited: 06.05.2025
+## last edited: 06.20.2025
 
 ## This code reads in the csv of assembled QIIME2 outputs and metadata
 ## and further processes it by removing reads that are "Mitochondria"
@@ -20,7 +20,8 @@ data <- read.csv("./data/molecular/16s_nochimera.csv")
 
 data_ver2_filtered <- data %>% 
   filter(!grepl("mitochondria", family, ignore.case =TRUE)) %>% 
-  filter(!grepl("chloroplast", family, ignore.case = TRUE))
+  filter(!grepl("chloroplast", family, ignore.case = TRUE)) %>% 
+  filter(domain != "Eukaryota") # exclude anything matching to Eurkaryota
 # seems like family level removes all cases of mitochondria and chloroplast from the dataset!
 
 ##### (3) Removing low confidence reads ####
@@ -65,9 +66,9 @@ total_abundance_per_vial <- data_ver4_true %>%
   dplyr::summarize(total_reads = sum(abundance))
 
 # summary of number of reads
-mean(total_abundance_per_vial$total_reads) # 87134
+mean(total_abundance_per_vial$total_reads) # 87131
 min(total_abundance_per_vial$total_reads) # 1945
-max(total_abundance_per_vial$total_reads) # 270186
+max(total_abundance_per_vial$total_reads) # 270140
 
 # left join in this data to full dataframe and calculate relative abundance
 data_ver5_relativized <- left_join(data_ver4_true, total_abundance_per_vial, by = c("vial_ID")) %>% 
@@ -107,7 +108,20 @@ blank_reads_per_sample <- reads_per_sample %>%
 data_ver6_noblanks <- data_ver5_relativized %>% 
   filter(sample_type != "blank")
 
-#### (7) Processing Triplicates ####
+#### (7) Cleaning names ####
+
+# look at names at different levels
+unique(data_ver6_noblanks$domain)
+unique(data_ver6_noblanks$phylum)
+unique(data_ver6_noblanks$class)
+unique(data_ver6_noblanks[which(data_ver6_noblanks$phylum == "Cyanobacteria"),]$family)
+unique(data_ver6_noblanks[which(data_ver6_noblanks$phylum == "Cyanobacteria"),]$order)
+unique(data_ver6_noblanks[which(data_ver6_noblanks$phylum == "Cyanobacteria"),]$genus)
+
+# clean accordingly
+# have some _ to fix for domain
+
+#### (8) Processing Triplicates ####
 
 # filter out for triplicates and not triplicates
 triplicates <- data_ver6_noblanks %>% 
@@ -150,8 +164,7 @@ for(i in 1:length(triplicates_list)) {
 # RUS-1 9/15/2022 TAC, RUS-3 8/17/2022 NT, SAL-3 NT 9/22/22, SAL-3 9/22/22 TAC,
 # SFE-M-1S 7/28/2022 TM, SFE-M-3 7/28/22 TAC, SFE-M-3 9/6/22 NT
 
+# save as 16s_nochimera_processed.csv
 #### TO-DO anything else I should do???
 
 # average triplicate groups together
-
-# save as 16s_nochimera_processed.csv

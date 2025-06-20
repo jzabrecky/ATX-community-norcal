@@ -7,6 +7,11 @@
 # ignore large data files
 data/molecular/raw_files
 data/molecular/16s_nochimera.csv
+data/molecular/16s_nochimera_rarefied.csv
 # will delete this folder later, but for now hosts random images
 unknown_sample_investigation/
 code/old_code
+# ignore image files for now
+*.jpeg
+*.png
+*.pdf
