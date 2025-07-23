@@ -17,8 +17,9 @@ lapply(c("tidyverse", "plyr", "biomformat"), require, character.only = T)
 
 ## (a) read in .biom files
 
-# get file path names
-biom_files <- list.files(path = "./data/molecular/raw_files", pattern = "_rarefied")
+# get file path names 
+# (instead of plates separate here, all plates are together; two for INSERT)
+biom_files <- list.files(path = "./data/molecular/raw_files/rarefied", pattern = ".biom")
 
 # create empty list 
 # (need to keep them separate because IDs repeat across different plates but aren't same sample)
@@ -27,7 +28,7 @@ biom_data <- list()
 # fill in list with dataframes
 for(i in 1:length(biom_files)) {
   # (some slight lexical error in read_biom but seems to be reading in fine)
-  raw <- read_biom(paste("data/molecular/raw_files/", biom_files[i], sep = ""))
+  raw <- read_biom(paste("./data/molecular/raw_files/rarefied/", biom_files[i], sep = ""))
   temp <-  as(biom_data(raw), 'TsparseMatrix')
   df <- data.frame(feature_ID = temp @Dimnames[[1]][ temp @i + 1],
                    plate_ID = temp @Dimnames[[2]][ temp @j + 1],
@@ -51,72 +52,74 @@ for(i in 1:length(plate_files)) {
   colnames(plate_data[[i]]) <- c("plate_ID", "vial_ID")
 }
 
-# read in sample metadata
+# preface plate ID's with p2 or p3 if 2nd or 3rd plate respectively
+plate_data[[2]]$plate_ID <- paste("p2", plate_data[[2]]$plate_ID, sep = "")
+plate_data[[3]]$plate_ID <- paste("p3", plate_data[[3]]$plate_ID, sep = "")
+
+# put into one dataframe
+plate_data_final <- plate_data[[1]]
+for(i in 2:length(plate_data)) {
+  plate_data_final <- rbind(plate_data_final, plate_data[[i]])
+}
+
+# read in sample metadata & add into plate data
 metadata <- read.csv("./data/molecular/metadata/16s_sample_metadata.csv")
+plate_data_metadata <- left_join(plate_data_final, metadata, by = "vial_ID")
 
 ## (c) read in Silva taxnomy files
 
-# get list of file names
-taxonomy_files <- list.files(path = "./data/molecular/raw_files/", pattern = "taxonomy")
+# read in taxonomy file and filter 
+taxonomy_data <- read_tsv("./data/molecular/raw_files/rarefied/taxonomy_cy.tsv")
+colnames(taxonomy_data) <- c("feature_ID", "taxon_full", "confidence")
 
-# create empty list (taxonomy for each plate)
-taxonomy_data <- list()
-
-# fill in list with dataframes
-for(i in 1:length(taxonomy_files)) {
-  df <- read_tsv(paste("./data/molecular/raw_files/", taxonomy_files[i], sep = ""))
-  colnames(df) <- c("feature_ID", "taxon_full", "confidence")
-  # break down full taxonomy assignment
-  df <- df %>% 
-    # if phylum is given, take phrase between d and p, else take entire phrase after d
-    mutate(domain = case_when(grepl("c__", taxon_full) ~ 
-                                str_match(taxon_full, "d__\\s*(.*?)\\s*; p__")[,2],
-                              TRUE ~ str_extract(taxon_full, "(?<=d__).*")),
-           # if class is given, take phrase between p and c, else take entire phrase after c
-           phylum = case_when(grepl("c__", taxon_full) ~ 
-                                str_match(taxon_full, "p__\\s*(.*?)\\s*; c__")[,2],
-                              TRUE ~ str_extract(taxon_full, "(?<=p__).*")),
-           # if order is given, take phrase between c and o, else take entire phrase after c
-           class = case_when(grepl("o__", taxon_full) ~ 
-                               str_match(taxon_full, "c__\\s*(.*?)\\s*; o__")[,2],
-                             TRUE ~ str_extract(taxon_full, "(?<=c__).*")),
-           # if family is given, take phrase between  and f, else take entire phrase after o
-           order = case_when(grepl("f__", taxon_full) ~
-                               str_match(taxon_full, "o__\\s*(.*?)\\s*; f__")[,2],
-                             TRUE ~ str_extract(taxon_full, "(?<=o__).*")),
-           # if genus is given, take phrase between f and g, else take entire phrase after f
-           family = case_when(grepl("g__", taxon_full) ~
-                                str_match(taxon_full, "f__\\s*(.*?)\\s*; g__")[,2],
-                              TRUE ~ str_extract(taxon_full, "(?<=f__).*")),
-           # if species is given, take phrase between g and s, else take entire phrase after g
-           genus = case_when(grepl("s__", taxon_full) ~
-                               str_match(taxon_full, "g__\\s*(.*?)\\s*; s__")[,2],
-                             TRUE ~ str_extract(df$taxon_full, "(?<=g__).*")),
-           # for species there is no further classification so anything after s
-           species = str_extract(df$taxon_full, "(?<=s__).*")
-    )
-  
-  # add in dataframe to taxonomy data list
-  taxonomy_data[[i]] <- df
-}
+# break down full taxonomy assignment
+taxonomy_data <- taxonomy_data %>% 
+  # if phylum is given, take phrase between d and p, else take entire phrase after d
+  mutate(domain = case_when(grepl("c__", taxon_full) ~ 
+                              str_match(taxon_full, "d__\\s*(.*?)\\s*; p__")[,2],
+                            TRUE ~ str_extract(taxon_full, "(?<=d__).*")),
+         # if class is given, take phrase between p and c, else take entire phrase after c
+         phylum = case_when(grepl("c__", taxon_full) ~ 
+                              str_match(taxon_full, "p__\\s*(.*?)\\s*; c__")[,2],
+                            TRUE ~ str_extract(taxon_full, "(?<=p__).*")),
+         # if order is given, take phrase between c and o, else take entire phrase after c
+         class = case_when(grepl("o__", taxon_full) ~ 
+                             str_match(taxon_full, "c__\\s*(.*?)\\s*; o__")[,2],
+                           TRUE ~ str_extract(taxon_full, "(?<=c__).*")),
+         # if family is given, take phrase between  and f, else take entire phrase after o
+         order = case_when(grepl("f__", taxon_full) ~
+                             str_match(taxon_full, "o__\\s*(.*?)\\s*; f__")[,2],
+                           TRUE ~ str_extract(taxon_full, "(?<=o__).*")),
+         # if genus is given, take phrase between f and g, else take entire phrase after f
+         family = case_when(grepl("g__", taxon_full) ~
+                              str_match(taxon_full, "f__\\s*(.*?)\\s*; g__")[,2],
+                            TRUE ~ str_extract(taxon_full, "(?<=f__).*")),
+         # if species is given, take phrase between g and s, else take entire phrase after g
+         genus = case_when(grepl("s__", taxon_full) ~
+                             str_match(taxon_full, "g__\\s*(.*?)\\s*; s__")[,2],
+                           TRUE ~ str_extract(df$taxon_full, "(?<=g__).*")),
+         # for species there is no further classification so anything after s
+         species = str_extract(df$taxon_full, "(?<=s__).*"))
 
 #### (2) Merging dataframes together ####
 
 # empty data frame for merged files
 merged_data <- list()
 
-## (a) merging plate metadata and sequence abundances
+## (a) merging sequence abundances and plate IDs w/ metadata
+
+# have separate no of plates and biom data
 
 # left join in plate metadata
-for(i in 1:length(plate_files)) {
-  merged_data[[i]] <- left_join(biom_data[[i]], plate_data[[i]], by = "plate_ID")
+for(i in 1:length(biom_data)) {
+  merged_data[[i]] <- left_join(biom_data[[i]], plate_data_metadata, by = "plate_ID")
 }
 
 # checking to see if any are missing a vial
-merged_data[[3]]$plate_ID[which(is.na(merged_data[[3]]$vial_ID))]
-# 2E from plate 1, 9G from plate 2, C5 from plate 3
+merged_data[[2]]$plate_ID[which(is.na(merged_data[[2]]$vial_ID))]
+# 9G from plate 2, C5 from plate 3
 view(plate_data[[1]])
-# 2E is vial 801, 9G is vial 554, C5 is 931
+# 9G is vial 554, C5 is 931
 # these were either from another project or labels that got lost in translation
 
 # remove those with missing vial IDs
@@ -138,26 +141,26 @@ merged_data <- lapply(merged_data, function(x) {
   x <- x %>% filter(vial_ID != 108)
 })
 
-# join in sample metadata
-for(i in 1:length(plate_files)) {
-  merged_data[[i]] <- left_join(merged_data[[i]], metadata, by = "vial_ID")
-}
-
 # checking to see if any are missing sample names
-merged_data[[3]]$vial_ID[which(is.na(merged_data[[3]]$site_reach))]
+merged_data[[2]]$vial_ID[which(is.na(merged_data[[2]]$site_reach))]
 
 ## (b) adding in taxonomy
 
 # add in taxonomy
-for(i in 1:length(plate_files)) {
-  merged_data[[i]] <-left_join(merged_data[[i]], taxonomy_data[[i]], by = "feature_ID")
+for(i in 1:length(merged_data)) {
+  merged_data[[i]] <-left_join(merged_data[[i]], taxonomy_data, by = "feature_ID")
 }
 
 # check to see each sequence ID got an assignment!
-merged_data[[1]]$vial_ID[which(is.na(merged_data[[1]]$taxon_full))]
+merged_data[[2]]$vial_ID[which(is.na(merged_data[[2]]$taxon_full))]
 # yay everything transferred!
 
 ## (c) putting all into one dataframe
+
+# NEED TO SEE WHAT THE DIFFERENCE IS BETWEEN THESE TWO FRAMES!!
+# believe 1 is _90 and 2 is _95
+# temporary
+final <- merged_data[[2]]
 
 # final dataframe with all plates
 final <- rbind(merged_data[[1]], merged_data[[2]])
