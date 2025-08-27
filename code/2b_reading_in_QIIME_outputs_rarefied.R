@@ -1,14 +1,16 @@
 #### Reading in and putting together QIIME2 output that were rarefied
 ### Jordan Zabrecky
-## last edited 06.20.2025
-
-## NOTE CURRENTLY SEEMS TO BE AN ISSUE WITH FEATURE TABLE 1 FOR RAREFIED PROCESSING
+## last edited 08.27.2025
 
 ## This code reads in QIIME2 outputs (sequence abundances and SILVA taxonomy assignment;
 ## for processing that included rarefaction) and matches them with metadata. 
 ## The script detects what samples were missing (either due to label misreadings or 
 ## low quality reads that were filtered in QIIME2) and summarizes that. It then saves 
 ## the final dataframe to be further processed in another script.
+
+## Note: two rarefied dataframes are read in here. "_90" refers to rarefaction sampling
+## depth where 90% of samples are retained and "_95" refers to rarefaction sampling 
+## depth where 95% of samples are retained
 
 #### (1) Loading in libraries and data ####
 
@@ -35,6 +37,9 @@ for(i in 1:length(biom_files)) {
                    abundance = temp @x)
   biom_data[[i]] <- df
 }
+
+# add names to biom_data list to know which is which
+names(biom_data) <- biom_files
 
 ## (b) read in sequencing plate and sample metadata files
 
@@ -97,23 +102,24 @@ taxonomy_data <- taxonomy_data %>%
          # if species is given, take phrase between g and s, else take entire phrase after g
          genus = case_when(grepl("s__", taxon_full) ~
                              str_match(taxon_full, "g__\\s*(.*?)\\s*; s__")[,2],
-                           TRUE ~ str_extract(df$taxon_full, "(?<=g__).*")),
+                           TRUE ~ str_extract(taxon_full, "(?<=g__).*")),
          # for species there is no further classification so anything after s
-         species = str_extract(df$taxon_full, "(?<=s__).*"))
+         species = str_extract(taxon_full, "(?<=s__).*"))
 
 #### (2) Merging dataframes together ####
 
-# empty data frame for merged files
-merged_data <- list()
-
 ## (a) merging sequence abundances and plate IDs w/ metadata
 
-# have separate no of plates and biom data
+# create list of merged data
+merged_data <- list()
 
 # left join in plate metadata
 for(i in 1:length(biom_data)) {
   merged_data[[i]] <- left_join(biom_data[[i]], plate_data_metadata, by = "plate_ID")
 }
+
+# add in names to merged_data list (distinguish 90 vs 95 rarefied)
+names(merged_data) <- names(biom_data)
 
 # checking to see if any are missing a vial
 merged_data[[2]]$plate_ID[which(is.na(merged_data[[2]]$vial_ID))]
@@ -142,7 +148,8 @@ merged_data <- lapply(merged_data, function(x) {
 })
 
 # checking to see if any are missing sample names
-merged_data[[2]]$vial_ID[which(is.na(merged_data[[2]]$site_reach))]
+merged_data[[1]]$vial_ID[which(is.na(merged_data[[1]]$site_reach))]
+# none missing!
 
 ## (b) adding in taxonomy
 
@@ -151,57 +158,67 @@ for(i in 1:length(merged_data)) {
   merged_data[[i]] <-left_join(merged_data[[i]], taxonomy_data, by = "feature_ID")
 }
 
-# check to see each sequence ID got an assignment!
-merged_data[[2]]$vial_ID[which(is.na(merged_data[[2]]$taxon_full))]
+# check to see each sequence ID got an assignment! (change 1 & 2 manually :) )
+merged_data[[1]]$vial_ID[which(is.na(merged_data[[1]]$taxon_full))]
 # yay everything transferred!
 
-## (c) putting all into one dataframe
+## (c) some final checks
 
-# NEED TO SEE WHAT THE DIFFERENCE IS BETWEEN THESE TWO FRAMES!!
-# believe 1 is _90 and 2 is _95
-# temporary
-final <- merged_data[[2]]
+## LEFT OFF HERE 7/24/2025
 
-# final dataframe with all plates
-final <- rbind(merged_data[[1]], merged_data[[2]])
-final <- rbind(final, merged_data[[3]])
+# want to see if we are missing any vials from metadata (change 1 & 2 manually :) )
+eval(length(unique(merged_data[[2]]$vial_ID)) == length(metadata$vial_ID))
+# no, seems like we are missing some
+setdiff(metadata$vial_ID, unique(merged_data[[1]]$vial_ID)) # missing IDs:
+# 4  18  34  40  43  58  86  90  94  98  99 102 104 107 108 115 124 135 137 142 208 215 216
+setdiff(metadata$vial_ID, unique(merged_data[[2]]$vial_ID)) # missing IDs:
+# 4  18  34  40  43  58  99 102 104 108 115 135 137 142 208 215
 
-# real quick want to see if we are missing any vials from metadata
-eval(length(unique(final$vial_ID)) == length(metadata$vial_ID))
-# no, seems like we are missing seven...
-setdiff(metadata$vial_ID, unique(final$vial_ID)) # 18, 34, 104, 108, 115, 135, 208
+# we know from looking at nonrarefied data that:
+# 104, 108, and 208 were lost in translation
+# 18, 34, and 135 had poor sequencing quality
 
-# we know what happened for vial 108 from early (two plates had that ID)
-# 208 could be 801 or the second 108 but unsure which would be the correct 108
-# so will just have to accept that those samples are gone
+## lost from 95% sequencing depth rarefaction:
+# 4: SAL-3 blank 6-27-2022 (inconsequential!)
+# 40: SAL-2 TM 7-26-2022
+# 43: SFE-M-3 TAC 7-14-2022
+# 58: SFE-M-3 TAC 7-28-2022 (triplicate- inconsequential!)
+# 99: RUS-1S TM 8-17-2022 (fake target- inconsequential!)
+# 102: RUS-1S blank 8-17-2022 (blank- inconsequential!)
+# 115: RUS-2 TAC 9-1-2022
+# 137: SFE-M-1S blank 9-6-2022 (blank- inconsequential!)
+# 142: RUS-1S TM 9-1-2022 (fake target- inconsequential!)
+# 215: RUS-1S TM 9-15-2022 (fake target- inconsequential!)
 
-# found vial IDs on plates for the following:
-# vial 135 is plate 2 ID 8B, vial 18 is plate 3 ID B8, and vial 34 is plate 3 ID A11
-# confirmed these sequences were read into the pipeline
-# they were samples had very few reads and were ultimately filtered out by QIIME
+## additional lost from 90% sequencing depth rarefaction:
+# 86: SFE-M-3 TM 8-10-2022
+# 90: SFE-M-4 TAC 8-10-2022
+# 94: RUS-1S TAC 8-17-2022
+# 98: SFE-M-3 TM 8-23-2022 (triplicate- inconsequential!)
+# 107: RUS-2 TAC 8-17-2022 
+# 124: RUS-3 TAC 9-1-2022
+# 216: SAL-1S NT 9-22-2022
 
-# seems like 104 must have also just got lost in translation
-
-## so in summary:
-## vials lost in translation: 104, 108, 208
-# 104 RUS-1S NT 8-17-2022
-# 108 RUS-3 TM 8-17-2022 (fake TM meaning we did not see Microcoleus but tried to take a sample anyways)
-# ^ (likely throwing those out so that sample is inconsequential)
-# 208 RUS-1S NT 9-15-2022
-## vials with low quality reads: 18, 34, 135
-# 18 RUS-2 NT 7-6-2022 (luckily is a triplicate)
-# 34 SAL-3 NT 7-12-2022
-# 135 SFE-M-4 9-6-2022 (another fake TM sample)
+# to compare, how many samples did we have total 
+# (excluding blanks, fake targets, and counting triplicates as one sample)
+nrow(unique(metadata %>% filter(sample_type != "blank" & fake_target == "n") %>% 
+  select(site_reach, sample_type, field_date))) # 105
+nrow(unique(merged_data[[1]] %>% filter(sample_type != "blank" & fake_target == "n") %>% 
+              select(site_reach, sample_type, field_date))) # 93 for 90% rarefaction
+nrow(unique(merged_data[[2]] %>% filter(sample_type != "blank" & fake_target == "n") %>% 
+              select(site_reach, sample_type, field_date))) # 99 for 95% rarefaction
 
 # NOTE: will remove chloroplasts, unassigned taxa, "fake targets", etc. in future script
 
 #### (3) Re-organizing and saving data ####
 
-# using select on dataframe to quickly reorganize columns
-final_tosave <- final %>% 
-  select(site_reach, site, field_date, sample_type, material, triplicate, fake_target,
-         container, plate_ID, vial_ID, abundance, feature_ID, taxon_full, domain, 
-         phylum, class, order, family, genus, species, confidence)
-
-# saving outputs
-write.csv(final_tosave, "./data/molecular/16s_nochimera_rarefied.csv", row.names = FALSE)
+# trim dataframe and save!
+for(i in 1:length(merged_data)) {
+  # keep columns we care about
+  final <- merged_data[[i]] %>% select(site_reach, site, field_date, sample_type, material, triplicate, fake_target,
+                              container, plate_ID, vial_ID, abundance, feature_ID, taxon_full, domain, 
+                              phylum, class, order, family, genus, species, confidence)
+  # save!
+  write.csv(final, paste("./data/molecular/16s_nochimera_", str_match(names(merged_data)[i], "table_\\s*(.*?)\\s*.biom")[,2], 
+                         "_unfiltered.csv", sep = ""), row.names = FALSE)
+}

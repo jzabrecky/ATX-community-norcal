@@ -186,7 +186,7 @@ setdiff(metadata$vial_ID, unique(final$vial_ID)) # 18, 34, 104, 108, 115, 135, 2
 ## vials with low quality reads: 18, 34, 135
 # 18 RUS-2 NT 7-6-2022 (luckily is a triplicate)
 # 34 SAL-3 NT 7-12-2022
-# 135 SFE-M-4 9-6-2022 (another fake TM sample)
+# 135 SFE-M-4 TM 9-6-2022 (another fake TM sample)
 
 # NOTE: will remove chloroplasts, unassigned taxa, "fake targets", etc. in future script
 
@@ -199,4 +199,4 @@ final_tosave <- final %>%
          phylum, class, order, family, genus, species, confidence)
 
 # saving outputs
-write.csv(final_tosave, "./data/molecular/16s_nochimera.csv", row.names = FALSE)
+write.csv(final_tosave, "./data/molecular/16s_nochimera_unfiltered.csv", row.names = FALSE)

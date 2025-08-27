@@ -1,6 +1,6 @@
 #### Further processing of QIIME2 outputs
 ### Jordan Zabrecky
-## last edited: 06.20.2025
+## last edited: 08.27.2025
 
 ## This code reads in the csv of assembled QIIME2 outputs and metadata
 ## and further processes it by removing reads that are "Mitochondria"
@@ -8,13 +8,42 @@
 ## field target samples, and analyzes/processes blanks and triplicates
 ## and saves to a final csv
 
-#### (1) Loading libraries an data ####
+# left off: making plotting functions, comparing 80-90% confidence filtering for 
+# meeting update powerpoint
+
+#### (1) Loading libraries and data ####
 
 # loading libraries
 lapply(c("tidyverse"), require, character.only = T)
 
 # load in data
-data <- read.csv("./data/molecular/16s_nochimera.csv")
+data <- ldply(list.files(path = "./data/molecular/", pattern = "unfiltered"), function(filename) {
+  d <- read.csv(paste("data/molecular/", filename, sep = ""))
+  d$file <- filename
+  return(d)
+})
+
+# decide on random 12 samples to compare during processing steps
+set.seed(23)
+indeces <- sample(1:73, 12)
+
+# get information for these random samples
+test_samples <- data %>% filter(sample_type != "blank" & fake_target == "n" 
+       & file == "16s_nochimera_rarefied_90_unfiltered.csv", triplicate == "n") %>% 
+  select(site_reach, sample_type, field_date) %>%
+  unique()
+test_samples <- test_samples[indeces,]
+test_samples$test_index <- seq(1:12)
+
+# join into data
+data <- left_join(data, test_samples, by = c("site_reach", "sample_type", "field_date"))
+
+# lastly, make plotting functions to easily look at samples as we are processing
+plot_phylum <- function(data, facet_wrap, group) {
+}
+plot_cyano <- function(data, facet_wrap, group) {
+  
+}
 
 #### (2) Filter out chloroplast and mitochondria assignments ####
 
@@ -26,19 +55,75 @@ data_ver2_filtered <- data %>%
 
 ##### (3) Removing low confidence reads ####
 
-data_ver3_conf <- data_ver2_filtered %>% 
-  filter(confidence > 0.85)
-
 ## dataframe size:
-# all: 166787
-# >0.7: 166266 (99.7% of original retained)
-# most abundant reads in the 70% are Anabaena and Rhodobacter
-# however, we also have a lot of Anabaena that are >0.9 so probably fine to filter
-# >0.8: 144512 (86.6% of original retained)
-# more random assortment of things 
-# >0.9: 119518 (71.7 % of original retained)
+# all: 466395
+# >0.7: 466395 (100% of original retained)
+# >0.8: 405259 (86.8% of original retained)
+# lots of uncultured bacteria at .8 level
+# >0.9: 335626 (72.0 % of original retained)
+
+# visual test looking at test samples
+data_confint_test_80 <- data_ver2_filtered %>% 
+  filter(!is.na(test_index)) %>% 
+  filter(confidence > 0.80) %>% 
+  mutate(filtered = "> 0.80")
+data_confint_test_85 <- data_ver2_filtered %>% 
+  filter(!is.na(test_index)) %>% 
+  filter(confidence > 0.85) %>% 
+  mutate(filtered = "> 0.85")
+data_confint_test_90 <- data_ver2_filtered %>% 
+  filter(!is.na(test_index)) %>% 
+  filter(confidence > 0.90) %>% 
+  mutate(filtered = "> 0.90")
+data_confint_test_95 <- data_ver2_filtered %>% 
+  filter(!is.na(test_index)) %>% 
+  filter(confidence > 0.95) %>% 
+  mutate(filtered = "> 0.95")
+data_confint_test <- rbind(data_confint_test_80, data_confint_test_85, data_confint_test_90,
+                           data_confint_test_95) %>% 
+  filter(file == "16s_nochimera_rarefied_95_unfiltered.csv")
+
+## MAYBE TURN THESE INTO FUNCTIONS
+
+# will go only through test samples; MAYBE WANT TO CALCULATE RELATIVE ABUNDANCE FIRST!?!
+for(i in 1:length(indeces)) {
+  test_data = data_confint_test %>% filter(test_index == i)
+  title_label <- paste(as.character(test_samples[i,]), sep = " ")
+  
+  plot <- ggplot(data = test_data) +
+    geom_bar(aes(x = vial_ID, y = abundance, fill = phylum), 
+             stat = "identity", position = "fill") +
+    labs(title = title_label) +
+    facet_wrap(~filtered)
+  
+  print(plot)
+}
+
+for(i in 1:length(indeces)) {
+  cyano_only = data_confint_test %>% filter(test_index == i) %>%  # filter out for cyanobacteria
+    filter(phylum == "Cyanobacteria")
+  title_label <- paste(as.character(test_samples[i,]), sep = " ")
+
+  plot <- ggplot(data = cyano_only) +
+    geom_bar(aes(x = vial_ID, y = abundance, fill = genus), 
+           stat = "identity", position = "fill") +
+    labs(title = title_label) +
+    facet_wrap(~filtered)
+  
+  print(plot)
+}
 
 # will just go with 85% for now because there is a lot of anabaena at 85% :)
+
+## double-check to see if we lost any samples from doing this
+# as a reminder, unrarefied should have X, 95% rarefied should have 95, and
+# 90% rarefied should have 93
+data_ver3_conf %>% filter(sample_type != "blank" & fake_target == "n") %>% 
+  select(site_reach, sample_type, field_date, file) %>% 
+  dplyr::group_by(file) %>% 
+  unique() %>%
+  dplyr::summarize(count = n())
+# lost 1 for nonrarefied but won't be using that anyways, let's continue!
 
 #### (4) Removing "fake" target samples ####
 
