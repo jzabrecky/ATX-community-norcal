@@ -1,6 +1,6 @@
 #### Reading in and putting together QIIME2 outputs
 ### Jordan Zabrecky
-## last edited 05.16.2025
+## last edited 09.05.2025
 
 ## This code reads in QIIME2 outputs (sequence abundances and SILVA taxonomy assignment;
 ## for processing that did not include rarefaction) and matches them with metadata. 
@@ -67,7 +67,7 @@ for(i in 1:length(taxonomy_files)) {
   # break down full taxonomy assignment
   df <- df %>% 
            # if phylum is given, take phrase between d and p, else take entire phrase after d
-    mutate(domain = case_when(grepl("c__", taxon_full) ~ 
+    mutate(domain = case_when(grepl("p__", taxon_full) ~ 
                                 str_match(taxon_full, "d__\\s*(.*?)\\s*; p__")[,2],
                               TRUE ~ str_extract(taxon_full, "(?<=d__).*")),
            # if class is given, take phrase between p and c, else take entire phrase after c

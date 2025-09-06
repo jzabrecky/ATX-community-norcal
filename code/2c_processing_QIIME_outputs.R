@@ -1,20 +1,17 @@
 #### Further processing of QIIME2 outputs
 ### Jordan Zabrecky
-## last edited: 08.27.2025
+## last edited: 09.05.2025
 
 ## This code reads in the csv of assembled QIIME2 outputs and metadata
 ## and further processes it by removing reads that are "Mitochondria"
 ## or "Chloroplasts", removes low confidence (<0.85) reads, removes "fake"
-## field target samples, and analyzes/processes blanks and triplicates
+## field target samples, and analyzes/processes blanks and triplicates,
 ## and saves to a final csv
-
-# left off: making plotting functions, comparing 80-90% confidence filtering for 
-# meeting update powerpoint
 
 #### (1) Loading libraries and data ####
 
 # loading libraries
-lapply(c("tidyverse"), require, character.only = T)
+lapply(c("tidyverse", "plyr"), require, character.only = T)
 
 # load in data
 data <- ldply(list.files(path = "./data/molecular/", pattern = "unfiltered"), function(filename) {
@@ -38,12 +35,37 @@ test_samples$test_index <- seq(1:12)
 # join into data
 data <- left_join(data, test_samples, by = c("site_reach", "sample_type", "field_date"))
 
-# lastly, make plotting functions to easily look at samples as we are processing
-plot_phylum <- function(data, facet_wrap, group) {
+# functions to quickly plot data
+plot_phylum <- function(data) {
+  plot <- ggplot(data = data) +
+    geom_bar(aes(x = vial_ID, y = abundance, fill = phylum), 
+             stat = "identity", position = "fill")
+  return(plot)
 }
-plot_cyano <- function(data, facet_wrap, group) {
+plot_cyano <- function(data) {
+  # filter out for phylum cyanobacteria
+  cyano_only = data %>%
+    filter(phylum == "Cyanobacteria")
+  plot <- ggplot(data = cyano_only) +
+    geom_bar(aes(x = vial_ID, y = abundance, fill = genus), 
+             stat = "identity", position = "fill")
+  return(plot)
   
 }
+
+# compare non-rarefied versus rarefied data for random samples
+for(i in 1:length(indeces)) {
+  test_data = data %>% filter(test_index == i)
+  title_label = paste(test_samples[i,], collapse = " ")
+  
+  print(plot_phylum(test_data) + 
+          labs(title = title_label) +
+          facet_wrap(~file))
+  print(plot_cyano(test_data) + 
+          labs(title = title_label) +
+          facet_wrap(~file))
+}
+# really no easily visible change in relative abundance!
 
 #### (2) Filter out chloroplast and mitochondria assignments ####
 
@@ -63,60 +85,44 @@ data_ver2_filtered <- data %>%
 # >0.9: 335626 (72.0 % of original retained)
 
 # visual test looking at test samples
+data_confint_test_75 <- data_ver2_filtered %>% 
+  filter(confidence > 0.75) %>% 
+  mutate(filtered = "> 0.75")
 data_confint_test_80 <- data_ver2_filtered %>% 
-  filter(!is.na(test_index)) %>% 
   filter(confidence > 0.80) %>% 
   mutate(filtered = "> 0.80")
 data_confint_test_85 <- data_ver2_filtered %>% 
-  filter(!is.na(test_index)) %>% 
   filter(confidence > 0.85) %>% 
   mutate(filtered = "> 0.85")
 data_confint_test_90 <- data_ver2_filtered %>% 
-  filter(!is.na(test_index)) %>% 
   filter(confidence > 0.90) %>% 
   mutate(filtered = "> 0.90")
-data_confint_test_95 <- data_ver2_filtered %>% 
+data_confint_test <- rbind(data_confint_test_75,data_confint_test_80, 
+                           data_confint_test_85, data_confint_test_90) %>% 
   filter(!is.na(test_index)) %>% 
-  filter(confidence > 0.95) %>% 
-  mutate(filtered = "> 0.95")
-data_confint_test <- rbind(data_confint_test_80, data_confint_test_85, data_confint_test_90,
-                           data_confint_test_95) %>% 
-  filter(file == "16s_nochimera_rarefied_95_unfiltered.csv")
+  filter(file == "16s_nochimera_rarefied_90_unfiltered.csv")
 
-## MAYBE TURN THESE INTO FUNCTIONS
-
-# will go only through test samples; MAYBE WANT TO CALCULATE RELATIVE ABUNDANCE FIRST!?!
 for(i in 1:length(indeces)) {
   test_data = data_confint_test %>% filter(test_index == i)
-  title_label <- paste(as.character(test_samples[i,]), sep = " ")
+  title_label <- paste(test_samples[i,], collapse = " ")
   
-  plot <- ggplot(data = test_data) +
-    geom_bar(aes(x = vial_ID, y = abundance, fill = phylum), 
-             stat = "identity", position = "fill") +
-    labs(title = title_label) +
-    facet_wrap(~filtered)
-  
-  print(plot)
+  print(plot_phylum(test_data) + 
+          labs(title = title_label) +
+          facet_wrap(~filtered))
+  print(plot_cyano(test_data) + 
+          labs(title = title_label) +
+          facet_wrap(~filtered))
 }
+# really no easily visible change in relative abundance!
 
-for(i in 1:length(indeces)) {
-  cyano_only = data_confint_test %>% filter(test_index == i) %>%  # filter out for cyanobacteria
-    filter(phylum == "Cyanobacteria")
-  title_label <- paste(as.character(test_samples[i,]), sep = " ")
-
-  plot <- ggplot(data = cyano_only) +
-    geom_bar(aes(x = vial_ID, y = abundance, fill = genus), 
-           stat = "identity", position = "fill") +
-    labs(title = title_label) +
-    facet_wrap(~filtered)
-  
-  print(plot)
-}
-
-# will just go with 85% for now because there is a lot of anabaena at 85% :)
+# will just go with 85% because there is a lot of anabaena at 85% 
+# & that gets rid of our misc. "uncultured bacterium" reads :)
+data_ver3_conf <- data_ver2_filtered %>% 
+  filter(confidence > 0.85) %>% 
+  mutate(filtered = "> 0.85")
 
 ## double-check to see if we lost any samples from doing this
-# as a reminder, unrarefied should have X, 95% rarefied should have 95, and
+# as a reminder, unrarefied should have 102, 95% rarefied should have 99, and
 # 90% rarefied should have 93
 data_ver3_conf %>% filter(sample_type != "blank" & fake_target == "n") %>% 
   select(site_reach, sample_type, field_date, file) %>% 
@@ -136,120 +142,127 @@ fakes <- data_ver3_conf %>%
 
 view(fakes)
 # yes, we had presence in some Russian samples and in Salmon september samples even though
-# it was not visually apparent
+# it was not visually apparent (note searched "tychonema")
 
-# however, this is probably too confusing for methods and non-target samples will
+# we had one sample on 7-14-2022 for TM at SFE-M-4 that was a "maybe"
+maybe <- data_ver3_conf %>% 
+  filter(fake_target == "maybe")
+
+view(maybe)
+# single read of microcoleus/tychonema!
+
+# however, these "fake targets" are probably too confusing for methods and non-target samples will
 # show presence of "macroscopically absent" taxa we care about, so focus only on "true" samples
 data_ver4_true <- data_ver3_conf %>% 
   filter(fake_target == "n")
 
 #### (5) Relativizing Abundances #####
 
-# calculate total abundances/reads per vial
+# calculate total abundances/reads per vial for each file
 total_abundance_per_vial <- data_ver4_true %>% 
-  dplyr::group_by(vial_ID) %>% 
+  dplyr::group_by(vial_ID, file) %>% 
   dplyr::summarize(total_reads = sum(abundance))
 
-# summary of number of reads
-mean(total_abundance_per_vial$total_reads) # 87131
-min(total_abundance_per_vial$total_reads) # 1945
-max(total_abundance_per_vial$total_reads) # 270140
-
 # left join in this data to full dataframe and calculate relative abundance
-data_ver5_relativized <- left_join(data_ver4_true, total_abundance_per_vial, by = c("vial_ID")) %>% 
+data_ver5_relativized <- left_join(data_ver4_true, total_abundance_per_vial, by = c("vial_ID", "file")) %>% 
   mutate(relative_abundance = abundance / total_reads) %>% 
   relocate(total_reads, .before = feature_ID) %>% 
   relocate(relative_abundance, .before = feature_ID)
-
-# reads per sample
-reads_per_sample <- data_ver5_relativized %>% 
-  select(site_reach, field_date, total_reads, sample_type) %>% 
-  unique() 
-# 3 of the 4 lowest are blanks
-# 3 of the 4 highest are NT... and one is a blank...?
-
-# plot to look at relationship with reads 
-ggplot(data = reads_per_sample) +
-  geom_boxplot(aes(y = total_reads, color = sample_type)) +
-  theme_bw()
-# can also probably be just dependent on how extraction of sample went?
 
 #### (6) Processing blanks ####
 
 # look at blanks
 blanks <- data_ver5_relativized %>% 
-  filter(sample_type == "blank")
-blank_reads_per_sample <- reads_per_sample %>% 
-  filter(sample_type == "blank")
-# half are below average number of reads in a sample but seemingly no pattern of what makes
-# number of total reads low or high (e.g. site or date)
+  filter(sample_type == "blank") %>% 
+  mutate(full_sample_name = paste(site_reach, field_date, sample_type))
 
-# indicates our while out in the field sample processing was not perfect
-# (which involved a quick bleach of the filtering equipment then rinse)
-# however this is to be expected; would have been interesting to check
-# blanks after in the more extensive in-lab bleaching process
+view(blanks)
+# not a ton of microcoleus or anabaena which is good
 
-# remove blanks from data
+# remove blanks
 data_ver6_noblanks <- data_ver5_relativized %>% 
   filter(sample_type != "blank")
 
-#### (7) Cleaning names ####
-
-# look at names at different levels
-unique(data_ver6_noblanks$domain)
-unique(data_ver6_noblanks$phylum)
-unique(data_ver6_noblanks$class)
-unique(data_ver6_noblanks[which(data_ver6_noblanks$phylum == "Cyanobacteria"),]$family)
-unique(data_ver6_noblanks[which(data_ver6_noblanks$phylum == "Cyanobacteria"),]$order)
-unique(data_ver6_noblanks[which(data_ver6_noblanks$phylum == "Cyanobacteria"),]$genus)
-
-# clean accordingly
-# have some _ to fix for domain
-
-#### (8) Processing Triplicates ####
+#### (7) Processing Triplicates ####
 
 # filter out for triplicates and not triplicates
 triplicates <- data_ver6_noblanks %>% 
   filter(triplicate == "y") %>% 
-  mutate(full_sample_name = paste(site_reach, field_date, sample_type)) %>% 
-  mutate(vial_ID = as.character(vial_ID))
+  mutate(full_sample_name = paste(site_reach, field_date, sample_type))
   
 # split out into a list for plotting purposes
 triplicates_list <- split(triplicates, triplicates$full_sample_name)
 
-# visually look at differences across phyla
+# visually look at differences
 for(i in 1:length(triplicates_list)) {
-  title_label <- triplicates_list[[i]]$full_sample_name[1]
+  test_data = triplicates_list[[i]] %>% filter(file == "16s_nochimera_rarefied_90_unfiltered.csv")
+  title_label = paste(test_data$site_reach[i],
+                       test_data$sample_type[i],
+                       test_data$field_date[i], sep = " ")
   
-  plot <- ggplot(data = triplicates_list[[i]]) +
-    geom_bar(aes(x = vial_ID, y = relative_abundance, fill = phylum), stat = "identity") +
-    labs(title = title_label)
-  
-  print(plot)
+  print(plot_phylum(test_data) + 
+          labs(title = title_label))
+  print(plot_cyano(test_data) + 
+          labs(title = title_label))
 }
 # generally samples look good
 # samples that appear to have one-odd-one-out:
 # RUS-3 8/17/22 NT, SAL-3 9/22/22 NT, SFE-M-1S 7/28/22 TM, SFE-M-3 9/6/22 NT
+# will remove odd-one-out:
+IDs_to_remove <- c(110, 225, 50, 123)
+triplicates_adjusted <- triplicates %>% 
+  filter(!vial_ID %in% IDs_to_remove)
 
-# visually look at differences within cyanobacteria
-for(i in 1:length(triplicates_list)) {
+# average across triplcates
+triplicates_adjusted <- triplicates_adjusted %>% 
+  group_by(site_reach, site, field_date, sample_type, triplicate, feature_ID, 
+           taxon_full, domain, phylum, class, order, family, genus, species, file, full_sample_name) %>% 
+  # need to do mean of relative abundance as each vial has different number of reads!
+  dplyr::summarize(abundance = mean(relative_abundance),
+                   confidence = mean(confidence)) %>% 
+  mutate(vial_ID = NA)
+
+# plot merged triplicates
+triplicates_adjusted_list <- split(triplicates_adjusted, triplicates_adjusted$full_sample_name) 
+for(i in 1:length(triplicates_adjusted_list)) {
+  test_data = triplicates_adjusted_list[[i]] %>%  filter(file == "16s_nochimera_rarefied_90_unfiltered.csv")
+  title_label = paste(test_data$site_reach[i],
+                      test_data$sample_type[i],
+                      test_data$field_date[i], sep = " ")
   
-  cyano_only = triplicates_list[[i]] %>% # filter out for cyanobacteria
-    filter(phylum == "Cyanobacteria")
-  title_label <- triplicates_list[[i]]$full_sample_name[1]
-  
-  plot <- ggplot(data = cyano_only) +
-    geom_bar(aes(x = vial_ID, y = abundance, fill = genus), 
-             stat = "identity", position = "fill") +
-    labs(title = title_label)
-  
-  print(plot)
+  print(plot_phylum(test_data) + 
+          labs(title = title_label))
+  print(plot_cyano(test_data) + 
+          labs(title = title_label))
 }
-# more samples here that appear to have one-odd-one-out:
-# RUS-1 9/15/2022 TAC, RUS-3 8/17/2022 NT, SAL-3 NT 9/22/22, SAL-3 9/22/22 TAC,
-# SFE-M-1S 7/28/2022 TM, SFE-M-3 7/28/22 TAC, SFE-M-3 9/6/22 NT
 
-# save as 16s_nochimera_processed.csv
-#### TO-DO anything else I should do???
+#### (8) Putting final data together
 
-# average triplicate groups together
+# get data without triplicates and trim columns
+data_ver7_final <- data_ver6_noblanks %>% 
+  filter(triplicate == "n") %>% 
+  select(site_reach, site, field_date, sample_type, triplicate, relative_abundance, feature_ID,
+         taxon_full, domain, phylum, class, order, family, genus, species, confidence, file)
+
+# adjust column names for triplicates
+triplicates_final <- triplicates_adjusted %>% 
+  dplyr::rename(relative_abundance = abundance) %>% 
+  relocate(relative_abundance, .before = "feature_ID") %>% 
+  select(!c("vial_ID", "full_sample_name")) %>% 
+  relocate(confidence, .before = file)
+
+# double-check that column names match those of triplicate
+eval(colnames(data_ver7_final) == colnames(triplicates_final))
+
+# rbind non-triplicates and triplicates together
+data_ver7_final <- rbind(data_ver7_final, triplicates_final) %>% 
+  mutate(file = str_remove(file, "_unfiltered.csv"))
+
+# split into list based on file name
+final <- split(data_ver7_final, data_ver7_final$file)
+
+# save all as individual csv's
+lapply(names(final), function(x) write.csv(final[[x]] %>% select(!file), 
+                                    paste("./data/molecular/", x, 
+                                          "_filtered.csv", sep = ""), 
+                                    row.names = FALSE))
