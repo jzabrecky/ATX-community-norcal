@@ -1,6 +1,6 @@
 #### Editing taxonomic assignments
 ### Jordan Zabrecky
-## last edited: 09.05.2025
+## last edited: 09.10.2025
 
 ## This code takes the processed QIIME outputs (presently, just the 90 rarefied)
 ## and adjusts taxonomic assignments to make sure they are all clean and correct
@@ -11,7 +11,7 @@
 lapply(c("tidyverse"), require, character.only = T)
 
 # reading in data
-original <- read.csv("./data/molecular/16s_nochimera_rarefied_90_filtered.csv") # keep original just in case
+original <- read.csv("./data/molecular/16s_nochimera_rarefied_95_filtered.csv") # keep original just in case
 data <- original # data dataframe is for altering
 
 #### (2) Changing Tychonema to Microcoleus ####
@@ -50,7 +50,22 @@ for(i in 1:length(odd_phylum_names)) {
        c("phylum", "class", "order", "family", "genus", "species")] <- NA
 }
 unique(data$phylum) # all look good now
-# NOTE: can check if these are all real later?
+# checking all of these in NCBI taxonomy, some notes:
+
+# Chloroflexi (should have ota on the end)
+data[which(data$phylum == "Chloroflexi"), "phylum"] <- "Chloroflexiota"
+# Campylobacterota instead of Campilobacterota
+data[which(data$phylum == "Campilobacterota"), "phylum"] <- "Campylobacterota"
+# Deferrisomatota is actually a class in the phylum Desulfobacterota
+data[which(data$phylum == "Deferrisomatota"), "phylum"] <- "Desulfobacterota"
+
+# synonyms of some of these groups
+# Firmicutes is also known as Bacillota, Modulibacteria as Moduliflexiota, 
+# Crenarchaeota as Thermoproteota, Actinobacteriota as Actinomycetota, Desulfobacterota as
+# Thermodesulfobacterota, Euryarchaeota as Methanobacteriota, Nanoarchaeota as Nanobdellota,
+# 
+# Patescibacteria is also known as candidate phyla radiation, highly unresolved group
+# Dependentiae is also highly unresolved, matches to Candidatus Babelota
 
 #### (4) Checking orders w/in Cyanobacteria ####
 
@@ -63,16 +78,16 @@ for(i in 1:length(odd_order_names)) {
   data[which(data$order == odd_order_names[i]),
        c("order", "family", "genus", "species")] <- NA
 }
-unique(data[which(data$phylum == "Cyanobacteria"),]$order) # all look good now
 
 # Fr127 has a lot of matches to Leptolyngbyales (order) Leptolyngbyaceae (family)
 # (not to genus only to family and order)
 data[which(data$order == "Fr127"), "family"] <- "Leptolyngbyaceae"
 data[which(data$order == "Fr127"), "order"] <- "Leptolyngbyales"
+data[which(data$genus == "Fr127"), c("genus", "species")] <- NA
 
 # "Oxyphotobacteria_Incertae_Sedis" (oxyphotobacteria of uncertain placement)
 # weirdly within our dataframe has a lot of cyanobacteria genera such as Calothrix,
-# Leptolyngbya, etc. so we will fix the order, family for those when we get to genus
+# Leptolyngbya, etc. so we will fix the order, family for those later
 
 # checking again to make sure all of these are true cyanobacteria orders
 unique(data[which(data$phylum == "Cyanobacteria"),]$order)
@@ -99,14 +114,16 @@ data[which(data$order == "Cyanobacteriia"), c("order", "family", "genus", "speci
 
 # final check for now
 unique(data[which(data$phylum == "Cyanobacteria"),]$order)
-# again, will deal with oxyphotobacteria thingy later
+# again, will deal with oxyphotobacteria thingy & cyanobacteriales later
 
 #### (5) Checking families w/in Cyanobacteria ####
 
 # unique names
-unique(original[which(data$phylum == "Cyanobacteria"),]$family)
+unique(data[which(data$phylum == "Cyanobacteria"),]$family)
 
-odd_family_names <- c("Unknown_family")
+# a lot under "Unknown Family" have defined genus
+unique(data[which(data$phylum == "Cyanobacteria" & data$family == "Unknown_Family"),"genus"])
+# many are also under the oxyphotobacteria thingy, so will deal with this later
 
 # Cyanobacteriaceae is not a family; genus for these is either Geitlerinema, Geminocystis
 # or a bacterium- those can be changed to NA
@@ -114,11 +131,11 @@ data[which(data$family == "Cyanobacteriaceae" & grepl("Geitlerinema", data$genus
      "order"] <- "Geitlerinematales"
 data[which(data$family == "Cyanobacteriaceae" & grepl("Geitlerinema", data$genus)),
      "family"] <- "Geitlerinemataceae"
-data[which(data$family == "Cyanobacteriaceae" & grepl("Geitlerinema", data$genus)),
+data[which(data$family == "Cyanobacteriaceae" & grepl("Geminocystis", data$genus)),
      "order"] <- "Chroococcales"
 data[which(data$family == "Cyanobacteriaceae" & grepl("Geminocystis", data$genus)),
      "family"] <- "Geminocystaceae"
-data[which(data$family == "Cyanobacteriaceae"),c("order", "family", "genus", "species")] <- NA
+data[which(data$family == "Cyanobacteriaceae"), c("order", "family", "genus", "species")] <- NA
 
 # Synechococcales_Incertae_Sedis- all of schizothrix genus which in the Leptolyngbya family
 data[which(data$family == "Synechococcales_Incertae_Sedis"), "order"] <- "Leptolyngbyales"
@@ -132,93 +149,273 @@ data[which(data$family == "Phormidiaceae" & grepl("Planktothrix", data$genus)), 
 # unknowns can go to Osillatoriaceae since that is what the Phormidiaceae search defaults to?
 data[which(data$family == "Phormidiaceae"), "family"] <- "Osillatoriaceae"
 
-# Phormidesmiaceae is also not a family, genus is Phormidesmis which is a new Leptolynbya...
-# insert adjustment here
+# Phormidesmiaceae is also not a family, genus is Phormidesmis which is a new Leptolynbyales (order)
+data[which(data$family == "Phormidesmiaceae"), "order"] <- "Leptolyngbyales"
+data[which(data$family == "Phormidesmiaceae"), "family"] <- "Leptolyngbyaceae"
 
+# Gloeocapsaceae is also not a family, genus Gloeocapsa is in family Chroococcaceae and order Chroococcales
+# there are also some species listed here that are not in the Gloecapsa genus or different family
+data[which(data$family == "Gloeocapsaceae"), "order"] <- "Chroococcales"
+data[which(data$family == "Gloeocapsaceae"), "family"] <- "Chroococcaceae"
+data[which(data$genus == "Gleocapsa" & grepl("Limnococcus", data$species)), "genus"] <- "Limnococcus"
+data[which(data$genus == "Gleocapsa" & grepl("Limnococcus", data$species)), "family"] <- "Cyanothrichaceae"
+data[which(data$genus == "Gleocapsa" & grepl("Chroococcus", data$species)), "genus"] <- "Chroococcus"
+data[which(data$genus == "Gleocapsa" & grepl("Chroococcus", data$species)), "family"] <- "Chroococcaceae"
+# lastly, the Chroococcales_cyanobacterium should not have identification beyond order according to BLAST/GenBank
+data[which(data$genus == "Gleocapsa" & data$species == "Chroococcales_cyanobacterium"), c("family", "genus")] <- NA
 
-## old script
-
-
-## process here: look at unique names, readjust naming
-# data frame for cleaning names
-data_ver7_cleannames <- data_ver6_noblanks
-
-## (a) domain
-unique(data_ver6_noblanks$domain) # good
-
-# just curious of ratio of bacteria to archaea in our samples
-ggplot(data = data_ver6_noblanks) +
-  geom_bar(aes(x = sample_type, y = abundance, fill = domain),
-           stat = "identity", position = "fill")
-# very much dominated by bacteria!
-
-## (b) phylum
-unique(data_ver6_noblanks$phylum)
-odd_phylum_names <- c("WPS-2", "SAR324_clade(Marine_group_B)", "MBNT15", "NB1-j", 
-                      "RCP2-54", "GAL15", "PAUC34f", "FCPU426", "AncK6", "WS1", 
-                      "Rs-K70_termite_group", "Sva0485", "LCP-89")
-
-for(i in 1:length(odd_phylum_names)) {
-  data_ver7_cleannames[which(data_ver7_cleannames$phylum == odd_phylum_names[i]),
-                       c("phylum", "class", "order", "family", 
-                         "genus", "species")] <- NA
-}
-unique(data_ver7_cleannames$phylum)
-
-# BLASTing most abundant sequence for "weird" labels
-# most are coming up as uncultured bacteriums and what not, so let's just shove them to NA
-# lapply to go through lists?
-
-# our most common reads matching to Tychnonema also 100% match Microcoleus
-# considering the poor resolution here & past work in northern California,
-# we will change these to Microcoleus
-
-# also want to test certain taxa to make sure they have correct order
-
-## (c) Order within Cyanobacteria
-unique(data_ver7_cleannames[which(data_ver7_cleannames$phylum == "Cyanobacteria"),]$order)
-odd_order_names <- c("SepB-3", "uncultured", "RD011")
-
-# convert odd ones to NA
-for(i in 1:length(odd_phylum_names)) {
-  data_ver7_cleannames[which(data_ver7_cleannames$family == odd_family_names[i]),
-                       c("order", "family", "genus", "species")] <- NA
-}
-
-# Oxyphotobacteria_Incertae_Sedis refers to oxyphotobacteria of uncertain placement
-# a lot of these actually have a true genus (e.g. Calothrix or Phormidium) so adjust
-unique(data_ver7_cleannames[which(data_ver7_cleannames$order == "Oxyphotobacteria_Incertae_Sedis"),]$genus)
-# will edit those for correct family later when checking genus
-
-# Fr127 has a lot of matches to Leptolyngbyales (order) Leptolyngbyaceae (family)
-data_ver7_cleannames[which(data_ver7_cleannames$family == "Fr127"), 
-                     "order"] <- "Leptolyngbyales"
-data_ver7_cleannames[which(data_ver7_cleannames$family == "Fr127"),
-                     "family"] <- "Leptolynbyaceae"
-
-## (c) Order within Cyanobacteria
-unique(data_ver7_cleannames[which(data_ver7_cleannames$phylum == "Cyanobacteria"),]$order)
-
-
-unique(data_ver7_cleannames[which(data_ver7_cleannames$phylum == "Cyanobacteria"),]$family)
-odd_family_names <- c("Unknown_Family", "SepB-3", "uncultured", "RD011")
-
-for(i in 1:length(odd_phylum_names)) {
-  data_ver7_cleannames[which(data_ver7_cleannames$family == odd_family_names[i]),
-                       c("family", "genus", "species")] <- NA
-}
-
-# Fr127 has a lot of matches to Leptolyngbyales (order) Leptolyngbyaceae (family)
-data_ver7_cleannames[which(data_ver7_cleannames$family == "Fr127"), 
-                     "order"] <- "Leptolyngbyales"
-data_ver7_cleannames[which(data_ver7_cleannames$family == "Fr127"),
-                     "family"] <- "Leptolynbyaceae"
-
-# do all the remaining names make sense?
-unique(data_ver7_cleannames[which(data_ver7_cleannames$phylum == "Cyanobacteria"),]$family)
 # Cyanobiaceaea- Synechococcus-like species, under a reclassification (see Komarek et al. 2020)
-# left as is...
-# Limnotrichaceae- also not on NCBI taxonomy, all are genus limnothrix, adjust as such
+# will just leave as is despite it not currently being in NCBI taxonomy
 
-# clean accordingly
-# have some _ to fix for domain
+# also, Vampirovibrionales is not a family but only an order
+data[which(data$family == "Vampirovibrionales"), c("family")] <- NA
+
+# final check
+unique(data[which(data$phylum == "Cyanobacteria"),]$family)
+# again, will finish dealing with unknown family later
+
+#### (6) Checking genera w/in Cyanobacteria ####
+
+# unique names
+unique(data[which(data$phylum == "Cyanobacteria"),]$genus)
+
+# SU2_symbiont group, some have species Aphanothece_sacrum, under BLAST has defined order & family
+data[which(data$genus == "SU2_symbiont_group" & grepl("Aphanothece", data$species)), "order"] <-  "Chroococcales"
+data[which(data$genus == "SU2_symbiont_group" & grepl("Aphanothece", data$species)), "family"] <- "Aphanothecaceae"
+data[which(data$genus == "SU2_symbiont_group" & grepl("Aphanothece", data$species)), "genus"] <- "Aphanothece"
+# remainder are endosymbionts or NA matching to Epithemia endosymbionts undefined beyond Cyanobacteriota
+data[which(data$genus == "SU2_symbiont_group"), c("order", "family", "genus")] <- NA
+
+# only two CENA518 reads are Leptolyngbya species
+data[which(data$genus == "CENA518"), "order"] <- "Leptolyngbyales"
+data[which(data$genus == "CENA518"), "family"] <- "Leptolyngbyaceae"
+data[which(data$genus == "CENA518"), "genus"] <- "Leptolyngbya"
+
+# remove uncultured genus to NA sans one "uncultured_Oscillatoriales" that should be in Oscillatoriales
+data[which(data$genus == "uncultured" & grepl("uncultured_Oscillatoria", data$species)), "order"] <- "Oscillatoriales"
+data[which(data$genus == "uncultured" & grepl("uncultured_Oscillatoria", data$species)), "family"] <- "Oscillatoriaceae"
+data[which(data$genus == "uncultured" & grepl("uncultured_Oscillatoria", data$species)), "genus"] <- "Oscillatoria"
+data[which(data$genus == "uncultured"), "genus"] <- NA
+
+# LB3-76 does not really match to anything in BLAST
+data[which(data$genus == "LB3-76"), c("order", "family", "genus")] <- NA
+
+# Unknown Family?
+unique(data[which(data$phylum == "Cyanobacteria" & data$genus == "Unknown_Family"),])
+# not seeming to match to anything clearly
+data[which(data$phylum == "Cyanobacteria" & data$genus == "Unknown_Family"), c("order", "family", "genus")] <- NA
+
+# lots of the genus names have "_[numbers]" following that can be removed
+data[which(data$phylum == "Cyanobacteria"), "genus"] <- str_replace(data[which(data$phylum == "Cyanobacteria"), "genus"], "_.*", "")
+
+# look again at names
+unique(data[which(data$phylum == "Cyanobacteria"),]$genus)
+# checking to make sure all of these are legit in NCBI taxonomy
+
+# Nostocaceae is a family
+unique(data[which(data$phylum == "Cyanobacteria" & data$genus == "Nostocaceae"),])
+# they are Calothrix species that are matching to a Calothrix genus, etc. on BLAST
+data[which(data$genus == "Nostocaceae" & grepl("Calothrix", data$species)), "order"] <- "Nostocales"
+data[which(data$genus == "Nostocaceae" & grepl("Calothrix", data$species)), "family"] <- "Calotrichaceae"
+data[which(data$genus == "Nostocaceae" & grepl("Calothrix", data$species)), "genus"] <- "Calothrix"
+
+# candidatus is not a  genus
+data[which(data$genus == "Candidatus"), "genus"] <- NA
+       
+# Leptolyngbyaceae is also a family; only a single read, just removing genus
+data[which(data$genus == "Leptolyngbyaceae"), "genus"] <- NA
+
+# Caenarcaniphilales considered as an order, not genus (highly unresolved)
+data[which(data$genus == "Caenarcaniphilales"), c("family", "genus")] <- NA
+
+# Obscuribacteraceae considered only at family
+data[which(data$genus == "Obscuribacteraceae"), "genus"] <- NA
+
+# Vampirovibrionaceae is also just a family
+data[which(data$genus == "Vampirovibrionaceae"), "genus"] <- NA
+
+# also, Vampirovibrionales is not a genus but an order
+data[which(data$genus == "Vampirovibrionales"), c("genus")] <- NA
+
+# other notes:
+# Sericytochromatia is an unranked clade, going to leave as is
+# Gleocapsa not in NCBI but in Phycokey so keeping it
+
+#### (7) Checking consistency across genera ####
+
+## lastly, need to check that the same genus have the same family, order, etc.
+## this will also deal with the order "Cyanobacteriales" and the oxyphotobacteria thingy
+names <- unique(data[which(data$phylum == "Cyanobacteria"), c("order", "family", "genus")])
+view(names) # going through genus in this dataframe
+
+# Aliterella family is wrong and order is the "Cyanobacteriales"
+data[which(data$genus == "Aliterella"), "family"] <- "Aliterellaceae"
+data[which(data$genus == "Aliterella"), "order"] <- "Chroococcidiopsidales"
+
+# Anabaena & Aphanizomenon order is wrong ("Cyanobacteriales")
+data[which(data$genus == "Anabaena" | data$genus == "Aphanizomenon"), "order"] <- "Nostocales"
+
+# Aphanizomenon also in wrong family
+data[which(data$genus == "Aphanizomenon"), "family"] <- "Aphanizomenonaceae"
+
+# two incorrect labels for Calothrix
+data[which(data$genus == "Calothrix"), "family"] <- "Calotrichaceae"
+data[which(data$genus == "Calothrix"), "order"] <- "Nostocales"
+
+# Chamaesiphon also has incorrect "Cyanobacteriales" order
+data[which(data$genus == "Chamaesiphon"), "order"] <- "Gomontiellales"
+
+# Chroococcidiopsis and Chroococcopsis also have wrong family and incorrect "Cyanobacteriales" order
+data[which(data$genus == "Chroococcidiopsis"), "family"] <- "Chroococcidiopsidaceae"
+data[which(data$genus == "Chroococcidiopsis"), "order"] <- "Chroococcidiopsidales"
+data[which(data$genus == "Chroococcopsis"), "family"] <- "Hyellaceae"
+data[which(data$genus == "Chroococcopsis"), "order"] <- "Pleurocapsales"
+
+# Cuspidothrix has incorrect "Cyanobacteriales" order
+data[which(data$genus == "Cuspidothrix"), "order"] <- "Nostocales"
+data[which(data$genus == "Cuspidothrix"), "family"] <- "Aphanizomenonaceae"
+
+# Cyanothece incorrect Cyanobacteriales order
+data[which(data$genus == "Cyanothece"), "order"] <- "Gomontiellales"
+data[which(data$genus == "Cyanothece"), "family"] <- "Cyanothecaceae"
+
+# Cylindrospermum & Cylindrospermopsis have been reassigned to Aphanizomenonaceae family
+# also both have incorrect Cyanobacteriales order
+data[which(data$genus == "Cylindrospermum" | data$genus == "Cylindrospermopsis"), "family"] <- "Aphanizomenonaceae"
+data[which(data$genus == "Cylindrospermum" | data$genus == "Cylindrospermopsis"), "order"] <- "Nostocales"
+
+# Desmonostoc same order issue
+data[which(data$genus == "Desmonostoc"), "order"] <- "Nostocales"
+
+# Two reads for Geitlerinema have same issue & oxyphoto issue and a mispelling in Family
+data[which(data$genus == "Geitlerinema"), "family"] <- "Geitlerinemataceae"
+data[which(data$genus == "Geitlerinema"), "order"] <- "Geitlerinematales"
+
+# "Cyanobacteriales" order issue for Geminocystis as well
+data[which(data$genus == "Geminocystis"), "order"] <- "Chroococcales"
+
+# Same order issue and a family issue for Gloeothece
+data[which(data$genus == "Gloeothece"), "family"] <- "Aphanothecaceae"
+data[which(data$genus == "Gloeothece"), "order"] <- "Chroococcales"
+
+# Same order issue and a family issue for Gloeotrichia
+data[which(data$genus == "Gloeotrichia"), "family"] <- "Gloeotrichiaceae"
+data[which(data$genus == "Gloeotrichia"), "order"] <- "Nostocales"
+
+# Same order issue for Kamptonema
+data[which(data$genus == "Kamptonema"), "order"] <- "Oscillatoriales"
+
+# One read for Leptolyngbya with Oxyphoto order issue
+data[which(data$genus == "Leptolyngbya"), "family"] <- "Leptolyngbyales"
+data[which(data$genus == "Leptolyngbya"), "order"] <- "Leptolyngbyaceae"
+
+# Merismopedia with family and order ("Cyanobacteriales) issues
+# noting that a lot of the Cyanobacteriales also have incorrect families that are Microcystaceae
+data[which(data$genus == "Merismopedia"), "family"] <- "Merismopediaceae"
+data[which(data$genus == "Merismopedia"), "order"] <- "Synechococcales"
+
+# Microcoleus incorrect family and order ("Cyanobacteriales")
+# (I guess this is the original Microcoleus reads that weren't Tychonema)
+data[which(data$genus == "Microcoleus"), "family"] <- "Microcoleaceae"
+data[which(data$genus == "Microcoleus"), "order"] <- "Oscillatoriales"
+
+# Microcystis wrong order ("Cyanobacteriales")
+data[which(data$genus == "Microcystis"), "order"] <- "Chroococcales"
+
+# Incorrect order for Nodosilinea
+data[which(data$genus == "Nodosilinea"), "order"] <- "Nodosilineales"
+
+# Incorrect "Cyanobacteriales" order for both Nodularia and Nostoc plus incorrect family for Nodularia
+data[which(data$genus == "Nostoc" | data$genus == "Nodularia"), "order"] <- "Nostocales"
+data[which(data$genus == "Nodularia"), "family"] <- "Nodulariaceae"
+
+# Incorrect oxyphotobacteria & unknown family for Oscillatoria & Phormidium
+data[which(data$genus == "Oscillatoria" | data$genus == "Phormidium"), "family"] <- "Oscillatoriaceae"
+data[which(data$genus == "Oscillatoria" | data$genus == "Phormidium"), "order"] <- "Oscillatoriales"
+
+# Incorrect "Cyanobacteriales" order for Planktothricoides & Planktothrix
+data[which(data$genus == "Planktothricoides" | data$genus == "Planktothrix"), "order"] <- "Oscillatoriales"
+
+# Incorrect family & "Cyanobacteriales" order for Pleurocapsa
+data[which(data$genus == "Pleurocapsa"), "order"] <- "Pleurocapsales"
+data[which(data$genus == "Pleurocapsa"), "family"] <- "Hyellaceae"
+
+# Incorrect family & "Cyanobacteriales" order for Potamolinea
+data[which(data$genus == "Potamolinea"), "order"] <- "Coleofasciculales"
+data[which(data$genus == "Potamolinea"), "family"] <- "Wilmottiaceae"
+
+# Oxyphoto order issue and unknown family for a Pseudanabaena read
+data[which(data$genus == "Pseudanabaena"), "order"] <- "Pseudanabaenales"
+data[which(data$genus == "Pseudanabaena"), "family"] <- "Pseudanabaenaceae"
+
+# Incorrect "Cyanobacteriales" order for Richelia
+data[which(data$genus == "Richelia"), "order"] <- "Nostocales"
+
+# Incorrect "Cyanobacteriales" order and family for Scytonema
+data[which(data$genus == "Scytonema"), "order"] <- "Nostocales"
+data[which(data$genus == "Scytonema"), "family"] <- "Scytonemataceae"
+
+# Incorrect "Cyanobacteriales" order and family for Snowella
+data[which(data$genus == "Scytonema"), "order"] <- "Synechococcales"
+data[which(data$genus == "Scytonema"), "family"] <- "Coelosphaeriaceae"
+
+# Incorrect "Cyanobacteriales" order and family for Sphaerospermopsis
+data[which(data$genus == "Sphaerospermopsis"), "order"] <- "Nostocales"
+data[which(data$genus == "Sphaerospermopsis"), "family"] <- "Aphanizomenonaceae"
+
+# Incorrect order and family for Synechococcus
+data[which(data$genus == "Synechococcus"), "order"] <- "Synechococcales"
+data[which(data$genus == "Synechococcus"), "family"] <- "Synechococcaceae"
+
+# Incorrect "Cyanobacteriales" order and family for Synechocystis
+data[which(data$genus == "Synechocystis"), "order"] <- "Synechococcales"
+data[which(data$genus == "Synechocystis"), "family"] <- "Merismopediaceae"
+
+# Incorrect "Cyanobacteriales" order and family for Tolypothrix
+data[which(data$genus == "Tolypothrix"), "order"] <- "Nostocales"
+data[which(data$genus == "Tolypothrix"), "family"] <- "Tolypothrichaceae"
+
+# Incorrect "Cyanobacteriales" order for Trichodesmium
+data[which(data$genus == "Trichodesmium"), "order"] <- "Oscillatoriales"
+
+# Incorrect "Cyanobacteriales" order for Trichormus
+data[which(data$genus == "Trichormus"), "order"] <- "Nostocales"
+
+# change the remainder of Oxyphotobacteria and Unknown Family to NA (These have no genus)
+data[which(data$order == "Oxyphotobacteria_Incertae_Sedis"), c("order", "family", "genus")] <- NA
+data[which(data$family == "Unknown_Family"), c("order", "family", "genus")] <- NA
+
+# lastly, there are some known families without genus under "Cyanobacteriales" order
+data[which(data$family == "Nostocaceae"), "order"] <- "Nostocales"
+data[which(data$family == "Microcystaceae"), "order"] <- "Chroococcales"
+data[which(data$family == "Coleofasciculaceae"), "order"] <- "Coleofasciculales"
+data[which(data$family == "Osillatoriaceae"), "order"] <- "Oscillatoriales"
+data[which(data$family == "Xenococcaceae"), "order"] <- "Pleurocapsales"
+data[which(data$family == "Chroococcidiopsaceae"), "order"] <- "Chroococcidiopsidales"
+
+# now can just remove the remainder of Cyanobacteriales order that aren't given a family or genus
+data[which(data$order == "Cyanobacteriales"), "order"] <- NA
+
+# double-check that everything looks correct
+names_final <- unique(data[which(data$phylum == "Cyanobacteria"), c("order", "family", "genus")])
+view(names_final)
+
+# note: may reassign Trichormus to Anabaena because it's also an equal match in BLAST
+
+#### (8) Saving ####
+
+# save csv
+write.csv(data, "./data/molecular/16s_nochimera_rarefied_95_processed.csv", row.names = FALSE)
+
+## save versions of TM and TAC with Microcoleus and Anabaena/Cylindrospermum/Trichormus removed respectively
+
+# for microcoleus
+TM_data <- data %>% 
+  filter(genus != "Microcoleus") %>% 
+  filter(sample_type == "TM")
+write.csv(TM_data, "./data/molecular/16s_nochimera_rarefied_95_TM_nomicro.csv", row.names = FALSE)
+
+TAC_data <- data %>% 
+  filter(genus != "Anabaena" | genus != "Cylindropsermum" | genus != "Trichormus") %>% 
+  filter(sample_type == "TAC")
+write.csv(TAC_data, "./data/molecular/16s_nochimera_rarefied_95_TAC_noanacyl.csv")
