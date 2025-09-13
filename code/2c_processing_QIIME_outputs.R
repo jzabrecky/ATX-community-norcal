@@ -1,6 +1,6 @@
 #### Further processing of QIIME2 outputs
 ### Jordan Zabrecky
-## last edited: 09.05.2025
+## last edited: 09.10.2025
 
 ## This code reads in the csv of assembled QIIME2 outputs and metadata
 ## and further processes it by removing reads that are "Mitochondria"
@@ -26,7 +26,7 @@ indeces <- sample(1:73, 12)
 
 # get information for these random samples
 test_samples <- data %>% filter(sample_type != "blank" & fake_target == "n" 
-       & file == "16s_nochimera_rarefied_90_unfiltered.csv", triplicate == "n") %>% 
+                                & file == "16s_nochimera_rarefied_90_unfiltered.csv", triplicate == "n") %>% 
   select(site_reach, sample_type, field_date) %>%
   unique()
 test_samples <- test_samples[indeces,]
@@ -165,9 +165,14 @@ total_abundance_per_vial <- data_ver4_true %>%
 
 # left join in this data to full dataframe and calculate relative abundance
 data_ver5_relativized <- left_join(data_ver4_true, total_abundance_per_vial, by = c("vial_ID", "file")) %>% 
-  mutate(relative_abundance = abundance / total_reads) %>% 
+  mutate(relative_abundance = abundance / total_reads * 100) %>% # doing % to avoid really small decimals
   relocate(total_reads, .before = feature_ID) %>% 
   relocate(relative_abundance, .before = feature_ID)
+
+# check to make sure all add up to 100%
+relativized_check <- data_ver5_relativized %>% 
+  dplyr::group_by(vial_ID, file) %>% 
+  dplyr::summarize(total = sum(relative_abundance))
 
 #### (6) Processing blanks ####
 
@@ -189,7 +194,7 @@ data_ver6_noblanks <- data_ver5_relativized %>%
 triplicates <- data_ver6_noblanks %>% 
   filter(triplicate == "y") %>% 
   mutate(full_sample_name = paste(site_reach, field_date, sample_type))
-  
+
 # split out into a list for plotting purposes
 triplicates_list <- split(triplicates, triplicates$full_sample_name)
 
@@ -197,8 +202,8 @@ triplicates_list <- split(triplicates, triplicates$full_sample_name)
 for(i in 1:length(triplicates_list)) {
   test_data = triplicates_list[[i]] %>% filter(file == "16s_nochimera_rarefied_90_unfiltered.csv")
   title_label = paste(test_data$site_reach[i],
-                       test_data$sample_type[i],
-                       test_data$field_date[i], sep = " ")
+                      test_data$sample_type[i],
+                      test_data$field_date[i], sep = " ")
   
   print(plot_phylum(test_data) + 
           labs(title = title_label))
@@ -215,15 +220,31 @@ triplicates_adjusted <- triplicates %>%
 
 # average across triplcates
 triplicates_adjusted <- triplicates_adjusted %>% 
-  group_by(site_reach, site, field_date, sample_type, triplicate, feature_ID, 
-           taxon_full, domain, phylum, class, order, family, genus, species, file, full_sample_name) %>% 
+  dplyr::group_by(site_reach, site, field_date, sample_type, triplicate, feature_ID, taxon_full, 
+                  domain, phylum, class, order, family, genus, species, file, full_sample_name) %>% 
   # need to do mean of relative abundance as each vial has different number of reads!
-  dplyr::summarize(abundance = mean(relative_abundance),
+  dplyr::summarize(relative_abundance_means = mean(relative_abundance), # may not sum to 100!
                    confidence = mean(confidence)) %>% 
   mutate(vial_ID = NA)
 
+# to ensure they still sum to 100, take the total of relative abundances
+total_relative_abundances <- triplicates_adjusted %>% 
+  dplyr::group_by(full_sample_name, file) %>% 
+  dplyr::summarize(relative_abundance_totals = sum(relative_abundance_means))
+
+# then re-relativize triplicates
+triplicates_adjusted_final <- left_join(triplicates_adjusted, total_relative_abundances, 
+                                        by = c("full_sample_name", "file")) %>% 
+  mutate(relative_abundance = relative_abundance_means / relative_abundance_totals * 100,
+         abundance = relative_abundance) # for plotting function purposes!
+
+# check that they all sum to 100
+triplicate_relativize_check <- triplicates_adjusted_final %>% 
+  dplyr::group_by(full_sample_name, file) %>% 
+  dplyr::summarize(total = sum(relative_abundance)) # all summing to 100!
+
 # plot merged triplicates
-triplicates_adjusted_list <- split(triplicates_adjusted, triplicates_adjusted$full_sample_name) 
+triplicates_adjusted_list <- split(triplicates_adjusted_final, triplicates_adjusted_final$full_sample_name) 
 for(i in 1:length(triplicates_adjusted_list)) {
   test_data = triplicates_adjusted_list[[i]] %>%  filter(file == "16s_nochimera_rarefied_90_unfiltered.csv")
   title_label = paste(test_data$site_reach[i],
@@ -245,10 +266,10 @@ data_ver7_final <- data_ver6_noblanks %>%
          taxon_full, domain, phylum, class, order, family, genus, species, confidence, file)
 
 # adjust column names for triplicates
-triplicates_final <- triplicates_adjusted %>% 
-  dplyr::rename(relative_abundance = abundance) %>% 
+triplicates_final <- triplicates_adjusted_final %>% 
   relocate(relative_abundance, .before = "feature_ID") %>% 
-  select(!c("vial_ID", "full_sample_name")) %>% 
+  select(!c("vial_ID", "full_sample_name", "relative_abundance_means", 
+            "relative_abundance_totals", "abundance")) %>% 
   relocate(confidence, .before = file)
 
 # double-check that column names match those of triplicate
@@ -263,6 +284,6 @@ final <- split(data_ver7_final, data_ver7_final$file)
 
 # save all as individual csv's
 lapply(names(final), function(x) write.csv(final[[x]] %>% select(!file), 
-                                    paste("./data/molecular/", x, 
-                                          "_filtered.csv", sep = ""), 
-                                    row.names = FALSE))
+                                           paste("./data/molecular/", x, 
+                                                 "_filtered.csv", sep = ""), 
+                                           row.names = FALSE))
