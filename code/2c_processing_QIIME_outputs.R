@@ -1,12 +1,13 @@
 #### Further processing of QIIME2 outputs
 ### Jordan Zabrecky
-## last edited: 09.10.2025
+## last edited: 10.02.2025
 
 ## This code reads in the csv of assembled QIIME2 outputs and metadata
 ## and further processes it by removing reads that are "Mitochondria"
 ## or "Chloroplasts", removes low confidence (<0.85) reads, removes "fake"
 ## field target samples, and analyzes/processes blanks and triplicates,
-## and saves to a final csv
+## and saves to a final csv (one with raw reads [triplicates not averaged] 
+# and one with relative)
 
 #### (1) Loading libraries and data ####
 
@@ -156,28 +157,10 @@ view(maybe)
 data_ver4_true <- data_ver3_conf %>% 
   filter(fake_target == "n")
 
-#### (5) Relativizing Abundances #####
-
-# calculate total abundances/reads per vial for each file
-total_abundance_per_vial <- data_ver4_true %>% 
-  dplyr::group_by(vial_ID, file) %>% 
-  dplyr::summarize(total_reads = sum(abundance))
-
-# left join in this data to full dataframe and calculate relative abundance
-data_ver5_relativized <- left_join(data_ver4_true, total_abundance_per_vial, by = c("vial_ID", "file")) %>% 
-  mutate(relative_abundance = abundance / total_reads * 100) %>% # doing % to avoid really small decimals
-  relocate(total_reads, .before = feature_ID) %>% 
-  relocate(relative_abundance, .before = feature_ID)
-
-# check to make sure all add up to 100%
-relativized_check <- data_ver5_relativized %>% 
-  dplyr::group_by(vial_ID, file) %>% 
-  dplyr::summarize(total = sum(relative_abundance))
-
-#### (6) Processing blanks ####
+#### (5) Processing blanks ####
 
 # look at blanks
-blanks <- data_ver5_relativized %>% 
+blanks <- data_ver4_true %>% 
   filter(sample_type == "blank") %>% 
   mutate(full_sample_name = paste(site_reach, field_date, sample_type))
 
@@ -185,13 +168,41 @@ view(blanks)
 # not a ton of microcoleus or anabaena which is good
 
 # remove blanks
-data_ver6_noblanks <- data_ver5_relativized %>% 
+data_ver5_noblanks <- data_ver4_true %>% 
   filter(sample_type != "blank")
+
+#### (5) Relativizing Abundances #####
+
+# first, let's save the raw reads so we can compare ASV's across samples before merging
+# triplicates (which requires relativizing)
+raw_reads <- split(data_ver5_noblanks, data_ver5_noblanks$file)
+names(raw_reads) <- lapply(names(raw_reads), function(x) gsub("_unfiltered.csv*.","", x))
+lapply(names(raw_reads), function(x) write.csv(raw_reads[[x]] %>% select(!file), 
+                                           paste("./data/molecular/", x, 
+                                                 "_filtered_rawreads.csv", sep = ""), 
+                                           row.names = FALSE))
+
+
+# calculate total abundances/reads per vial for each file
+total_abundance_per_vial <- data_ver5_noblanks %>% 
+  dplyr::group_by(vial_ID, file) %>% 
+  dplyr::summarize(total_reads = sum(abundance))
+
+# left join in this data to full dataframe and calculate relative abundance
+data_ver6_relativized <- left_join(data_ver5_noblanks, total_abundance_per_vial, by = c("vial_ID", "file")) %>% 
+  mutate(relative_abundance = abundance / total_reads * 100) %>% # doing % to avoid really small decimals
+  relocate(total_reads, .before = feature_ID) %>% 
+  relocate(relative_abundance, .before = feature_ID)
+
+# check to make sure all add up to 100%
+relativized_check <- data_ver6_relativized %>% 
+  dplyr::group_by(vial_ID, file) %>% 
+  dplyr::summarize(total = sum(relative_abundance))
 
 #### (7) Processing Triplicates ####
 
 # filter out for triplicates and not triplicates
-triplicates <- data_ver6_noblanks %>% 
+triplicates <- data_ver6_relativized %>% 
   filter(triplicate == "y") %>% 
   mutate(full_sample_name = paste(site_reach, field_date, sample_type))
 
@@ -260,7 +271,7 @@ for(i in 1:length(triplicates_adjusted_list)) {
 #### (8) Putting final data together
 
 # get data without triplicates and trim columns
-data_ver7_final <- data_ver6_noblanks %>% 
+data_ver7_final <- data_ver6_relativized %>% 
   filter(triplicate == "n") %>% 
   select(site_reach, site, field_date, sample_type, triplicate, relative_abundance, feature_ID,
          taxon_full, domain, phylum, class, order, family, genus, species, confidence, file)
@@ -279,11 +290,18 @@ eval(colnames(data_ver7_final) == colnames(triplicates_final))
 data_ver7_final <- rbind(data_ver7_final, triplicates_final) %>% 
   mutate(file = str_remove(file, "_unfiltered.csv"))
 
+# instead of saving several decimals, let's just save up to the minimum required for non-zero values
+min((data_ver7_final %>% filter(relative_abundance != 0))[,"relative_abundance"]) # 0.0004859393
+
+# save to the 5th decimal place
+data_ver7_final <- data_ver7_final %>% 
+  mutate(relative_abundance = round(relative_abundance, 5))
+
 # split into list based on file name
 final <- split(data_ver7_final, data_ver7_final$file)
 
 # save all as individual csv's
 lapply(names(final), function(x) write.csv(final[[x]] %>% select(!file), 
                                            paste("./data/molecular/", x, 
-                                                 "_filtered.csv", sep = ""), 
+                                                 "_filtered_relativized.csv", sep = ""), 
                                            row.names = FALSE))

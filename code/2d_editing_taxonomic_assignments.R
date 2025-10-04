@@ -1,8 +1,8 @@
 #### Editing taxonomic assignments
 ### Jordan Zabrecky
-## last edited: 09.10.2025
+## last edited: 09.30.2025
 
-## This code takes the processed QIIME outputs (presently, just the 90 rarefied)
+## This code takes the processed QIIME outputs (presently, just the 95% rarefied)
 ## and adjusts taxonomic assignments to make sure they are all clean and correct
 
 #### (1) Loading libraries & data ####
@@ -11,7 +11,7 @@
 lapply(c("tidyverse"), require, character.only = T)
 
 # reading in data
-original <- read.csv("./data/molecular/16s_nochimera_rarefied_95_filtered.csv") # keep original just in case
+original <- read.csv("./data/molecular/16s_nochimera_rarefied_90_filtered_relativized.csv") # keep original just in case
 data <- original # data dataframe is for altering
 
 #### (2) Changing Tychonema to Microcoleus ####
@@ -179,12 +179,8 @@ unique(data[which(data$phylum == "Cyanobacteria"),]$family)
 # unique names
 unique(data[which(data$phylum == "Cyanobacteria"),]$genus)
 
-# SU2_symbiont group, some have species Aphanothece_sacrum, under BLAST has defined order & family
-data[which(data$genus == "SU2_symbiont_group" & grepl("Aphanothece", data$species)), "order"] <-  "Chroococcales"
-data[which(data$genus == "SU2_symbiont_group" & grepl("Aphanothece", data$species)), "family"] <- "Aphanothecaceae"
-data[which(data$genus == "SU2_symbiont_group" & grepl("Aphanothece", data$species)), "genus"] <- "Aphanothece"
-# remainder are endosymbionts or NA matching to Epithemia endosymbionts undefined beyond Cyanobacteriota
-data[which(data$genus == "SU2_symbiont_group"), c("order", "family", "genus")] <- NA
+# will assign SU2 symbiont group as N-fixing Diazoplasts (according to Marks et al. 2025)
+data[which(data$genus == "SU2_symbiont_group"), c("order", "family", "genus")] <- "Endosymbiotic Diazoplast"
 
 # only two CENA518 reads are Leptolyngbya species
 data[which(data$genus == "CENA518"), "order"] <- "Leptolyngbyales"
@@ -402,10 +398,17 @@ view(names_final)
 
 # note: may reassign Trichormus to Anabaena because it's also an equal match in BLAST
 
+#### (8) Fix field date labels ####
+
+# remove sample taken on 9/6 at SFE-M-1S (taken inconsistently from other samples; turkey-baster, lots of water)
+# & replace with sample taken on 9/8 (taken correctly; mostly mat )
+data <- data[-which(data$field_date == "9/6/2022" & data$site_reach == "SFE-M-1S"),]
+data[which(data$field_date == "9/8/2022" & data$site_reach == "SFE-M-1S"),]$field_date <- "9/6/2022"
+
 #### (8) Saving ####
 
 # save csv
-write.csv(data, "./data/molecular/16s_nochimera_rarefied_95_processed.csv", row.names = FALSE)
+write.csv(data, "./data/molecular/16s_nochimera_rarefied_90_FINAL.csv", row.names = FALSE)
 
 ## save versions of TM and TAC with Microcoleus and Anabaena/Cylindrospermum/Trichormus removed respectively
 
@@ -413,9 +416,10 @@ write.csv(data, "./data/molecular/16s_nochimera_rarefied_95_processed.csv", row.
 TM_data <- data %>% 
   filter(genus != "Microcoleus") %>% 
   filter(sample_type == "TM")
-write.csv(TM_data, "./data/molecular/16s_nochimera_rarefied_95_TM_nomicro.csv", row.names = FALSE)
+write.csv(TM_data, "./data/molecular/16s_nochimera_rarefied_90_TM_nomicro.csv", row.names = FALSE)
 
+# for anabaena/cylindrospermum
 TAC_data <- data %>% 
   filter(genus != "Anabaena" | genus != "Cylindropsermum" | genus != "Trichormus") %>% 
   filter(sample_type == "TAC")
-write.csv(TAC_data, "./data/molecular/16s_nochimera_rarefied_95_TAC_noanacyl.csv")
+write.csv(TAC_data, "./data/molecular/16s_nochimera_rarefied_90_TAC_noanacyl.csv")
