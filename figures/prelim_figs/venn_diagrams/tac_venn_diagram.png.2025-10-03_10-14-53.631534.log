@@ -1,0 +1,21 @@
+INFO [2025-10-03 10:14:53] $x
+INFO [2025-10-03 10:14:53] list(TAC$RUS$feature_ID, TAC$SAL$feature_ID, TAC$`SFE-M`$feature_ID)
+INFO [2025-10-03 10:14:53] 
+INFO [2025-10-03 10:14:53] $filename
+INFO [2025-10-03 10:14:53] [1] "tac_venn_diagram.png"
+INFO [2025-10-03 10:14:53] 
+INFO [2025-10-03 10:14:53] $category.names
+INFO [2025-10-03 10:14:53] c("Russian Anabaena", "Salmon Anabaena", "South Fork Eel Anabaena")
+INFO [2025-10-03 10:14:53] 
+INFO [2025-10-03 10:14:53] $lwd
+INFO [2025-10-03 10:14:53] [1] 2
+INFO [2025-10-03 10:14:53] 
+INFO [2025-10-03 10:14:53] $lty
+INFO [2025-10-03 10:14:53] [1] "blank"
+INFO [2025-10-03 10:14:53] 
+INFO [2025-10-03 10:14:53] $fill
+INFO [2025-10-03 10:14:53] c("#ebdf38", "#62a7f8", "#416f16")
+INFO [2025-10-03 10:14:53] 
+INFO [2025-10-03 10:14:53] [[7]]
+INFO [2025-10-03 10:14:53] 
+INFO [2025-10-03 10:14:53] 
