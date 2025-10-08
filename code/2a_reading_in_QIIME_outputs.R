@@ -1,6 +1,6 @@
 #### Reading in and putting together QIIME2 outputs
 ### Jordan Zabrecky
-## last edited 09.05.2025
+## last edited 10.07.2025
 
 ## This code reads in QIIME2 outputs (sequence abundances and SILVA taxonomy assignment;
 ## for processing that did not include rarefaction) and matches them with metadata. 
@@ -199,4 +199,5 @@ final_tosave <- final %>%
          phylum, class, order, family, genus, species, confidence)
 
 # saving outputs
-write.csv(final_tosave, "./data/molecular/16s_nochimera_unfiltered.csv", row.names = FALSE)
+write.csv(final_tosave, "./data/molecular/intermediate_csvs/16s_nochimera_unfiltered.csv", 
+          row.names = FALSE)

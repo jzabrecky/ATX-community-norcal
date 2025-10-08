@@ -1,6 +1,6 @@
 #### Editing taxonomic assignments
 ### Jordan Zabrecky
-## last edited: 09.30.2025
+## last edited: 10.07.2025
 
 ## This code takes the processed QIIME outputs (presently, just the 95% rarefied)
 ## and adjusts taxonomic assignments to make sure they are all clean and correct
@@ -11,7 +11,7 @@
 lapply(c("tidyverse"), require, character.only = T)
 
 # reading in data
-original <- read.csv("./data/molecular/16s_nochimera_rarefied_90_filtered_relativized.csv") # keep original just in case
+original <- read.csv("./data/molecular/intermediate_csvs/16s_nochimera_rarefied_90_filtered_relativized.csv") # keep original just in case
 data <- original # data dataframe is for altering
 
 #### (2) Changing Tychonema to Microcoleus ####
@@ -50,6 +50,7 @@ for(i in 1:length(odd_phylum_names)) {
        c("phylum", "class", "order", "family", "genus", "species")] <- NA
 }
 unique(data$phylum) # all look good now
+
 # checking all of these in NCBI taxonomy, some notes:
 
 # Chloroflexi (should have ota on the end)
@@ -67,7 +68,28 @@ data[which(data$phylum == "Deferrisomatota"), "phylum"] <- "Desulfobacterota"
 # Patescibacteria is also known as candidate phyla radiation, highly unresolved group
 # Dependentiae is also highly unresolved, matches to Candidatus Babelota
 
-#### (4) Checking orders w/in Cyanobacteria ####
+
+#### (5) Checking class-level ####
+
+# unique names
+unique(data$class)
+
+# there is a lot- let's just see if there are any that are common that would
+# not get filtered into "other"
+classes <- data %>% 
+  dplyr::group_by(class) %>% 
+  dplyr::summarize(total = sum(relative_abundance)) %>% 
+  filter(total > 1)
+
+# BLASTing the weird names shows that they are mostly random cultured bacteriums
+# unassigned passed phylum, let's just add them to NA after class level
+odd_class_names <- c("vadinHA49", "OM190", "KD4-96", "uncultured", "Subgroup_22", "Pla4_lineage")
+for(i in 1:length(odd_class_names)) {
+  data[which(data$class == odd_class_names[i]),
+       c("class", "order", "family", "genus", "species")] <- NA
+}
+
+#### (6) Checking orders w/in Cyanobacteria ####
 
 # unique names
 unique(data[which(data$phylum == "Cyanobacteria"),]$order)
@@ -116,7 +138,7 @@ data[which(data$order == "Cyanobacteriia"), c("order", "family", "genus", "speci
 unique(data[which(data$phylum == "Cyanobacteria"),]$order)
 # again, will deal with oxyphotobacteria thingy & cyanobacteriales later
 
-#### (5) Checking families w/in Cyanobacteria ####
+#### (7) Checking families w/in Cyanobacteria ####
 
 # unique names
 unique(data[which(data$phylum == "Cyanobacteria"),]$family)
@@ -174,7 +196,7 @@ data[which(data$family == "Vampirovibrionales"), c("family")] <- NA
 unique(data[which(data$phylum == "Cyanobacteria"),]$family)
 # again, will finish dealing with unknown family later
 
-#### (6) Checking genera w/in Cyanobacteria ####
+#### (8) Checking genera w/in Cyanobacteria ####
 
 # unique names
 unique(data[which(data$phylum == "Cyanobacteria"),]$genus)
@@ -237,7 +259,7 @@ data[which(data$genus == "Vampirovibrionales"), c("genus")] <- NA
 # Sericytochromatia is an unranked clade, going to leave as is
 # Gleocapsa not in NCBI but in Phycokey so keeping it
 
-#### (7) Checking consistency across genera ####
+#### (9) Checking consistency across genera ####
 
 ## lastly, need to check that the same genus have the same family, order, etc.
 ## this will also deal with the order "Cyanobacteriales" and the oxyphotobacteria thingy
@@ -398,14 +420,14 @@ view(names_final)
 
 # note: may reassign Trichormus to Anabaena because it's also an equal match in BLAST
 
-#### (8) Fix field date labels ####
+#### (10) Fix field date labels ####
 
 # remove sample taken on 9/6 at SFE-M-1S (taken inconsistently from other samples; turkey-baster, lots of water)
 # & replace with sample taken on 9/8 (taken correctly; mostly mat )
 data <- data[-which(data$field_date == "9/6/2022" & data$site_reach == "SFE-M-1S"),]
 data[which(data$field_date == "9/8/2022" & data$site_reach == "SFE-M-1S"),]$field_date <- "9/6/2022"
 
-#### (8) Saving ####
+#### (11) Saving ####
 
 # save csv
 write.csv(data, "./data/molecular/16s_nochimera_rarefied_90_FINAL.csv", row.names = FALSE)

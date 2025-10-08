@@ -1,6 +1,6 @@
 #### Reading in and putting together QIIME2 output that were rarefied
 ### Jordan Zabrecky
-## last edited 09.05.2025
+## last edited 10.07.2025
 
 ## This code reads in QIIME2 outputs (sequence abundances and SILVA taxonomy assignment;
 ## for processing that included rarefaction) and matches them with metadata. 
@@ -219,6 +219,7 @@ for(i in 1:length(merged_data)) {
                               container, plate_ID, vial_ID, abundance, feature_ID, taxon_full, domain, 
                               phylum, class, order, family, genus, species, confidence)
   # save!
-  write.csv(final, paste("./data/molecular/16s_nochimera_", str_match(names(merged_data)[i], "table_\\s*(.*?)\\s*.biom")[,2], 
+  write.csv(final, paste("./data/molecular/intermediate_csvs/16s_nochimera_", 
+                         str_match(names(merged_data)[i], "table_\\s*(.*?)\\s*.biom")[,2], 
                          "_unfiltered.csv", sep = ""), row.names = FALSE)
 }

@@ -1,6 +1,6 @@
 #### Further processing of QIIME2 outputs
 ### Jordan Zabrecky
-## last edited: 10.02.2025
+## last edited: 10.07.2025
 
 ## This code reads in the csv of assembled QIIME2 outputs and metadata
 ## and further processes it by removing reads that are "Mitochondria"
@@ -15,8 +15,9 @@
 lapply(c("tidyverse", "plyr"), require, character.only = T)
 
 # load in data
-data <- ldply(list.files(path = "./data/molecular/", pattern = "unfiltered"), function(filename) {
-  d <- read.csv(paste("data/molecular/", filename, sep = ""))
+data <- ldply(list.files(path = "./data/molecular/intermediate_csvs", 
+                         pattern = "unfiltered"), function(filename) {
+  d <- read.csv(paste("data/molecular/intermediate_csvs/", filename, sep = ""))
   d$file <- filename
   return(d)
 })
@@ -178,7 +179,7 @@ data_ver5_noblanks <- data_ver4_true %>%
 raw_reads <- split(data_ver5_noblanks, data_ver5_noblanks$file)
 names(raw_reads) <- lapply(names(raw_reads), function(x) gsub("_unfiltered.csv*.","", x))
 lapply(names(raw_reads), function(x) write.csv(raw_reads[[x]] %>% select(!file), 
-                                           paste("./data/molecular/", x, 
+                                           paste("./data/molecular/intermediate_csvs/", x, 
                                                  "_filtered_rawreads.csv", sep = ""), 
                                            row.names = FALSE))
 
@@ -302,6 +303,6 @@ final <- split(data_ver7_final, data_ver7_final$file)
 
 # save all as individual csv's
 lapply(names(final), function(x) write.csv(final[[x]] %>% select(!file), 
-                                           paste("./data/molecular/", x, 
+                                           paste("./data/molecular/intermediate_csvs/", x, 
                                                  "_filtered_relativized.csv", sep = ""), 
                                            row.names = FALSE))
