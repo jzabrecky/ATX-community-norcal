@@ -32,5 +32,5 @@ atx_target_wider <- atx_target %>%
 data <- left_join(water_chemistry, atx_target_wider, by = c("field_date", "site_reach"))
 
 # save csv
-write.csv(data, "./data/field_and_lab/environmental_covariates.csv",
+write.csv(data, "./data/field_and_lab/environmental_covariates_and_toxins.csv",
           row.names = FALSE)

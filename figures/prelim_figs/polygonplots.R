@@ -11,7 +11,7 @@ molecular <- read.csv("./data/molecular/16s_nochimera_rarefied_95_processed.csv"
          year = year(field_date))
 
 
-# morphological
+#### morphological ####
 tm <- read.csv("./data/morphological/tm_algalonly_with_covar.csv") 
 tac <- read.csv("./data/morphological/tac_algalonly_with_covar.csv")
 target <- rbind(tm, tac) %>% 
@@ -105,7 +105,7 @@ nt_morpho_site <- ggplot(data = nt_group, aes(x = field_date, y = mean, fill = g
   facet_wrap(~ site + year, scales = "free")
 nt_morpho_site
 
-#### molecular polygon plots
+#### molecular polygon plots ####
 
 ## have to readjust 
 
@@ -207,6 +207,67 @@ nt_molec_reach_order <- ggplot(data = molecular_orders %>% filter(sample_type ==
 nt_molec_reach_order
 
 # will still try to figure out polygon plots ugh not sure what is up
+
+#### morphological without target taxa ####
+ana_no_t <- read.csv("./data/morphological/tac_algalonly_noanacyl.csv") %>% 
+  mutate(field_date = ymd(field_date),
+         year = year(field_date)) %>% 
+  relocate(year, .before = "field_date")
+micro_no_t <- read.csv("./data/morphological/tm_algalonly_nomicro.csv") %>% 
+  mutate(field_date = ymd(field_date),
+         year = year(field_date)) %>% 
+  relocate(year, .before = "field_date")
+
+# pivot longer
+ana_no_t_l <- pivot_longer(ana_no_t, cols = c(6:ncol(ana_no_t)), names_to = "taxon",
+                                              values_to = "percent")
+micro_no_t_l <- pivot_longer(micro_no_t, cols = c(6:ncol(micro_no_t)), names_to = "taxon",
+                           values_to = "percent")
+
+# salmon micro
+tm_morpho_reach_sal <- ggplot(data = micro_no_t_l %>% 
+                                filter(site == "SAL"), aes(x = field_date, y = percent, fill = taxon)) +
+  geom_area() + 
+  facet_wrap(~ site_reach + year, scales = "free")
+tm_morpho_reach_sal
+
+tm_morpho_reach_sfk <- ggplot(data = micro_no_t_l %>% 
+                                filter(site == "SFE-M"), aes(x = field_date, y = percent, fill = taxon)) +
+  geom_area() + 
+  facet_wrap(~ site_reach + year, scales = "free")
+tm_morpho_reach_sfk
+
+micro_group <- micro_no_t_l %>% 
+  dplyr::group_by(site, field_date, year, taxon) %>% 
+  dplyr::summarize(mean = mean(percent))
+
+tm_morpho_site <- ggplot(data = micro_group, aes(x = field_date, y = mean, fill = taxon)) +
+  geom_area() + 
+  facet_wrap(~ site + year, scales = "free")
+tm_morpho_site
+
+# tac plots
+tac_morpho_reach_rus <- ggplot(data = ana_no_t_l %>% 
+                                 filter(site == "RUS"), aes(x = field_date, y = percent, fill = taxon)) +
+  geom_area() + 
+  facet_wrap(~ site_reach + year, scales = "free")
+tac_morpho_reach_rus
+
+tac_morpho_reach_sfe <- ggplot(data = ana_no_t_l %>% 
+                                 filter(site == "SFE-M"), aes(x = field_date, y = percent, fill = taxon)) +
+  geom_area() + 
+  facet_wrap(~ site_reach + year, scales = "free")
+tac_morpho_reach_sfe
+
+
+anacyl_group <- ana_no_t_l %>% 
+  dplyr::group_by(site, field_date, year, taxon) %>% 
+  dplyr::summarize(mean = mean(percent))
+
+tac_morpho_site <- ggplot(data = anacyl_group, aes(x = field_date, y = mean, fill = taxon)) +
+  geom_area() + 
+  facet_wrap(~ site + year, scales = "free")
+tac_morpho_site
 
 
 # curious about raw read for RUSSIAN TAC 9-15

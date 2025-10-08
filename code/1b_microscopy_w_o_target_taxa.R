@@ -1,6 +1,6 @@
 #### Processing microscopy data further (removing target taxa)
 ### Jordan Zabrecky
-## last edited 05.09.2025
+## last edited 010.07.2025
 
 ## This code processes target microscopy data from processed from the previous
 ## code by removing the target taxa (i.e. Microcoleus or Anabaena/Cylindrospermum)
@@ -12,23 +12,16 @@
 lapply(c("tidyverse", "lubridate"), require, character.only = T)
 
 # read in processed microscopy data
-tm <- read.csv("./data/morphological/tm_algalonly_with_covar.csv")
-tac <- read.csv("./data/morphological/tac_algalonly_with_covar.csv")
-
-# saving covariate data to add in later
-covariates <- colnames(tm[,27:ncol(tm)])
-tm_covariates <- tm %>% 
-  select(site_reach, field_date, covariates)
-tac_covariates <- tac %>% 
-  select(site_reach, field_date, covariates)
+tm <- read.csv("./data/morphological/tm_algalonly.csv")
+tac <- read.csv("./data/morphological/tac_algalonly.csv")
 
 #### (2) Removing target taxa from each sample ####
 
 ## (a) TM // target microcoleus samples
 
-# remove environmental covariate data and microcoleus abundance
+# remove  microcoleus abundance
 tm_temp <- tm %>% 
-  select(!c(microcoleus, covariates))
+  select(!microcoleus)
 
 # calculate total abundances w/o microcoleus
 tm_temp$total_community_percent <- rowSums(tm_temp[c(5:ncol(tm_temp))])
@@ -52,7 +45,7 @@ rowSums(tm_processed[5:ncol(tm_processed)])[check_tm] # yup, all 100!
 
 # remove environmental covariate data and microcoleus abundance
 tac_temp <- tac %>% 
-  select(!c(anabaena_and_cylindrospermum, covariates))
+  select(!anabaena_and_cylindrospermum)
 
 # calculate total abundances w/o microcoleus
 tac_temp$total_community_percent <- rowSums(tac_temp[c(5:ncol(tac_temp))])
@@ -74,12 +67,8 @@ rowSums(tac_processed[5:ncol(tac_processed)])[check_tac] # yup, all 100!
 
 #### (3) Add back in environmental covariate data and save ####
 
-# join back in environmental covariate data
-tm_final <- left_join(tm_processed, tm_covariates, by = c("site_reach", "field_date"))
-tac_final <- left_join(tac_processed, tac_covariates, by = c("site_reach", "field_date"))
-
 # save!
-write.csv(tm_final, "./data/morphological/tm_algalonly_nomicro_with_covar.csv", 
+write.csv(tm_processed, "./data/morphological/tm_algalonly_nomicro.csv", 
           row.names = FALSE)
-write.csv(tac_final, "./data/morphological/tac_algalonly_noanacyl_with_covar.csv", 
+write.csv(tac_processed, "./data/morphological/tac_algalonly_noanacyl.csv", 
           row.names = FALSE)
