@@ -1,6 +1,6 @@
 #### Processing microscopy data
 ### Jordan Zabrecky
-## last edited 10.02.2025
+## last edited 10.10.2025
 
 ## This code processes microscopy data from the EDI data release 
 ## (averaging across slides and evaluting rsd), remove non-algal portion
@@ -159,11 +159,6 @@ processed <- lapply(processed, function(x) x %>%
                                               grepl("SAL", site_reach) ~ "SAL",
                                               grepl("SFE-SH", site_reach) ~ "SFE-SH")) %>% 
                       relocate(site, .before = "site_reach"))
-
-# turns out we don't have ATX data for TM SFE-M-4 08-23-2022
-# I think we weren't clear if it would be Microcoleus and did not have enough
-# so let's just remove that row
-processed$tm <- processed$tm[-22,]
 
 # saving csv's
 path <- paste(getwd(), "/data/morphological/", sep = "")

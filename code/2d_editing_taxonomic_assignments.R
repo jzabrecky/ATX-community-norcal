@@ -1,6 +1,6 @@
 #### Editing taxonomic assignments
 ### Jordan Zabrecky
-## last edited: 10.07.2025
+## last edited: 10.10.2025
 
 ## This code takes the processed QIIME outputs (presently, just the 95% rarefied)
 ## and adjusts taxonomic assignments to make sure they are all clean and correct
@@ -11,7 +11,7 @@
 lapply(c("tidyverse"), require, character.only = T)
 
 # reading in data
-original <- read.csv("./data/molecular/intermediate_csvs/16s_nochimera_rarefied_90_filtered_relativized.csv") # keep original just in case
+original <- read.csv("./data/molecular/intermediate_csvs/16s_nochimera_rarefied_95_filtered_relativized.csv") # keep original just in case
 data <- original # data dataframe is for altering
 
 #### (2) Changing Tychonema to Microcoleus ####
@@ -422,10 +422,10 @@ view(names_final)
 
 #### (10) Fix field date labels ####
 
-# remove sample taken on 9/6 at SFE-M-1S (taken inconsistently from other samples; turkey-baster, lots of water)
+# remove TM sample taken on 9/6 at SFE-M-1S (taken inconsistently from other samples; turkey-baster, lots of water)
 # & replace with sample taken on 9/8 (taken correctly; mostly mat )
-data <- data[-which(data$field_date == "9/6/2022" & data$site_reach == "SFE-M-1S"),]
-data[which(data$field_date == "9/8/2022" & data$site_reach == "SFE-M-1S"),]$field_date <- "9/6/2022"
+data <- data[-which(data$field_date == "9/6/2022" & data$site_reach == "SFE-M-1S" & data$sample_type == "TM"),]
+data[which(data$field_date == "9/8/2022" & data$site_reach == "SFE-M-1S"& data$sample_type == "TM"),]$field_date <- "9/6/2022"
 
 #### (11) Saving ####
 

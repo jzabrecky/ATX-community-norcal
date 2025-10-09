@@ -1,6 +1,6 @@
 #### Further processing of QIIME2 outputs
 ### Jordan Zabrecky
-## last edited: 10.07.2025
+## last edited: 10.10.2025
 
 ## This code reads in the csv of assembled QIIME2 outputs and metadata
 ## and further processes it by removing reads that are "Mitochondria"
@@ -131,7 +131,7 @@ data_ver3_conf %>% filter(sample_type != "blank" & fake_target == "n") %>%
   dplyr::group_by(file) %>% 
   unique() %>%
   dplyr::summarize(count = n())
-# lost 1 for nonrarefied but won't be using that anyways, let's continue!
+# lost 1 for non-rarefied but won't be using that anyways, let's continue!
 
 #### (4) Removing "fake" target samples ####
 
@@ -157,6 +157,12 @@ view(maybe)
 # show presence of "macroscopically absent" taxa we care about, so focus only on "true" samples
 data_ver4_true <- data_ver3_conf %>% 
   filter(fake_target == "n")
+
+# was also very unsure about TAC at SAL-2 on 9/22/22 (only took a little for 16s)
+# in the field, so will probably just remove (not as clearly Anabaena as the sample at SAL-3)
+# despite some reads being anabaena! (is vial 230)
+data_ver4_true <- data_ver4_true %>% 
+  filter(vial_ID != 230)
 
 #### (5) Processing blanks ####
 

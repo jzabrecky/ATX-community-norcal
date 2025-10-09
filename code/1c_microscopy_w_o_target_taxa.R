@@ -1,6 +1,6 @@
 #### Processing microscopy data further (removing target taxa)
 ### Jordan Zabrecky
-## last edited 010.07.2025
+## last edited 10.07.2025
 
 ## This code processes target microscopy data from processed from the previous
 ## code by removing the target taxa (i.e. Microcoleus or Anabaena/Cylindrospermum)

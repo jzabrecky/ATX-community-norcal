@@ -60,7 +60,7 @@ vial_ID,site_reach,site,sample_type,field_date,material,triplicate,fake_target,c
 60,SFE-M-1S,SFE-M,TM,7/28/2022,mat,y,n,Eppendorf_Tube
 61,SFE-M-1S,SFE-M,TM,7/28/2022,mat,y,n,Eppendorf_Tube
 62,SFE-M-3,SFE-M,TAC,7/28/2022,mat,y,n,Eppendorf_Tube
-63,SFE-M-4,SFE-M,TM,7/28/2022,mat,n,n,Eppendorf_Tube
+63,SFE-M-4,SFE-M,TM,7/28/2022,mat,n,y,Eppendorf_Tube
 64,SFE-M-3,SFE-M,TAC,7/28/2022,mat,y,n,Eppendorf_Tube
 65,SFE-M-4,SFE-M,TAC,7/28/2022,mat,n,n,Eppendorf_Tube
 66,SFE-M-3,SFE-M,TM,7/28/2022,mat,n,n,Eppendorf_Tube
