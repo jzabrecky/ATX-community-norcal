@@ -1,14 +1,19 @@
 #### Comparing microscopy data among rivers
 ### Jordan Zabrecky
-## last edited: 11.12.2025
+## last edited: 11.14.2025
+
+## This code compares microscopy data from NT, TM, and TAC samples
+## across rivers to answer Q1
+
+## TO-DO want to check vS ordination arrow size and filter for only significant to be placed w/ arrows
 
 #### (1) Loading libraries & data ####
 
-# set seed
+# set seed for reproducibility
 set.seed(2025)
 
 # libraries
-lapply(c("tidyverse", "plyr", "vegan"), require, character.only = T)
+lapply(c("tidyverse", "plyr", "vegan", "cowplot"), require, character.only = T)
 
 # read in files (note: two target taxa csvs- one with target taxa included, other with it excluded)
 # doing as a list rather than one csv as each has a different # of columns
@@ -28,7 +33,7 @@ data_wide <- lapply(data_wide, function(x) x %>% mutate(year = year(ymd(field_da
 # (adding 5 to match indexing that starts at 6 for colSums)
 notaxa <- lapply(data_wide, function(x) colnames(x)[5 + c(which(colSums(x[,6:ncol(x)]) == 0))])
 
-# remove these taxa from the dataframes
+# remove these taxa (that are not present in any samples) from the dataframes
 for(i in 1:length(data_wide)) {
   data_wide[[i]] <- data_wide[[i]] %>% 
     dplyr::select(!c(notaxa[[i]]))
@@ -133,7 +138,7 @@ lapply(data_filtered, function(x) hist(x$sqrt_percent,  breaks=seq(0, 10,l=20)))
 
 # make a wider version
 data_filtered_wide <- lapply(data_filtered, function(x)
-  pivot_wider(x %>% select(!percent), names_from = taxa, values_from = sqrt_percent))
+  pivot_wider(x %>% select(!c(percent, broader)), names_from = taxa, values_from = sqrt_percent))
   
 #### (3) Functions for Analysis ####
 
@@ -142,7 +147,7 @@ theme_set(theme_bw() + theme(panel.grid = element_blank(),
                              panel.border = element_rect(fill = NA, color = "black"),
                              legend.position = "right"))
 
-# bar plot by site fill taxa
+# bar plot by site fill taxa (argument data is data in long format))
 barplot_taxa <- function(data) {
   plot = ggplot(data = data, aes(x = site, y = percent, fill = taxa)) +
     geom_bar(position = "fill", stat = "identity")
@@ -150,7 +155,7 @@ barplot_taxa <- function(data) {
   return(plot)
 }
 
-# bar plot by site fill broader groupings
+# bar plot by site fill broader groupings (argument data is data in long format)
 barplot_broader <- function(data) {
   plot = ggplot(data = data, aes(x = site, y = percent, fill = broader)) +
     geom_bar(position = "fill", stat = "identity")
@@ -158,232 +163,159 @@ barplot_broader <- function(data) {
   return(plot)
 }
 
+# creates NMDS data point coordinates and loadings (argument data is data in wide format)
 getNMDSdata <- function(data) {
   # use vegan to calculate NMDS distances
-  nmds = metaMDS(as.matrix(data_wide_sqrt$tm_algalonly.csv[,6:ncol(data_wide_sqrt$tm_algalonly.csv)]),
+  nmds = metaMDS(as.matrix(data[,6:ncol(data)]),
                  distance = "bray",
                  trymax = 500,
                  autotransform = TRUE)
   # bind x & y positions to site information
-  nmds_final = cbind(as.data.frame(scores(tm_nmds, "sites")), 
-        data_wide_sqrt$tm_algalonly.csv %>% select(site_reach, site, field_date)) %>% 
+  nmds_final = cbind(as.data.frame(scores(nmds, "sites")), 
+        data %>% select(site_reach, site, field_date)) %>% 
     mutate(field_date = ymd(field_date),
            year = year(field_date),
            month = as.character(month(field_date)))
   # get loadings for taxa
+  vs = envfit(nmds, as.matrix(data[,6:ncol(data)]), perm = 999)
+  coord = as.data.frame(scores(vs, "vectors"))
+  stress = nmds$stress
   
-  return(list(nmds, nmds_final))
+  # return a named list with both dataframes
+  list <- list(nmds_final, coord, stress)
+  names(list) = c("nmds", "vs", "stress")
+  return(list)
 }
 
-getloadings <- function()
+# make NMDS plots (without loadings; data is nmds data, loading is a TRUE/FALSE command)
+makeNMDSplot <- function(data, loading) {
+  
+  # separating out data to be able to easily call each
+  nmds_data = data$nmds
+  stress = data$stress
+  loadings = data$vs
+  
+  # make plot
+  plot = ggplot(nmds_data, aes(x = NMDS1, y = NMDS2)) +
+    geom_point(aes(color = site, shape = month), size = 4) +
+    stat_ellipse(aes(color = site), type = "t", linetype = 2, size = 0.5) +
+    scale_color_manual(values = c("SAL" = "#62a7f8",
+                                  "SFE-M" = "#416f16", 
+                                  "RUS" = "#bdb000")) +
+    labs(subtitle = paste("Stress:", round(stress, 3)),
+         x = "NMDS Axis 1",
+         y = "NMDS Axis 2")
+  
+  # add in loadings
+  if(loading) {
+    plot = plot + geom_segment(aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2), 
+                   data = loadings, size =1, alpha = 0.5, colour = "grey30") +
+                  geom_text(data = loadings, aes(x = NMDS1, y = NMDS2), colour = "grey30", 
+                    fontface = "bold", label = rownames(loadings))
+  }
+  
+  return(plot)
+}
 
+# run PERMANOVA test (argument data is for wide format)
+runPERMANOVA <- function(data) {
+  # create distance matrix based on Bray-Curtis distances
+  dist_matrix = vegdist(data[,6:ncol(data)], method = "bray")
+  
+  # return PERMANOVA test results
+  return(adonis2(dist_matrix ~ site, data = data))
+}
+
+# summarize taxa abundance across samples within a site (input: data long format)
+summarize_site <- function(data) {
+  summary = data %>% 
+    dplyr::group_by(site, taxa) %>% 
+    dplyr::summarize(mean = mean(percent))
+}
 
 #### (4) Bar Plots ####
 
-# make empty lists to hold bar plots
-barplot_taxa_list <- list()
-barplot_broader_list <- list()
+# put bar plots into lists
+barplot_taxa_plots <- lapply(data, function(x) barplot_taxa(x))
+barplot_broader_plots <- lapply(data, function(x) barplot_broader(x))
 
-for(i in 1:length(data)) {
-  barplot_taxa_list[[i]] <- barplot_taxa(data[[i]])
-  barplot_broader_list[[i]] <- barplot_broader(data[[i]])
-  #print(barplot_taxa_list[[i]])
-  print(barplot_broader_list[[i]])
+# titles for plots
+titles <- c("Non-Target Samples", "Anabaena/Cylindrospermum Samples (including)", 
+            "Anabaena/Cylindrospermum Samples (excluding)", "Microcoleus Samples (including)",
+            "Microcoleus Samples (excluding)")
+
+# view plots
+for(i in 1:length(barplot_taxa_plots)) {
+  print(barplot_taxa_plots[[i]] + labs(title = titles[i]))
+  print(barplot_broader_plots[[i]] + labs(title = titles[i]))
 }
 
-#### (4) NMDS
+#### (5) NMDS ####
 
-#### (3) TM Samples ####
+# get NMDS for each dataframe (sqrt-transformed!)
+NMDS_list <- lapply(data_wide_sqrt, function(x) getNMDSdata(x))
 
-## (a) average across site bar plot
+# making plots
+NMDS_plots <- lapply(NMDS_list, function(x) makeNMDSplot(x, TRUE))
 
-## with Microcoleus included
-# NMDS data
-tm_nmds <- metaMDS(as.matrix(data_wide_sqrt$tm_algalonly.csv[,6:ncol(data_wide_sqrt$tm_algalonly.csv)]),
-                     distance = "bray",
-                     trymax = 500,
-                     autotransform = TRUE)
-tm_nmds_data <- cbind(as.data.frame(scores(tm_nmds, "sites")), 
-                      data_wide_sqrt$tm_algalonly.csv %>% select(site_reach, site, field_date)) %>% 
-  mutate(field_date = ymd(field_date),
-         year = year(field_date),
-         month = as.character(month(field_date)))
+# compare with non-transformed data or sqrt-transformed w/ rare taxa removed (get data and then plots)
+NMDS_list_nontransformed <- lapply(data_wide, function(x) getNMDSdata(x))
+NMDS_list_raretaxaremoved <- lapply(data_filtered_wide, function(x) getNMDSdata(x))
+NMDS_plots_nontransformed <- lapply(NMDS_list_nontransformed, function(x) makeNMDSplot(x, TRUE))
+NMDS_plots_raretaxaremoved <- lapply(NMDS_list_raretaxaremoved, function(x) makeNMDSplot(x, TRUE))
 
-# get loadings
-tm_vf <- envfit(tm_nmds, as.matrix(data_wide_sqrt$tm_algalonly.csv[,6:ncol(data_wide_sqrt$tm_algalonly.csv)]), perm = 999)
-tm_coord <- as.data.frame(scores(tm_vf, "vectors")) * ordiArrowMul(tm_vf)
+# viewing plots against each other
+for(i in 1:length(NMDS_plots)) {
+  print(plot_grid(NMDS_plots[[i]] + labs(title = titles[i]), 
+            NMDS_plots_nontransformed[[i]] + labs(title = "non-transformed"),
+            NMDS_plots_raretaxaremoved[[i]] + labs(title = "rare taxa removed"), ncol = 1))
+}
 
-# plot NMDS
-tm_nmds_plot <- ggplot(tm_nmds_data, aes(x = NMDS1, y = NMDS2)) +
-  geom_point(aes(color = site, shape = month), size = 4) +
-  stat_ellipse(aes(color = site), type = "t", linetype = 2, size = 0.5) +
-  scale_color_manual(values = c("SAL" = "#62a7f8",
-                                "SFE-M" = "#416f16")) +
-  geom_segment(aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2), 
-               data = tm_coord, size =1, alpha = 0.5, colour = "grey30") +
-  geom_text(data = tm_coord, aes(x = NMDS1, y = NMDS2), colour = "grey30", 
-            fontface = "bold", label = row.names(tm_coord)) +
-  labs(title = "NMDS of Morphologically-Identified Microcoleus Mat Community",
-       subtitle = paste("Stress:", round(tm_nmds$stress, 3)),
-       x = "NMDS Axis 1",
-       y = "NMDS Axis 2")
-tm_nmds_plot
+#### (6) Q: What is dominant taxa across samples? ####
 
-##  without Microcoleus included
-# NMDS data
-tm_nmds_nomicro <- metaMDS(as.matrix(data_wide_sqrt$tm_algalonly_nomicro.csv[,6:ncol(data_wide_sqrt$tm_algalonly_nomicro.csv)]),
-                   distance = "bray",
-                   trymax = 500,
-                   autotransform = TRUE)
-tm_nmds_data_nomicro <- cbind(as.data.frame(scores(tm_nmds, "sites")), 
-                      data_wide_sqrt$tm_algalonly_nomicro.csv %>% select(site_reach, site, field_date)) %>% 
-  mutate(field_date = ymd(field_date),
-         year = year(field_date),
-         month = as.character(month(field_date)))
+# get summaries for each taxa
+summaries <- lapply(data, function(x) summarize_site(x))
 
-# get loadings
-tm_vf_nomicro <- envfit(tm_nmds_nomicro, as.matrix(data_wide_sqrt$tm_algalonly_nomicro.csv[,6:ncol(data_wide_sqrt$tm_algalonly_nomicro.csv)]), perm = 999)
-tm_coord_nomicro <- as.data.frame(scores(tm_vf_nomicro, "vectors")) * ordiArrowMul(tm_vf_nomicro)
+#### (7) Q: Are communities from each river significantly different? (PERMANOVA) ####
 
-# plot NMDS
-tm_nmds_plot_nomicro <- ggplot(tm_nmds_data_nomicro, aes(x = NMDS1, y = NMDS2)) +
-  geom_point(aes(color = site, shape = month), size = 4) +
-  stat_ellipse(aes(color = site), type = "t", linetype = 2, size = 0.5) +
-  scale_color_manual(values = c("SAL" = "#62a7f8",
-                                "SFE-M" = "#416f16",
-                                "SFE-SH" = "#a8ff82")) +
-  geom_segment(aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2), 
-               data = tm_coord_nomicro, size =1, alpha = 0.5, colour = "grey30") +
-  geom_text(data = tm_coord_nomicro, aes(x = NMDS1, y = NMDS2), colour = "grey30", 
-            fontface = "bold", label = row.names(tm_coord_nomicro)) +
-  labs(title = "NMDS of Morphologically-Identified Microcoleus Mat Community",
-       subtitle = paste("Stress:", round(tm_nmds$stress, 3)),
-       x = "NMDS Axis 1",
-       y = "NMDS Axis 2")
-tm_nmds_plot_nomicro
+# run PERMANOVAs (on square-root transformed, unaltered, and sqrt-transformed w/ rare taxa removed)
+permanovas <- lapply(data_wide_sqrt, function(x) runPERMANOVA(x))
+permanovas_nontransformed <- lapply(data_wide, function(x) runPERMANOVA(x))
+permanovas_raretaxaremoved <- lapply(data_filtered_wide, function(x) runPERMANOVA(x))
 
-## (c) misc. questions
+# create summary table
+permanova_summaries <- data.frame(data = NA,
+                                  altering = NA,
+                                  significant = NA)
+for(i in 1:length(permanovas)) {
+  # make dataframe for all PERMANOVAs at index i
+  temp <- data.frame(data = c(names(permanovas)[i], names(permanovas_nontransformed)[i], names(permanovas_raretaxaremoved)[i]),
+             altering = c("sqrt-transformed", "unaltered", "sqrt-transformed & rare taxa removed"),
+             significant = c(permanovas[[i]]$`Pr(>F)`[1], permanovas_nontransformed[[i]]$`Pr(>F)`[1], permanovas_raretaxaremoved[[i]]$`Pr(>F)`[1]))
+  
+  # add to existing dataframe
+  permanova_summaries <- rbind(permanova_summaries, temp)
+}
 
-# Excluding Microcoleus, what are the dominant taxa across all samples?
-tm_summary <- data$tm_algalonly_nomicro.csv %>% 
-  dplyr::group_by(site, taxa) %>% 
-  dplyr::summarize(mean = mean(percent))
-# For Salmon TM: non-e diatoms, green algae, other coccoids
-# For SfkEel TM: Epithemia, green algae, non-e diatoms, and has many other cyanos that SAL TM does not
+view(permanova_summaries)
+# TM & NT significant across all while TAC not significant across all!
 
-# Are the communities from each river significantly different via PERMANOVA?
-tm_dist <- vegdist(data_wide_sqrt$tm_algalonly.csv[6:ncol(data_wide_sqrt$tm_algalonly.csv)], method = "bray")
-tm_permanova <- adonis2(tm_dist ~ site, data = data_wide_sqrt$tm_algalonly.csv)  # 0.001 ***
-tm_dist_nomicro <- vegdist(data_wide_sqrt$tm_algalonly_nomicro.csv[6:ncol(data_wide_sqrt$tm_algalonly_nomicro.csv)], method = "bray")
-tm_permanova_nomicro <- adonis2(tm_dist_nomicro ~ site, data = data_wide_sqrt$tm_algalonly_nomicro.csv)  # 0.001 ***
-# Yes!
+# strata test
+adonis2(vegdist(data_wide_sqrt$nt_algalonly.csv[,6:ncol(data_wide_sqrt$nt_algalonly.csv)], method = "bray") ~ site, 
+        data = data_wide_sqrt$nt_algalonly.csv,
+        strata = data_wide_sqrt$nt_algalonly.csv$field_date)
 
-# How does the above change with rare taxa removed?
-tm_dist_raretaxa_nomicro <- vegdist(data_filtered$tm_algalonly_nomicro.csv[6:ncol(data_filtered$tm_algalonly_nomicro.csv)], method = "bray")
-tm_permanova_raretaxa_nomicro <- adonis2(tm_dist_raretaxa_nomicro ~ site, data = data_filtered$tm_algalonly_nomicro.csv)  # 0.001 ***
+## checking beta dispersion
+for(i in 1:length(data_wide_sqrt)) {
+  print(anova(betadisper(vegdist(data_wide_sqrt[[i]][,6:ncol(data_wide_sqrt[[i]])], method = "bray"), 
+                         data_wide_sqrt[[i]]$site)))
+}
+# there is a significant difference in beta-dispersion for all
+# however, based on https://www.youtube.com/watch?v=oLf0EpMJ4yA
+# and his paper https://www.nature.com/articles/ismej20085
+# this may not affect results of adonis2, especially if NMDS shows that groups are very far apart
+# which we definitely see for Microcoleus and for Non-target which are our significant samples via adonis2
 
-#### (4) TAC Samples ####
-
-## (a) average across site bar plot
-
-# with A/C included
-TAC_bar_taxa <- ggplot(data = data$tac_algalonly.csv, aes(x = site, y = percent, fill = taxa)) +
-  geom_bar(position = "fill", stat = "identity")
-TAC_bar_taxa
-TAC_bar_broad <- ggplot(data = data$tac_algalonly.csv, aes(x = site, y = percent, fill = broader)) +
-  geom_bar(position = "fill", stat = "identity")
-TAC_bar_broad
-
-# without Microcoleus included
-TM_bar_taxa_excl <- ggplot(data = data$tm_algalonly_nomicro.csv, aes(x = site, y = percent, fill = taxa)) +
-  geom_bar(position = "fill", stat = "identity")
-TM_bar_taxa_excl
-TM_bar_broad_excl <- ggplot(data = data$tm_algalonly_nomicro.csv, aes(x = site, y = percent, fill = broader)) +
-  geom_bar(position = "fill", stat = "identity")
-TM_bar_broad_excl
-
-## (b) NMDS
-
-## with Microcoleus included
-# NMDS data
-tm_nmds <- metaMDS(as.matrix(data_wide_sqrt$tm_algalonly.csv[,6:ncol(data_wide_sqrt$tm_algalonly.csv)]),
-                   distance = "bray",
-                   trymax = 500,
-                   autotransform = TRUE)
-tm_nmds_data <- cbind(as.data.frame(scores(tm_nmds, "sites")), 
-                      data_wide_sqrt$tm_algalonly.csv %>% select(site_reach, site, field_date)) %>% 
-  mutate(field_date = ymd(field_date),
-         year = year(field_date),
-         month = as.character(month(field_date)))
-
-# get loadings
-tm_vf <- envfit(tm_nmds, as.matrix(data_wide_sqrt$tm_algalonly.csv[,6:ncol(data_wide_sqrt$tm_algalonly.csv)]), perm = 999)
-tm_coord <- as.data.frame(scores(tm_vf, "vectors")) * ordiArrowMul(tm_vf)
-
-# plot NMDS
-tm_nmds_plot <- ggplot(tm_nmds_data, aes(x = NMDS1, y = NMDS2)) +
-  geom_point(aes(color = site, shape = month), size = 4) +
-  stat_ellipse(aes(color = site), type = "t", linetype = 2, size = 0.5) +
-  scale_color_manual(values = c("SAL" = "#62a7f8",
-                                "SFE-M" = "#416f16")) +
-  geom_segment(aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2), 
-               data = tm_coord, size =1, alpha = 0.5, colour = "grey30") +
-  geom_text(data = tm_coord, aes(x = NMDS1, y = NMDS2), colour = "grey30", 
-            fontface = "bold", label = row.names(tm_coord)) +
-  labs(title = "NMDS of Morphologically-Identified Microcoleus Mat Community",
-       subtitle = paste("Stress:", round(tm_nmds$stress, 3)),
-       x = "NMDS Axis 1",
-       y = "NMDS Axis 2")
-tm_nmds_plot
-
-##  without Microcoleus included
-# NMDS data
-tm_nmds_nomicro <- metaMDS(as.matrix(data_wide_sqrt$tm_algalonly_nomicro.csv[,6:ncol(data_wide_sqrt$tm_algalonly_nomicro.csv)]),
-                           distance = "bray",
-                           trymax = 500,
-                           autotransform = TRUE)
-tm_nmds_data_nomicro <- cbind(as.data.frame(scores(tm_nmds, "sites")), 
-                              data_wide_sqrt$tm_algalonly_nomicro.csv %>% select(site_reach, site, field_date)) %>% 
-  mutate(field_date = ymd(field_date),
-         year = year(field_date),
-         month = as.character(month(field_date)))
-
-# get loadings
-tm_vf_nomicro <- envfit(tm_nmds_nomicro, as.matrix(data_wide_sqrt$tm_algalonly_nomicro.csv[,6:ncol(data_wide_sqrt$tm_algalonly_nomicro.csv)]), perm = 999)
-tm_coord_nomicro <- as.data.frame(scores(tm_vf_nomicro, "vectors")) * ordiArrowMul(tm_vf_nomicro)
-
-# plot NMDS
-tm_nmds_plot_nomicro <- ggplot(tm_nmds_data_nomicro, aes(x = NMDS1, y = NMDS2)) +
-  geom_point(aes(color = site, shape = month), size = 4) +
-  stat_ellipse(aes(color = site), type = "t", linetype = 2, size = 0.5) +
-  scale_color_manual(values = c("SAL" = "#62a7f8",
-                                "SFE-M" = "#416f16",
-                                "SFE-SH" = "#a8ff82")) +
-  geom_segment(aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2), 
-               data = tm_coord_nomicro, size =1, alpha = 0.5, colour = "grey30") +
-  geom_text(data = tm_coord_nomicro, aes(x = NMDS1, y = NMDS2), colour = "grey30", 
-            fontface = "bold", label = row.names(tm_coord_nomicro)) +
-  labs(title = "NMDS of Morphologically-Identified Microcoleus Mat Community",
-       subtitle = paste("Stress:", round(tm_nmds$stress, 3)),
-       x = "NMDS Axis 1",
-       y = "NMDS Axis 2")
-tm_nmds_plot_nomicro
-
-## (c) misc. questions
-
-# Excluding Microcoleus, what are the dominant taxa across all samples?
-tm_summary <- data$tm_algalonly_nomicro.csv %>% 
-  dplyr::group_by(site, taxa) %>% 
-  dplyr::summarize(mean = mean(percent))
-# For Salmon TM: non-e diatoms, green algae, other coccoids
-# For SfkEel TM: Epithemia, green algae, non-e diatoms, and has many other cyanos that SAL TM does not
-
-# Are the communities from each river significantly different via PERMANOVA?
-tm_dist <- vegdist(data_wide_sqrt$tm_algalonly.csv[6:ncol(data_wide_sqrt$tm_algalonly.csv)], method = "bray")
-tm_permanova <- adonis2(tm_dist ~ site, data = data_wide_sqrt$tm_algalonly.csv)  # 0.001 ***
-tm_dist_nomicro <- vegdist(data_wide_sqrt$tm_algalonly_nomicro.csv[6:ncol(data_wide_sqrt$tm_algalonly_nomicro.csv)], method = "bray")
-tm_permanova_nomicro <- adonis2(tm_dist ~ site, data = data_wide_sqrt$tm_algalonly_nomicro.csv)  # 0.001 ***
-# Yes!
+#### (8) Q: What explains these differences? ####
 
 
-#### (5) NT Samples ####
