@@ -1,11 +1,12 @@
 #### Comparing microscopy data among rivers
 ### Jordan Zabrecky
-## last edited: 11.14.2025
+## last edited: 12.15.2025
 
 ## This code compares microscopy data from NT, TM, and TAC samples
-## across rivers to answer Q1
-
-## TO-DO want to check vS ordination arrow size and filter for only significant to be placed w/ arrows
+## across rivers to answer Q1. First data is transformed (sqrt). For reference
+## we also complete analyses on untransformed data and data with rare taxa removed.
+## Data is analyzed using NMDS and ANOSIM. We also averaged across all samples
+## from a river and created bar plots to visually compare average samples at each river
 
 #### (1) Loading libraries & data ####
 
@@ -48,8 +49,11 @@ lapply(data, function(x) hist(x$percent))
 
 # square root transform for multivariate analyses since data is highly right-skewed
 # also keeps values positive for Bray-Curtis
+<<<<<<< HEAD
 
 # sqrt-transform percent values
+=======
+>>>>>>> 25c294a00d8878e81a27b8c6d3b25ba3d4ab649c
 data <- lapply(data, function(x) x %>% 
                           mutate(sqrt_percent = sqrt(percent)))
 data_wide_sqrt <- lapply(data, function(x)
@@ -61,7 +65,7 @@ lapply(data, function(x) hist(x$sqrt_percent, breaks=seq(0,10,l=20)))
 ## (b) make broader groups
 
 # grouping for TM & TAC
-for(i in 2:5) {
+for(i in 2:length(data)) {
   data[[i]] <- data[[i]] %>% 
     mutate(broader = case_when(taxa == "lyngbya" | taxa == "nodularia" |  taxa == "calothrix" |
                        taxa == "scytonema" | taxa == "gloeotrichia" ~ "Other N-fixing Cyanobacteria",
@@ -137,7 +141,8 @@ names(data_filtered) <- names(data)
 lapply(data_filtered, function(x) hist(x$sqrt_percent,  breaks=seq(0, 10,l=20)))
 
 # make a wider version
-data_filtered_wide <- lapply(data_filtered, function(x)
+data_filtered_wide <- lapply(data, function(x) colnames(x))
+data_filtered_wide <- lapply(data, function(x)
   pivot_wider(x %>% select(!c(percent, broader)), names_from = taxa, values_from = sqrt_percent))
   
 #### (3) Functions for Analysis ####
@@ -182,18 +187,21 @@ getNMDSdata <- function(data) {
   stress = nmds$stress
   
   # return a named list with both dataframes
-  list <- list(nmds_final, coord, stress)
-  names(list) = c("nmds", "vs", "stress")
+  list <- list(nmds_final, vs, coord, stress)
+  names(list) = c("nmds", "vs", "coord", "stress")
   return(list)
 }
 
-# make NMDS plots (without loadings; data is nmds data, loading is a TRUE/FALSE command)
-makeNMDSplot <- function(data, loading) {
+# make NMDS plots (without loadings; data is nmds data, loading is a TRUE/FALSE argument,
+# and significant is a TRUE/FALSE argument)
+makeNMDSplot <- function(data, loading, significant) {
   
   # separating out data to be able to easily call each
   nmds_data = data$nmds
   stress = data$stress
-  loadings = data$vs
+  loadings = data$coord
+  pvalues = as.data.frame(data$vs$vectors$pvals)
+  colnames(pvalues) = "pvalue"
   
   # make plot
   plot = ggplot(nmds_data, aes(x = NMDS1, y = NMDS2)) +
@@ -208,6 +216,13 @@ makeNMDSplot <- function(data, loading) {
   
   # add in loadings
   if(loading) {
+    
+    if(significant) {
+      loadings = cbind(loadings, pvalues) %>% 
+        filter(pvalue < 0.05)
+      
+    }
+    
     plot = plot + geom_segment(aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2), 
                    data = loadings, size =1, alpha = 0.5, colour = "grey30") +
                   geom_text(data = loadings, aes(x = NMDS1, y = NMDS2), colour = "grey30", 
@@ -241,7 +256,9 @@ barplot_broader_plots <- lapply(data, function(x) barplot_broader(x))
 
 # titles for plots
 titles <- c("Non-Target Samples", "Anabaena/Cylindrospermum Samples (including)", 
-            "Anabaena/Cylindrospermum Samples (excluding)", "Microcoleus Samples (including)",
+            "Anabaena/Cylindrospermum Samples (excluding)", 
+            "Anabaena/Cylindrospermum Samples (also excluding GA)",
+            "Microcoleus Samples (including)",
             "Microcoleus Samples (excluding)")
 
 # view plots
@@ -256,13 +273,13 @@ for(i in 1:length(barplot_taxa_plots)) {
 NMDS_list <- lapply(data_wide_sqrt, function(x) getNMDSdata(x))
 
 # making plots
-NMDS_plots <- lapply(NMDS_list, function(x) makeNMDSplot(x, FALSE))
+NMDS_plots <- lapply(NMDS_list, function(x) makeNMDSplot(x, TRUE, TRUE))
 
 # compare with non-transformed data or sqrt-transformed w/ rare taxa removed (get data and then plots)
 NMDS_list_nontransformed <- lapply(data_wide, function(x) getNMDSdata(x))
 NMDS_list_raretaxaremoved <- lapply(data_filtered_wide, function(x) getNMDSdata(x))
-NMDS_plots_nontransformed <- lapply(NMDS_list_nontransformed, function(x) makeNMDSplot(x, FALSE))
-NMDS_plots_raretaxaremoved <- lapply(NMDS_list_raretaxaremoved, function(x) makeNMDSplot(x, FALSE))
+NMDS_plots_nontransformed <- lapply(NMDS_list_nontransformed, function(x) makeNMDSplot(x, TRUE, TRUE))
+NMDS_plots_raretaxaremoved <- lapply(NMDS_list_raretaxaremoved, function(x) makeNMDSplot(x, TRUE, TRUE))
 
 # viewing plots against each other
 for(i in 1:length(NMDS_plots)) {
@@ -298,7 +315,7 @@ for(i in 1:length(permanovas)) {
 }
 
 view(permanova_summaries)
-# TM & NT significant across all while TAC not significant across all!
+# TM & NT significant across all while TAC not significant across all!http://127.0.0.1:39173/graphics/plot_zoom_png?width=1184&height=861
 
 # strata test
 adonis2(vegdist(data_wide_sqrt$nt_algalonly.csv[,6:ncol(data_wide_sqrt$nt_algalonly.csv)], method = "bray") ~ site, 
@@ -318,4 +335,28 @@ for(i in 1:length(data_wide_sqrt)) {
 
 #### (8) Q: What explains these differences? ####
 
+# get p-values from envfit in vegan ran earlier
+envfit_pvalues <- lapply(NMDS_list, function(x) as.data.frame(x$vs$vectors$pvals))
 
+# view results from dataframes we care about
+view(envfit_pvalues$tm_algalonly_nomicro.csv)
+view(envfit_pvalues$tac_algalonly_noanacylgreenalgae.csv)
+view(envfit_pvalues$nt_algalonly.csv)
+
+#### (9) Conclusions ####
+
+## In conclusion, 
+## (1) Microcoleus samples were significantly different among rivers with those from the South Fork Eel 
+## characterized by more Epithemia and Nitrogen-fixers (predominantly Anabaena & Nostoc)
+## (2) Anabaena/Cylindrospermum were NOT significantly different among rivers, all rivers had samples with
+## Epithemia and other anatoxin-associated cyanobacteria, particularly Geitlerinema
+## (3) Non-target communities were significantly different among rivers with South Fork Eel having more
+## Nostoc, Salmon having less green algae (could be due to sampling interruption)
+
+# save sqrt-transformed values for future analyses:
+for(i in 1:length(data_wide)) {
+  write.csv(data_wide[[i]], paste("./data/morphological/transformed/", 
+                                  str_replace(names(data_wide)[i], ".csv", ""),
+                                  "_sqrttransformed.csv", sep = ""),
+            row.names = FALSE)
+}
