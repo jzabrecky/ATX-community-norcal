@@ -21,9 +21,9 @@ files <- list.files(path = "./data/morphological/", pattern = ".csv")
 data_wide <- lapply(files, function(x) read.csv(paste("./data/morphological/", x, sep = "")))
 names(data_wide) <- files
 
-#### (2) Data Transformation
+#### (2) Data Transformations ####
 
-## (a) pivot longer and log-transform % values
+## (a) pivot longer and sqrt-transform % values
 
 # focus on 2022 data for the three river comparison
 data_wide <- lapply(data_wide, function(x) x %>% mutate(year = year(ymd(field_date))) %>% filter(year == 2022) %>% 
@@ -49,7 +49,7 @@ lapply(data, function(x) hist(x$percent))
 # square root transform for multivariate analyses since data is highly right-skewed
 # also keeps values positive for Bray-Curtis
 
-# log-transform percent values adding a small amount for zero for both long & wide dataframes
+# sqrt-transform percent values
 data <- lapply(data, function(x) x %>% 
                           mutate(sqrt_percent = sqrt(percent)))
 data_wide_sqrt <- lapply(data, function(x)
@@ -256,13 +256,13 @@ for(i in 1:length(barplot_taxa_plots)) {
 NMDS_list <- lapply(data_wide_sqrt, function(x) getNMDSdata(x))
 
 # making plots
-NMDS_plots <- lapply(NMDS_list, function(x) makeNMDSplot(x, TRUE))
+NMDS_plots <- lapply(NMDS_list, function(x) makeNMDSplot(x, FALSE))
 
 # compare with non-transformed data or sqrt-transformed w/ rare taxa removed (get data and then plots)
 NMDS_list_nontransformed <- lapply(data_wide, function(x) getNMDSdata(x))
 NMDS_list_raretaxaremoved <- lapply(data_filtered_wide, function(x) getNMDSdata(x))
-NMDS_plots_nontransformed <- lapply(NMDS_list_nontransformed, function(x) makeNMDSplot(x, TRUE))
-NMDS_plots_raretaxaremoved <- lapply(NMDS_list_raretaxaremoved, function(x) makeNMDSplot(x, TRUE))
+NMDS_plots_nontransformed <- lapply(NMDS_list_nontransformed, function(x) makeNMDSplot(x, FALSE))
+NMDS_plots_raretaxaremoved <- lapply(NMDS_list_raretaxaremoved, function(x) makeNMDSplot(x, FALSE))
 
 # viewing plots against each other
 for(i in 1:length(NMDS_plots)) {
