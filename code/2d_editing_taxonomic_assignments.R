@@ -1,9 +1,13 @@
 #### Editing taxonomic assignments
 ### Jordan Zabrecky
-## last edited: 10.10.2025
+## last edited: 12.15.2025
 
 ## This code takes the processed QIIME outputs (presently, just the 95% rarefied)
 ## and adjusts taxonomic assignments to make sure they are all clean and correct
+## (e.g., had a lot of Cyanobacteria phylum assignments with a specified, real genus 
+## but order "Cyanobacteriales" which does not exist)
+
+# Referencing NCBI Taxonomy database and Strunecky et al. (2023) to do this
 
 #### (1) Loading libraries & data ####
 
@@ -83,11 +87,21 @@ classes <- data %>%
 
 # BLASTing the weird names shows that they are mostly random cultured bacteriums
 # unassigned passed phylum, let's just add them to NA after class level
-odd_class_names <- c("vadinHA49", "OM190", "KD4-96", "uncultured", "Subgroup_22", "Pla4_lineage")
+odd_class_names <- c("vadinHA49", "OM190", "KD4-96", "uncultured", "Subgroup_22", 
+                     "Pla4_lineage", "P9X2b3D02", "BD7-11", "Lineage_IIc", "OLB14", 
+                     "bacteriap25", "Pla3_lineage", "TK10", "AT-s3-28", "Subgroup_5",
+                     "Subgroup_11", "Subgroup_25", "028H05-P-BN-P5", "ABY1", 
+                     "BD2-11_terrestrial_group", "WWE3", "V2072-189E03", "MVP-15", 
+                     "JG30-KF-CM66", "4-29-1", "Lineage_IIb", "SJA-28", "MB-A2-108", 
+                     "Lineage_IIa", "OC31", "Rs-M47", "CPR2", "Subgroup_18")
 for(i in 1:length(odd_class_names)) {
   data[which(data$class == odd_class_names[i]),
        c("class", "order", "family", "genus", "species")] <- NA
 }
+unique(data$class)
+
+# will wait to look more into confirming the correct, up-to-date spellings if 
+# I make a figure using the classes and see what are the main categories showing up :)
 
 #### (6) Checking orders w/in Cyanobacteria ####
 
@@ -95,7 +109,7 @@ for(i in 1:length(odd_class_names)) {
 unique(data[which(data$phylum == "Cyanobacteria"),]$order)
 
 # names that BLAST to again random uncultured bacteriums move to NA
-odd_order_names <- c("SepB-3", "uncultured", "RD011")
+odd_order_names <- c("SepB-3", "RD011")
 for(i in 1:length(odd_order_names)) {
   data[which(data$order == odd_order_names[i]),
        c("order", "family", "genus", "species")] <- NA
@@ -117,7 +131,7 @@ unique(data[which(data$phylum == "Cyanobacteria"),]$order)
 # Cyanobacteriales is not an order- a lot of what is under it is the family Nostocaceae,
 # Microcystaceae, etc. will adjust this when I get to family
 
-# Limnotrichales is not an order in NCBI- all of this is the genus Limnothrix, so change
+# Limnotrichales is not an order- all of this is the genus Limnothrix, so change
 data[which(data$order == "Limnotrichales"), "family"] <- "Pseudanabaenaceae"
 data[which(data$order == "Limnotrichales"), "order"] <- "Pseudanabaenales"
 
@@ -162,8 +176,9 @@ data[which(data$family == "Cyanobacteriaceae"), c("order", "family", "genus", "s
 # Synechococcales_Incertae_Sedis- all of schizothrix genus which in the Leptolyngbya family
 data[which(data$family == "Synechococcales_Incertae_Sedis"), "order"] <- "Leptolyngbyales"
 data[which(data$family == "Synechococcales_Incertae_Sedis"), "family"] <- "Schizotrichaceae"
+# NOTE: ambiguous phylogenetic placement as indicated by Strunecky et al. (2023)
 
-# note Phormidiaceae seems to have been changed to Oscillatoriaceae or Microcoleaceae in NCBI
+# note Phormidiaceae seems to have been changed to Oscillatoriaceae or Microcoleaceae
 # depending on genus
 data[which(data$family == "Phormidiaceae" & grepl("Trichodesmium", data$genus)), "family"] <- "Microcoleaceae"
 data[which(data$family == "Phormidiaceae" & grepl("Kamptonema", data$genus)), "family"] <- "Microcoleaceae"
@@ -172,22 +187,25 @@ data[which(data$family == "Phormidiaceae" & grepl("Planktothrix", data$genus)), 
 data[which(data$family == "Phormidiaceae"), "family"] <- "Osillatoriaceae"
 
 # Phormidesmiaceae is also not a family, genus is Phormidesmis which is a new Leptolynbyales (order)
+# NOTE: ambiguous phylogenetic placement as indicated by Strunecky et al. (2023)
 data[which(data$family == "Phormidesmiaceae"), "order"] <- "Leptolyngbyales"
 data[which(data$family == "Phormidesmiaceae"), "family"] <- "Leptolyngbyaceae"
 
-# Gloeocapsaceae is also not a family, genus Gloeocapsa is in family Chroococcaceae and order Chroococcales
+# Gloeocapsaceae is also not a family, genus Gloeocapsa is in family Chroococcaceae and order Chroococcidiopsidaceae
+# NOTE: ambiguous phylogenetic placement as indicated by Strunecky et al. (2023)
 # there are also some species listed here that are not in the Gloecapsa genus or different family
-data[which(data$family == "Gloeocapsaceae"), "order"] <- "Chroococcales"
-data[which(data$family == "Gloeocapsaceae"), "family"] <- "Chroococcaceae"
+data[which(data$family == "Gloeocapsaceae"), "order"] <- "Chroococcidiopsidaceae"
+data[which(data$family == "Gloeocapsaceae"), "family"] <- "Chroococcidiopsidales"
 data[which(data$genus == "Gleocapsa" & grepl("Limnococcus", data$species)), "genus"] <- "Limnococcus"
 data[which(data$genus == "Gleocapsa" & grepl("Limnococcus", data$species)), "family"] <- "Cyanothrichaceae"
 data[which(data$genus == "Gleocapsa" & grepl("Chroococcus", data$species)), "genus"] <- "Chroococcus"
 data[which(data$genus == "Gleocapsa" & grepl("Chroococcus", data$species)), "family"] <- "Chroococcaceae"
+
 # lastly, the Chroococcales_cyanobacterium should not have identification beyond order according to BLAST/GenBank
 data[which(data$genus == "Gleocapsa" & data$species == "Chroococcales_cyanobacterium"), c("family", "genus")] <- NA
 
 # Cyanobiaceaea- Synechococcus-like species, under a reclassification (see Komarek et al. 2020)
-# will just leave as is despite it not currently being in NCBI taxonomy
+# will just leave as is despite it not currently being in NCBI taxonomy or Strunecky et al. (2023)
 
 # also, Vampirovibrionales is not a family but only an order
 data[which(data$family == "Vampirovibrionales"), c("family")] <- NA
@@ -430,7 +448,7 @@ data[which(data$field_date == "9/8/2022" & data$site_reach == "SFE-M-1S"& data$s
 #### (11) Saving ####
 
 # save csv
-write.csv(data, "./data/molecular/16s_nochimera_rarefied_90_FINAL.csv", row.names = FALSE)
+write.csv(data, "./data/molecular/16s_nochimera_rarefied_95_FINAL.csv", row.names = FALSE)
 
 ## save versions of TM and TAC with Microcoleus and Anabaena/Cylindrospermum/Trichormus removed respectively
 
@@ -438,10 +456,10 @@ write.csv(data, "./data/molecular/16s_nochimera_rarefied_90_FINAL.csv", row.name
 TM_data <- data %>% 
   filter(genus != "Microcoleus") %>% 
   filter(sample_type == "TM")
-write.csv(TM_data, "./data/molecular/16s_nochimera_rarefied_90_TM_nomicro.csv", row.names = FALSE)
+write.csv(TM_data, "./data/molecular/16s_nochimera_rarefied_95_TM_nomicro.csv", row.names = FALSE)
 
 # for anabaena/cylindrospermum
 TAC_data <- data %>% 
   filter(genus != "Anabaena" | genus != "Cylindropsermum" | genus != "Trichormus") %>% 
   filter(sample_type == "TAC")
-write.csv(TAC_data, "./data/molecular/16s_nochimera_rarefied_90_TAC_noanacyl.csv")
+write.csv(TAC_data, "./data/molecular/16s_nochimera_rarefied_95_TAC_noanacyl.csv")

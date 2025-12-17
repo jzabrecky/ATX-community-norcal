@@ -49,11 +49,6 @@ lapply(data, function(x) hist(x$percent))
 
 # square root transform for multivariate analyses since data is highly right-skewed
 # also keeps values positive for Bray-Curtis
-<<<<<<< HEAD
-
-# sqrt-transform percent values
-=======
->>>>>>> 25c294a00d8878e81a27b8c6d3b25ba3d4ab649c
 data <- lapply(data, function(x) x %>% 
                           mutate(sqrt_percent = sqrt(percent)))
 data_wide_sqrt <- lapply(data, function(x)
@@ -315,7 +310,7 @@ for(i in 1:length(permanovas)) {
 }
 
 view(permanova_summaries)
-# TM & NT significant across all while TAC not significant across all!http://127.0.0.1:39173/graphics/plot_zoom_png?width=1184&height=861
+# TM & NT significant across all while TAC not significant across all!
 
 # strata test
 adonis2(vegdist(data_wide_sqrt$nt_algalonly.csv[,6:ncol(data_wide_sqrt$nt_algalonly.csv)], method = "bray") ~ site, 
