@@ -1,11 +1,11 @@
 #### Comparing microscopy data among rivers
 ### Jordan Zabrecky
-## last edited: 12.15.2025
+## last edited: 12.17.2025
 
 ## This code compares microscopy data from NT, TM, and TAC samples
 ## across rivers to answer Q1. First data is transformed (sqrt). For reference
 ## we also complete analyses on untransformed data and data with rare taxa removed.
-## Data is analyzed using NMDS and ANOSIM. We also averaged across all samples
+## Data is analyzed using NMDS, PERMANOVA, and ISA. We also averaged across all samples
 ## from a river and created bar plots to visually compare average samples at each river
 
 #### (1) Loading libraries & data ####
@@ -14,74 +14,64 @@
 set.seed(2025)
 
 # libraries
-lapply(c("tidyverse", "plyr", "vegan", "cowplot"), require, character.only = T)
+lapply(c("tidyverse", "plyr", "vegan", "cowplot", "indicspecies"), require, character.only = T)
 
-# read in files (note: two target taxa csvs- one with target taxa included, other with it excluded)
-# doing as a list rather than one csv as each has a different # of columns
-files <- list.files(path = "./data/morphological/", pattern = ".csv")
-data_wide <- lapply(files, function(x) read.csv(paste("./data/morphological/", x, sep = "")))
-names(data_wide) <- files
+# we will use the NT data, and TM excluding Microcoleus, and TAC excluding Anabaena and Green Algae
+nt <- read.csv("./data/morphological/nt_algalonly.csv")
+tm <- read.csv("./data/morphological/tm_algalonly_nomicro.csv")
+tac <- read.csv("./data/morphological/tac_algalonly_noanacylgreenalgae.csv")
 
-#### (2) Data Transformations ####
+# add into list
+unaltered_data <- list(nt, tm, tac)
+names(unaltered_data) <- c("nt", "tm", "tac")
 
-## (a) pivot longer and sqrt-transform % values
+# filter for data from year 2022 (for three river comparison)
+unaltered_data <- lapply(unaltered_data, function(x) x %>% filter(year(ymd(field_date)) == 2022))
 
-# focus on 2022 data for the three river comparison
-data_wide <- lapply(data_wide, function(x) x %>% mutate(year = year(ymd(field_date))) %>% filter(year == 2022) %>% 
-                      relocate(year, .before = "field_date"))
-
-# beforehand, curious if any taxa has 0 for all samples
-# (adding 5 to match indexing that starts at 6 for colSums)
-notaxa <- lapply(data_wide, function(x) colnames(x)[5 + c(which(colSums(x[,6:ncol(x)]) == 0))])
-
-# remove these taxa (that are not present in any samples) from the dataframes
-for(i in 1:length(data_wide)) {
-  data_wide[[i]] <- data_wide[[i]] %>% 
-    dplyr::select(!c(notaxa[[i]]))
+# see our exploration with data transformation in another script, "S4a_testing_data_transformations.R"
+# decided on square-root transformation on the relative abundances (Hellinger transformation)
+data <- unaltered_data
+for(i in 1:length(data)) {
+  data[[i]][,5:ncol(data[[i]])] <- sqrt(data[[i]][,5:ncol(data[[i]])])
 }
 
-# pivot longer
-data <- lapply(data_wide, function(x) x %>% pivot_longer(cols = c(6:ncol(x)), names_to = "taxa",
-                                                    values_to = "percent"))
+# save this data to use in future scripts (RUN ONCE)
+#write.csv(data$nt, "./data/morphological/transformed/nt_algalonly_sqrttransformed.csv",
+#          row.names = FALSE)
+#write.csv(data$tm, "./data/morphological/transformed/nt_algalonly_nomicro_sqrttransformed.csv",
+#          row.names = FALSE)
+#write.csv(data$tac, "./data/morphological/transformed/nt_algalonly_noanacylgreenalgae_gsqrttransformed.csv",
+#          row.names = FALSE)
 
-# histogram of raw percent (highly right-skew)
-lapply(data, function(x) hist(x$percent))
+# create a longer version of the unaltered data for bar plots of relative abundances
+data_longer <- lapply(unaltered_data, 
+                      function(x) pivot_longer(x, cols = c(5:ncol(x)), values_to = "percent",
+                                                           names_to = "taxa"))
 
-# square root transform for multivariate analyses since data is highly right-skewed
-# also keeps values positive for Bray-Curtis
-data <- lapply(data, function(x) x %>% 
-                          mutate(sqrt_percent = sqrt(percent)))
-data_wide_sqrt <- lapply(data, function(x)
-  pivot_wider(x %>% select(!percent), names_from = taxa, values_from = sqrt_percent))
-
-# updated histogram - still have zero-inflation, but otherwise closer to normally-distributed
-lapply(data, function(x) hist(x$sqrt_percent, breaks=seq(0,10,l=20)))
-
-## (b) make broader groups
-
+# add in broader group classification
 # grouping for TM & TAC
-for(i in 2:length(data)) {
-  data[[i]] <- data[[i]] %>% 
+for(i in 2:length(data_longer)) {
+  data_longer[[i]] <- data_longer[[i]] %>% 
     mutate(broader = case_when(taxa == "lyngbya" | taxa == "nodularia" |  taxa == "calothrix" |
-                       taxa == "scytonema" | taxa == "gloeotrichia" ~ "Other N-fixing Cyanobacteria",
-                     taxa == "nostoc" ~ "Nostoc",
-                     taxa == "chroococcus" | taxa == "other_coccoids"
-                     ~ "Unicellullar Cyanobacteria",
-                     taxa == "anabaena_and_cylindrospermum" ~ "Anabaena or Cylindrospermum",
-                     taxa == "e_diatoms" ~ "Epithemia",
-                     taxa == "geitlerinema" ~ "Other Anatoxin-Associated Cyanobacteria",
-                     taxa == "green_algae" ~ "Green Algae",
-                     taxa == "oscillatoria" | taxa == "phormidium_unknown" |
-                       taxa == "leptolyngbya" | taxa == "homoeothrix"
-                     ~ "Other Filamentous Cyanobacteria",
-                     taxa == "microcoleus" ~ "Microcoleus",
-                     taxa == "non_e_diatoms" ~ "Diatoms Other than Epithemia",
-                     taxa == "unknown" ~ "Unknown"
-                     ))
+                                 taxa == "scytonema" | taxa == "gloeotrichia" ~ "Other N-fixing Cyanobacteria",
+                               taxa == "nostoc" ~ "Nostoc",
+                               taxa == "chroococcus" | taxa == "other_coccoids"
+                               ~ "Unicellullar Cyanobacteria",
+                               taxa == "anabaena_and_cylindrospermum" ~ "Anabaena or Cylindrospermum",
+                               taxa == "e_diatoms" ~ "Epithemia",
+                               taxa == "geitlerinema" ~ "Other Anatoxin-Associated Cyanobacteria",
+                               taxa == "green_algae" ~ "Green Algae",
+                               taxa == "oscillatoria" | taxa == "phormidium_unknown" |
+                                 taxa == "leptolyngbya" | taxa == "homoeothrix"
+                               ~ "Other Filamentous Cyanobacteria",
+                               taxa == "microcoleus" ~ "Microcoleus",
+                               taxa == "non_e_diatoms" ~ "Diatoms Other than Epithemia",
+                               taxa == "unknown" ~ "Unknown"
+    ))
 }
 
 # grouping for NT
-data$nt_algalonly.csv <- data$nt_algalonly.csv %>% 
+data_longer$nt <- data_longer$nt %>% 
   mutate(broader = case_when(taxa == "lyngbya" | taxa == "nodularia" |  taxa == "calothrix" |
                                taxa == "scytonema" | taxa == "gloeotrichia" | taxa == "rivularia" |
                                taxa == "tolypothrix"
@@ -101,7 +91,7 @@ data$nt_algalonly.csv <- data$nt_algalonly.csv %>%
                                taxa == "unknown_green_algae"
                              ~ "Other",
                              taxa == "ankistrodesmus" | taxa == "gloeocystis" | taxa == "lacunastrum" | 
-                             taxa == "oocystis" | taxa == "pediastrum" | taxa == "scenedesmus_no_spines" |
+                               taxa == "oocystis" | taxa == "pediastrum" | taxa == "scenedesmus_no_spines" |
                                taxa == "stauridium" | taxa == "tetraedron" | taxa == "coelastrum" |
                                taxa == "cosmarium" | taxa == "desmodesmus_spines" | taxa == "closterium"
                              ~ "Unicellular Green Algae",
@@ -114,147 +104,25 @@ data$nt_algalonly.csv <- data$nt_algalonly.csv %>%
                              taxa == "spirogyra" ~ "Spirogyra"
   ))
 
-## (c) consider removing "rare" taxa
+#### (2) Functions for Analyses ####
 
-# consider removing taxa that compose less than 1% across all samples
-rare_taxa <- lapply(data, function(x) x %>% 
-    dplyr::group_by(taxa) %>% 
-    dplyr::summarize(max = max(percent),
-                   min = min(percent),
-                   mean = mean(percent)) %>% 
-    filter(max < 1))
+# load from supplemental script
+source("./code/supplemental_code/S4a_community_analyses_func.R")
+source("./code/supplemental_code/S4c_barplot_func.R")
 
-# separate list of dataframes with rare taxa removed
-data_filtered <- list()
-for(i in 1:length(data)) {
-  data_filtered[[i]] <- data[[i]] %>% 
-    filter(! taxa %in% rare_taxa[[i]]$taxa)
-}
-names(data_filtered) <- names(data)
+# summarize function
 
-# histogram of data with "rare" taxa removed (better but still zero-inflation!)
-lapply(data_filtered, function(x) hist(x$sqrt_percent,  breaks=seq(0, 10,l=20)))
 
-# make a wider version
-data_filtered_wide <- lapply(data, function(x) colnames(x))
-data_filtered_wide <- lapply(data, function(x)
-  pivot_wider(x %>% select(!c(percent, broader)), names_from = taxa, values_from = sqrt_percent))
-  
-#### (3) Functions for Analysis ####
-
-# set universal plot theme
-theme_set(theme_bw() + theme(panel.grid = element_blank(),
-                             panel.border = element_rect(fill = NA, color = "black"),
-                             legend.position = "right"))
-
-# bar plot by site fill taxa (argument data is data in long format))
-barplot_taxa <- function(data) {
-  plot = ggplot(data = data, aes(x = site, y = percent, fill = taxa)) +
-    geom_bar(position = "fill", stat = "identity")
-  
-  return(plot)
-}
-
-# bar plot by site fill broader groupings (argument data is data in long format)
-barplot_broader <- function(data) {
-  plot = ggplot(data = data, aes(x = site, y = percent, fill = broader)) +
-    geom_bar(position = "fill", stat = "identity")
-  
-  return(plot)
-}
-
-# creates NMDS data point coordinates and loadings (argument data is data in wide format)
-getNMDSdata <- function(data) {
-  # use vegan to calculate NMDS distances
-  nmds = metaMDS(as.matrix(data[,6:ncol(data)]),
-                 distance = "bray",
-                 trymax = 500,
-                 autotransform = TRUE)
-  # bind x & y positions to site information
-  nmds_final = cbind(as.data.frame(scores(nmds, "sites")), 
-        data %>% select(site_reach, site, field_date)) %>% 
-    mutate(field_date = ymd(field_date),
-           year = year(field_date),
-           month = as.character(month(field_date)))
-  # get loadings for taxa
-  vs = envfit(nmds, as.matrix(data[,6:ncol(data)]), perm = 999)
-  coord = as.data.frame(scores(vs, "vectors"))
-  stress = nmds$stress
-  
-  # return a named list with both dataframes
-  list <- list(nmds_final, vs, coord, stress)
-  names(list) = c("nmds", "vs", "coord", "stress")
-  return(list)
-}
-
-# make NMDS plots (without loadings; data is nmds data, loading is a TRUE/FALSE argument,
-# and significant is a TRUE/FALSE argument)
-makeNMDSplot <- function(data, loading, significant) {
-  
-  # separating out data to be able to easily call each
-  nmds_data = data$nmds
-  stress = data$stress
-  loadings = data$coord
-  pvalues = as.data.frame(data$vs$vectors$pvals)
-  colnames(pvalues) = "pvalue"
-  
-  # make plot
-  plot = ggplot(nmds_data, aes(x = NMDS1, y = NMDS2)) +
-    geom_point(aes(color = site, shape = month), size = 4) +
-    stat_ellipse(aes(color = site), type = "t", linetype = 2, size = 0.5) +
-    scale_color_manual(values = c("SAL" = "#62a7f8",
-                                  "SFE-M" = "#416f16", 
-                                  "RUS" = "#bdb000")) +
-    labs(subtitle = paste("Stress:", round(stress, 3)),
-         x = "NMDS Axis 1",
-         y = "NMDS Axis 2")
-  
-  # add in loadings
-  if(loading) {
-    
-    if(significant) {
-      loadings = cbind(loadings, pvalues) %>% 
-        filter(pvalue < 0.05)
-      
-    }
-    
-    plot = plot + geom_segment(aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2), 
-                   data = loadings, size =1, alpha = 0.5, colour = "grey30") +
-                  geom_text(data = loadings, aes(x = NMDS1, y = NMDS2), colour = "grey30", 
-                    fontface = "bold", label = rownames(loadings))
-  }
-  
-  return(plot)
-}
-
-# run PERMANOVA test (argument data is for wide format)
-runPERMANOVA <- function(data) {
-  # create distance matrix based on Bray-Curtis distances
-  dist_matrix = vegdist(data[,6:ncol(data)], method = "bray")
-  
-  # return PERMANOVA test results
-  return(adonis2(dist_matrix ~ site, data = data))
-}
-
-# summarize taxa abundance across samples within a site (input: data long format)
-summarize_site <- function(data) {
-  summary = data %>% 
-    dplyr::group_by(site, taxa) %>% 
-    dplyr::summarize(mean = mean(percent))
-}
-
-#### (4) Bar Plots ####
+#### (3) Relative Abundance Bar Plots ####
 
 # put bar plots into lists
-barplot_taxa_plots <- lapply(data, function(x) barplot_taxa(x))
-barplot_broader_plots <- lapply(data, function(x) barplot_broader(x))
+barplot_taxa_plots <- lapply(data_longer, function(x) barplot(x, x = "site", y = "percent", fill = "taxa"))
+barplot_broader_plots <- lapply(data_longer, function(x) barplot(x, x = "site", y  = "percent", fill = "broader"))
 
 # titles for plots
-titles <- c("Non-Target Samples", "Anabaena/Cylindrospermum Samples (including)", 
-            "Anabaena/Cylindrospermum Samples (excluding)", 
-            "Anabaena/Cylindrospermum Samples (also excluding GA)",
-            "Microcoleus Samples (including)",
-            "Microcoleus Samples (excluding)")
+titles <- c("Non-Target Samples", 
+            "Microcoleus Samples (excluding M)",
+            "Anabaena/Cylindrospermum Samples (excluding AC & GA)")
 
 # view plots
 for(i in 1:length(barplot_taxa_plots)) {
@@ -262,10 +130,10 @@ for(i in 1:length(barplot_taxa_plots)) {
   print(barplot_broader_plots[[i]] + labs(title = titles[i]))
 }
 
-#### (5) NMDS ####
+#### (4) NMDS Plots ####
 
 # get NMDS for each dataframe (sqrt-transformed!)
-NMDS_list <- lapply(data_wide_sqrt, function(x) getNMDSdata(x))
+NMDS_list <- lapply(data, function(x) getNMDSdata(x, 5))
 
 # making plots
 NMDS_plots <- lapply(NMDS_list, function(x) makeNMDSplot(x, TRUE, TRUE))
