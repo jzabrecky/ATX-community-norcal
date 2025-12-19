@@ -24,26 +24,34 @@ set.seed(2025)
 # libraries
 lapply(c("tidyverse", "plyr", "vegan", "cowplot"), require, character.only = T)
 
-# MAYBE ONLY READ IN SELECT FILES? 
+# read in files (data transformed in previous script, "4a_amongrivers_microscopy.R")
+data <- lapply(list.files(path = "./data/morphological/transformed/", pattern = ".csv"),
+               function(x) read.csv(paste("./data/morphological/transformed/", x, sep = "")))
+names(data) <- c("nt", "tac", "tm")
 
-# read in files (note: two target taxa csvs- one with target taxa included, other with it excluded)
-# doing as a list rather than one csv as each has a different # of columns
-files <- list.files(path = "./data/morphological/transformed/", pattern = ".csv")
-data_wide <- lapply(files, function(x) read.csv(paste("./data/morphological/transformed/", x, sep = "")))
-names(data_wide) <- files
+# load un-transformed relative abundances and make it longer for bar plots through time
+nt <- read.csv("./data/morphological/nt_algalonly.csv")
+tm <- read.csv("./data/morphological/tm_algalonly_nomicro.csv")
+tac <- read.csv("./data/morphological/tac_algalonly_noanacylgreenalgae.csv")
 
-# only doing square-root transformation, as established in previous script,
-# "4a_amongrivers_microscopy.R" not transforming or additionally removing rare 
-# taxa did not change results of analysis in a meaningful way 
-# (and that is already complete as we read in that data)
+# add into list
+unaltered_data <- list(nt, tm, tac)
+names(unaltered_data) <- c("nt", "tm", "tac")
 
-#### (2) Add  Tag for Sampling Time ####
+# finally, pivot longer for those bar plots and select only 2022 data
+data_longer <- lapply(unaltered_data, 
+                      function(x) x %>% pivot_longer(cols = c(5:ncol(x)), values_to = "percent",
+                                               names_to = "taxa") %>% 
+                        filter(year(ymd(field_date)) == 2022))
+
+#### (2) Add  Columns for Sampling Event & Broader Taxa ####
 
 # we have field dates for sampling distinguishing samples, however, let's change it
 # to be the the number of sampling event (where x is data)
 add_event_no <- function(data) {
   data %>% 
-    mutate(field_date = ymd(field_date)) %>% 
+    mutate(field_date = ymd(field_date),
+           month = month(field_date)) %>% 
     mutate(event_no = case_when((field_date >= ymd("2022-06-24") & field_date <= ymd("2022-06-29")) ~ 1,
                                 (field_date >= ymd("2022-07-06") & field_date <= ymd("2022-07-14")) ~ 2,
                                 (field_date >= ymd("2022-07-20") & field_date <= ymd("2022-07-28")) ~ 3,
@@ -51,45 +59,128 @@ add_event_no <- function(data) {
                                 (field_date >= ymd("2022-08-17") & field_date <= ymd("2022-08-23")) ~ 5,
                                 (field_date >= ymd("2022-09-01") & field_date <= ymd("2022-09-06")) ~ 6,
                                 (field_date >= ymd("2022-09-15") & field_date <= ymd("2022-09-22")) ~ 7)) %>% 
-    relocate(event_no, .before = "field_date")
+    relocate(event_no, .before = "field_date") %>% 
+    relocate(month, .before = "field_date")
 }
 
 # apply to all dataframes
-data_wide <- lapply(data_wide, function(x) add_event_no(x))
+data <- lapply(data, add_event_no)
+data_longer <- lapply(data_longer, add_event_no)
+
+# add in broader group classification
+# grouping for TM & TAC
+for(i in 2:length(data_longer)) {
+  data_longer[[i]] <- data_longer[[i]] %>% 
+    mutate(broader = case_when(taxa == "lyngbya" | taxa == "nodularia" |  taxa == "calothrix" |
+                                 taxa == "scytonema" | taxa == "gloeotrichia" ~ "Other N-fixing Cyanobacteria",
+                               taxa == "nostoc" ~ "Nostoc",
+                               taxa == "chroococcus" | taxa == "other_coccoids"
+                               ~ "Unicellullar Cyanobacteria",
+                               taxa == "anabaena_and_cylindrospermum" ~ "Anabaena or Cylindrospermum",
+                               taxa == "e_diatoms" ~ "Epithemia",
+                               taxa == "geitlerinema" ~ "Other Anatoxin-Associated Cyanobacteria",
+                               taxa == "green_algae" ~ "Green Algae",
+                               taxa == "oscillatoria" | taxa == "phormidium_unknown" |
+                                 taxa == "leptolyngbya" | taxa == "homoeothrix"
+                               ~ "Other Filamentous Cyanobacteria",
+                               taxa == "microcoleus" ~ "Microcoleus",
+                               taxa == "non_e_diatoms" ~ "Diatoms Other than Epithemia",
+                               taxa == "unknown" ~ "Unknown"
+    ))
+}
+
+# grouping for NT
+data_longer$nt <- data_longer$nt %>% 
+  mutate(broader = case_when(taxa == "lyngbya" | taxa == "nodularia" |  taxa == "calothrix" |
+                               taxa == "scytonema" | taxa == "gloeotrichia" | taxa == "rivularia" |
+                               taxa == "tolypothrix"
+                             ~ "Other N-fixing Cyanobacteria",
+                             taxa == "nostoc" ~ "Nostoc",
+                             taxa == "chroococcus" | taxa == "other_coccoids" | taxa == "aphanothece"
+                             ~ "Unicellullar Cyanobacteria",
+                             taxa == "anabaena_and_cylindrospermum" ~ "Anabaena or Cylindrospermum",
+                             taxa == "epithemia" ~ "Epithemia",
+                             taxa == "geitlerinema" ~ "Other Anatoxin-Associated Cyanobacteria",
+                             taxa == "oscillatoria" | taxa == "phormidium_unknown" |
+                               taxa == "leptolyngbya" | taxa == "homoeothrix"
+                             ~ "Other Filamentous Cyanobacteria",
+                             taxa == "microcoleus" ~ "Microcoleus",
+                             taxa == "non_e_r_diatoms" ~ "Diatoms Other than Epithemia or Rhopalodia",
+                             taxa == "unknown" | taxa == "chantransia" | taxa == "euglenoid" |
+                               taxa == "unknown_green_algae"
+                             ~ "Other",
+                             taxa == "ankistrodesmus" | taxa == "gloeocystis" | taxa == "lacunastrum" | 
+                               taxa == "oocystis" | taxa == "pediastrum" | taxa == "scenedesmus_no_spines" |
+                               taxa == "stauridium" | taxa == "tetraedron" | taxa == "coelastrum" |
+                               taxa == "cosmarium" | taxa == "desmodesmus_spines" | taxa == "closterium"
+                             ~ "Unicellular Green Algae",
+                             taxa == "cladophora" ~ "Cladophora",
+                             taxa == "mougeotia" | taxa == "ulothrix" | taxa == "zygnema" |
+                               taxa == "stigeoclonium"
+                             ~ "Other Filamentous Green Algae",
+                             taxa == "oedogonium" ~ "Oedogonium",
+                             taxa == "rhopalodia" ~ "Rhopalodia",
+                             taxa == "spirogyra" ~ "Spirogyra"
+  ))
+
+##### (3) Function for Analyses ####
+
+# load from supplemental script
+source("./code/supplemental_code/S4a_community_analyses_func.R")
+source("./code/supplemental_code/S4c_barplot_func.R")
+
+#### (4) Barplots through Time ####
+
+barplot_taxa_plots <- lapply(data_longer, function(x) barplot(x, x = "event_no", y = "percent", 
+                                                              fill = "taxa", facet_wrap = "site"))
+barplot_broader_plots <- lapply(data_longer, function(x) barplot(x, x = "event_no", y = "percent", 
+                                                              fill = "broader", facet_wrap = "site"))
+
+# titles for plots
+titles <- c("Non-Target Samples", 
+            "Microcoleus Samples (excluding M)",
+            "Anabaena/Cylindrospermum Samples (excluding AC & GA)")
+
+# view plots
+for(i in 1:length(barplot_taxa_plots)) {
+  print(barplot_taxa_plots[[i]] + labs(title = titles[i]))
+  print(barplot_broader_plots[[i]] + labs(title = titles[i]))
+}
 
 #### (3) PERMANOVA ####
 
-# Is there a significant difference in communities across time?
-dist_matrix = vegdist(data_wide$tm_algalonly_nomicro_sqrttransformed.csv
-                      [,7:ncol(data_wide$tm_algalonly_nomicro_sqrttransformed.csv)], method = "bray")
-adonis2(dist_matrix ~ event_no, data = data_wide$tm_algalonly_nomicro_sqrttransformed.csv,
-        strata = data_wide$tm_algalonly_nomicro_sqrttransformed.csv$site)
+# set column where abundance data starts
+start_col <- 7
 
-# how about we split data
-sfkeel_only <- data_wide$tm_algalonly_nomicro_sqrttransformed.csv %>% 
-  filter(site == "SFE-M")
-salmon_only <- data_wide$tm_algalonly_nomicro_sqrttransformed.csv %>% 
-  filter(site == "SAL")
+# separate data out by site
+data_river <- lapply(data, function(x) split(x, x$`site`))
 
-sfkeeldist <- vegdist(sfkeel_only[,7:ncol(sfkeel_only)], method = "bray")
-adonis2(sfkeeldist ~ event_no, data = sfkeel_only) # significant
+## (a) with the strata argument for EVENT NO.
+permanovas_event <- lapply(data, function(x) runPERMANOVA(x, start_col, x$`event_no`, strata = x$'site'))
+lapply(permanovas_event, print)
+# NT, TAC are significant among sampling dates, but not TAC
 
-saldist <- vegdist(salmon_only[,7:ncol(salmon_only)], method = "bray")
-adonis2(saldist ~ event_no, data = salmon_only) # not significant
+## (b) separated out by river
 
-# 
-sfkeel_only <- data_wide$tm_algalonly_nomicro_sqrttransformed.csv %>% 
-  filter(site == "SFE-M")
-salmon_only <- data_wide$tm_algalonly_nomicro_sqrttransformed.csv %>% 
-  filter(site == "SAL")
+permanovas_event_NT_sep <- lapply(data_river$nt, function(x) runPERMANOVA(x, start_col, x$`event_no`))
+lapply(permanovas_event_NT_sep, print)
+# NT significantly different for SAL**, RUS**, and SFE-M***
 
-sfkeeldist <- vegdist(sfkeel_only[,7:ncol(sfkeel_only)], method = "bray")
-adonis2(sfkeeldist ~ event_no, data = sfkeel_only) # significant
+permanovas_event_TM_sep <- lapply(data_river$tm, function(x) runPERMANOVA(x, start_col, x$`event_no`))
+lapply(permanovas_event_TM_sep, print)
+# TM significant for SFE-M** but not SAL but only 2 days
+# this is likely influencing the results of strata above, thus we should use this result
 
-saldist <- vegdist(salmon_only[,7:ncol(salmon_only)], method = "bray")
-adonis2(saldist ~ event_no, data = salmon_only) # not significant
+permanovas_event_TAC_sep <- lapply(data_river$tac, function(x) runPERMANOVA(x, start_col, x$`event_no`))
+lapply(permanovas_event_TAC_sep, print)
+# TAC significant for SFE-M* and especially RUS*** (only one data point for SAL, so NA)
 
-# maybe want to look at rivers separately?
+## (c) check dispersion in groups
+# LEFT OFF HERE
+
+#### (4) CLUSTER ANALYSES!?!??!??!?!???!????!?!?
+
+# maybe heat map stuff WOULD be cool but like idk right now :)
 
 #### (3) test indicator species analysis
 
@@ -106,6 +197,6 @@ library(indicspecies)
 NT <- data_wide$nt_algalonly_sqrttransformed.csv
 
 # func = "r.g" is for relative abundances 
-groups <- NT$
+groups <- NT$site
 test <- multipatt(NT[,7:ncol(NT)], groups, func = "r.g", control = how(nperm = 999))
 summary(test)

@@ -103,7 +103,7 @@ runPERMANOVA <- function(data, start_col, group, strata = NA) {
   dist_matrix = vegdist(data[,start_col:ncol(data)], method = "bray")
   
   # return PERMANOVA test results
-  if(is.na(strata)) {
+  if(is.na(strata[1])) {
     results = adonis2(dist_matrix ~ group)
   } else {
     results = adonis2(dist_matrix ~ group, strata = strata)

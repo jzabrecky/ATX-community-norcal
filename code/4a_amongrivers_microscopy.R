@@ -1,6 +1,6 @@
 #### Comparing microscopy data among rivers
 ### Jordan Zabrecky
-## last edited: 12.17.2025
+## last edited: 12.18.2025
 
 ## This code compares microscopy data from NT, TM, and TAC samples
 ## across rivers to answer Q1. First data is transformed (sqrt). For reference
@@ -28,24 +28,27 @@ names(unaltered_data) <- c("nt", "tm", "tac")
 # filter for data from year 2022 (for three river comparison)
 unaltered_data <- lapply(unaltered_data, function(x) x %>% filter(year(ymd(field_date)) == 2022))
 
+# set column where abundance data starts in dataframe
+start_col <- 5
+
 # see our exploration with data transformation in another script, "S4a_testing_data_transformations.R"
 # decided on square-root transformation on the relative abundances (Hellinger transformation)
 data <- unaltered_data
 for(i in 1:length(data)) {
-  data[[i]][,5:ncol(data[[i]])] <- sqrt(data[[i]][,5:ncol(data[[i]])])
+  data[[i]][,start_col:ncol(data[[i]])] <- sqrt(data[[i]][,start_col:ncol(data[[i]])])
 }
 
 # save this data to use in future scripts (RUN ONCE)
 #write.csv(data$nt, "./data/morphological/transformed/nt_algalonly_sqrttransformed.csv",
 #          row.names = FALSE)
-#write.csv(data$tm, "./data/morphological/transformed/nt_algalonly_nomicro_sqrttransformed.csv",
+#write.csv(data$tm, "./data/morphological/transformed/tm_algalonly_nomicro_sqrttransformed.csv",
 #          row.names = FALSE)
-#write.csv(data$tac, "./data/morphological/transformed/nt_algalonly_noanacylgreenalgae_gsqrttransformed.csv",
+#write.csv(data$tac, "./data/morphological/transformed/nt_algalonly_noanacylgreenalgae_sqrttransformed.csv",
 #          row.names = FALSE)
 
 # create a longer version of the unaltered data for bar plots of relative abundances
 data_longer <- lapply(unaltered_data, 
-                      function(x) pivot_longer(x, cols = c(5:ncol(x)), values_to = "percent",
+                      function(x) pivot_longer(x, cols = c(start_col:ncol(x)), values_to = "percent",
                                                            names_to = "taxa"))
 
 # add in broader group classification
@@ -111,7 +114,16 @@ source("./code/supplemental_code/S4a_community_analyses_func.R")
 source("./code/supplemental_code/S4c_barplot_func.R")
 
 # summarize function
-
+# @param data_long is relative abundance data in long format
+# @param grouping is either "taxa" or "broader" groups
+summarize_site <- function(data_long, grouping) {
+  data = data_long %>% 
+    dplyr::group_by(site, .data[[grouping]]) %>%
+    dplyr::summarize(avg_percent = mean(percent)) %>% 
+    arrange(-avg_percent)
+  
+  return(data)
+}
 
 #### (3) Relative Abundance Bar Plots ####
 
@@ -130,96 +142,105 @@ for(i in 1:length(barplot_taxa_plots)) {
   print(barplot_broader_plots[[i]] + labs(title = titles[i]))
 }
 
-#### (4) NMDS Plots ####
 
-# get NMDS for each dataframe (sqrt-transformed!)
-NMDS_list <- lapply(data, function(x) getNMDSdata(x, 5))
+#### (4) Q: What is dominant taxa across samples? ####
 
-# making plots
-NMDS_plots <- lapply(NMDS_list, function(x) makeNMDSplot(x, TRUE, TRUE))
-
-# compare with non-transformed data or sqrt-transformed w/ rare taxa removed (get data and then plots)
-NMDS_list_nontransformed <- lapply(data_wide, function(x) getNMDSdata(x))
-NMDS_list_raretaxaremoved <- lapply(data_filtered_wide, function(x) getNMDSdata(x))
-NMDS_plots_nontransformed <- lapply(NMDS_list_nontransformed, function(x) makeNMDSplot(x, TRUE, TRUE))
-NMDS_plots_raretaxaremoved <- lapply(NMDS_list_raretaxaremoved, function(x) makeNMDSplot(x, TRUE, TRUE))
-
-# viewing plots against each other
-for(i in 1:length(NMDS_plots)) {
-  print(plot_grid(NMDS_plots[[i]] + labs(title = titles[i]), 
-            NMDS_plots_nontransformed[[i]] + labs(title = "non-transformed"),
-            NMDS_plots_raretaxaremoved[[i]] + labs(title = "rare taxa removed"), ncol = 1))
-}
-
-#### (6) Q: What is dominant taxa across samples? ####
+# get summaries for each boader group
+summaries_broader <- lapply(data_longer, function(x) summarize_site(x, "broader"))
+lapply(summaries_broader, function(x) head(x))
+# RESULTS:
+# NT: diatoms & Microcoleus for Salmon; Spirogyra & Cladorphora for South Fork Eel;
+# and Spirogyra and diatoms other than Epithemia for Russian
+# TM: diatoms other than Epithemia and green algae for Salmon; Epithemia,
+# green algae and other ATX producers for South Fork Eel
+# TAC: diatoms other than Epithemia dominate for all three, then Epithemia
 
 # get summaries for each taxa
-summaries <- lapply(data, function(x) summarize_site(x))
+summaries_taxa <- lapply(data_longer, function(x) summarize_site(x, "taxa"))
+lapply(summaries_taxa, function(x) head(x))
+# similar top groupings as above
 
-#### (7) Q: Are communities from each river significantly different? (PERMANOVA) ####
+#### (5) NMDS Plots ####
 
-# run PERMANOVAs (on square-root transformed, unaltered, and sqrt-transformed w/ rare taxa removed)
-permanovas <- lapply(data_wide_sqrt, function(x) runPERMANOVA(x))
-permanovas_nontransformed <- lapply(data_wide, function(x) runPERMANOVA(x))
-permanovas_raretaxaremoved <- lapply(data_filtered_wide, function(x) runPERMANOVA(x))
+# get NMDS for each dataframe (sqrt-transformed!)
+NMDS_list <- lapply(data, function(x) getNMDSdata(x, start_col))
 
-# create summary table
-permanova_summaries <- data.frame(data = NA,
-                                  altering = NA,
-                                  significant = NA)
-for(i in 1:length(permanovas)) {
-  # make dataframe for all PERMANOVAs at index i
-  temp <- data.frame(data = c(names(permanovas)[i], names(permanovas_nontransformed)[i], names(permanovas_raretaxaremoved)[i]),
-             altering = c("sqrt-transformed", "unaltered", "sqrt-transformed & rare taxa removed"),
-             significant = c(permanovas[[i]]$`Pr(>F)`[1], permanovas_nontransformed[[i]]$`Pr(>F)`[1], permanovas_raretaxaremoved[[i]]$`Pr(>F)`[1]))
-  
-  # add to existing dataframe
-  permanova_summaries <- rbind(permanova_summaries, temp)
+# making plots
+NMDS_plots <- lapply(NMDS_list, function(x) makeNMDSplot(x, TRUE, TRUE, 
+                                                         color = "site", shape = "month"))
+
+lapply(NMDS_plots, print)
+# RESULT: TM and NT groups are visually distinct among rivers, but not for TAC
+
+#### (6) Q: Are communities from each river significantly different? (PERMANOVA) ####
+
+# run PERMANOVAs
+permanovas <- lapply(data, function(x) runPERMANOVA(x, start_col, x$`site`))
+lapply(permanovas, print)
+# RESULTS: significant difference for TM and NT across rivers, but not TAC
+
+# check dispersion to see if that influences results
+for(i in 1:length(data)) {
+  print(names(data)[i])
+  print(anova(betadisper(vegdist(data[[i]][,start_col:ncol(data[[i]])], method = "bray"), 
+                         data[[i]]$site)))
 }
-
-view(permanova_summaries)
-# TM & NT significant across all while TAC not significant across all!
-
-# strata test
-adonis2(vegdist(data_wide_sqrt$nt_algalonly.csv[,6:ncol(data_wide_sqrt$nt_algalonly.csv)], method = "bray") ~ site, 
-        data = data_wide_sqrt$nt_algalonly.csv,
-        strata = data_wide_sqrt$nt_algalonly.csv$field_date)
-
-## checking beta dispersion
-for(i in 1:length(data_wide_sqrt)) {
-  print(anova(betadisper(vegdist(data_wide_sqrt[[i]][,6:ncol(data_wide_sqrt[[i]])], method = "bray"), 
-                         data_wide_sqrt[[i]]$site)))
-}
-# there is a significant difference in beta-dispersion for all
+# TAC not significantly different, but TM and NT are
 # however, based on https://www.youtube.com/watch?v=oLf0EpMJ4yA
 # and his paper https://www.nature.com/articles/ismej20085
 # this may not affect results of adonis2, especially if NMDS shows that groups are very far apart
-# which we definitely see for Microcoleus and for Non-target which are our significant samples via adonis2
+# which we do see in our NMDS plots (With the exception maybe of the NT plot, but the centroids
+# for those groups are different)
 
-#### (8) Q: What explains these differences? ####
+#### (7) Q: What explains these differences? Loading & Species Indicator Analyses ####
 
+## (a) NMDS loadings
 # get p-values from envfit in vegan ran earlier
-envfit_pvalues <- lapply(NMDS_list, function(x) as.data.frame(x$vs$vectors$pvals))
+envfit_pvalues <- lapply(NMDS_list, function(x) {
+  newdata = as.data.frame(x$vs$vectors$pvals)
+  newdata = rownames_to_column(newdata, var = "taxa")
+  colnames(newdata) = c("taxa", "pval")
+  newdata = newdata %>% arrange(pval) })
 
-# view results from dataframes we care about
-view(envfit_pvalues$tm_algalonly_nomicro.csv)
-view(envfit_pvalues$tac_algalonly_noanacylgreenalgae.csv)
-view(envfit_pvalues$nt_algalonly.csv)
+# view results
+lapply(envfit_pvalues, function(x) head(x, 15))
+# RESULT:
+# NT: Cladophora, Epithemia, Homoethrix, Microcoleus, Mougeotia, Diatoms, Nostoc, 
+# Oedogonium, Rhopalodia, Spirogyra, and Stigeoclonium are most influential
+# TM: Diatoms, Epithemia, Nostoc, Green Algae, Coccoids, Geilerinema are most influential
+# TAC: Epithemia, Microcoleus, Nostoc, Oscillatoria, Phormidium, Diatoms, Geitlerinema
+# are most influential
+
+## (b) Species Indicator Analyses
+
+# note: if issues, another package may be masking the function unique() ???
+# if so, restart R and run this script only
+
+# run each separately:
+
+# (i) NT
+summary(multipatt(data$nt[,start_col:ncol(data$nt)], data$nt$site, func = "r.g", control = how(nperm = 999)))
+# SAL: homoethrix, leptolyngbya, coccoids, unknown green algae
+# SFE: cladophora, stauridium, nostoc, coelastrum, unknown, tetraedron, cosmarium, rivularia,
+# ankistrodesmus, lacunastrum
+# RUS: mougeotia, phormidium
+# RUS + SAL: diatoms, stigeoclonium
+# RUS + SFE: spirogyra, epithemia, anabaena, scenedesmus, odeogonium, rhopalodia
+# SAL + SFE: microcoleus
+
+# (ii) TM
+summary(multipatt(data$tm[,start_col:ncol(data$tm)], data$tm$site, func = "r.g", control = how(nperm = 999)))
+# SAL: diatoms
+# SFE: anabaena, nostoc
+
+# (iii) TAC
+# omit single salmon sample
+tac_sub <- data$tac %>% filter(site != "SAL")
+summary(multipatt(tac_sub[,start_col:ncol(tac_sub)], tac_sub$site, func = "r.g", control = how(nperm = 999)))
+# RUS: phormidium, oscillatoria
+# SFE: nodularia, microcoleus
 
 #### (9) Conclusions ####
 
 ## In conclusion, 
-## (1) Microcoleus samples were significantly different among rivers with those from the South Fork Eel 
-## characterized by more Epithemia and Nitrogen-fixers (predominantly Anabaena & Nostoc)
-## (2) Anabaena/Cylindrospermum were NOT significantly different among rivers, all rivers had samples with
-## Epithemia and other anatoxin-associated cyanobacteria, particularly Geitlerinema
-## (3) Non-target communities were significantly different among rivers with South Fork Eel having more
-## Nostoc, Salmon having less green algae (could be due to sampling interruption)
-
-# save sqrt-transformed values for future analyses:
-for(i in 1:length(data_wide)) {
-  write.csv(data_wide[[i]], paste("./data/morphological/transformed/", 
-                                  str_replace(names(data_wide)[i], ".csv", ""),
-                                  "_sqrttransformed.csv", sep = ""),
-            row.names = FALSE)
-}
+## come back & revisit this to rewrite this

@@ -16,10 +16,19 @@ theme_set(theme_bw() + theme(panel.grid = element_blank(),
 
 #### (2) Functions for plotting ####
 
-# bar plot function
-barplot <- function(data, x, y, fill) {
+# function to create barplots
+# @param data is data in long format
+# @param x is x-axis given in "string"
+# @param y is y-axis given in "string"
+# @param fill is aesthetic grouping for fill of barplots given in "string"
+# @param facet_wrap is aesthetic grouping for facet wrap (if called)
+barplot <- function(data, x, y, fill, facet_wrap = NA) {
   plot = ggplot(data = data, aes(x = .data[[x]], y = .data[[y]], fill = .data[[fill]])) +
     geom_bar(position = "fill", stat = "identity")
+  
+  if(!is.na(facet_wrap)) {
+    plot = plot + facet_wrap(~.data[[facet_wrap]])
+  }
   
   return(plot)
 }

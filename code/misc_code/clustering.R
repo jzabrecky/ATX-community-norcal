@@ -5,13 +5,15 @@
 ## This code compares clusters communities using the "cluster" package
 ## Instead, for analyses with are just using PERMANOVA and NMDS
 
+# TEST SIMPROF
+
 #### (1) Loading libraries & data ####
 
 # set seed for reproducibility
 set.seed(2025)
 
 # load libraries
-lapply(c("tidyverse", "vegan", "cluster"), require, character.only = T)
+lapply(c("tidyverse", "vegan", "cluster", "clustsig"), require, character.only = T)
 
 # loading files individually because I only want certain ones
 nt_micro <- read.csv("./data/morphological/transformed/nt_algalonly_sqrttransformed.csv")
@@ -49,7 +51,7 @@ microscopy <- lapply(microscopy, function(x) add_event_no(x))
 
 #### (2) Functions for Clustering ####
 
-# do cluster analyses (returns plot)
+# do cluster analyses (returns plot) using "cluster"
 # (arguments: data = wide data frame, data_start = col # of abundance data beginning,
 # plot_title = title for plot, string)
 cluster_analyses <- function(data, data_start, plot_title) {
@@ -57,17 +59,33 @@ cluster_analyses <- function(data, data_start, plot_title) {
   dist_trans = sqrt(dist)
   
   ward = hclust(dist, method = "ward.D2")
-  plot(ward, main = plot_title, 
-       labels = paste(data$site_reach, " date: ", data$event_no))
+  print(plot(ward, main = plot_title, 
+             labels = paste(data$site_reach, " sampling no. ", data$event_no)))
+  return(ward)
 }
 
-#### (3) Run analyses ####
+# function to identify optimal number of clusters
+opt_clusters <- function(data, cluster_object) {
+  tests = numeric(nrow(data)) # empty vector for number of groups
+  
+  # get our sqrt bray-curtis transformed distances (again)
+  dist = vegdist(data[,data_start:ncol(data)], method = "bray")
+  dist_trans = sqrt(dist)
+  
+  for(i in 2:(nrow(data) - 1)) { # start with two groups and end with all minus 1
+    silhouette = silhouette(cutree(cluster_object, k = i), dist_trans)
+    tests[i] <- summary(silhouette)$avg.width
+  }
+  
+  return(which.max(tests))
+}
 
-# microscopy/algal assemblages data
+#### (3) Microscopy Clusters ####
+
+## (a)  broad microscopy/algal assemblages data
 for(i in 1:length(microscopy)) {
   cluster_analyses(microscopy[[i]], 7, names(microscopy)[i])
 }
-
 # notes:
 # TAC - lots of river intermingling; single Salmon more related to Russian; 
 # generally July and August on left and September on the right
@@ -75,10 +93,25 @@ for(i in 1:length(microscopy)) {
 # NT - distinct early year Salmon branch; some branches are distinctly Russian while
 # other South Fork Eel but some intermingled; Salmon September closer to Russian
 
-# subsetting by river for NT...
-nt_micro_list <- split(nt_micro, nt_micro$site)
+## (b) subsetting by river for NT...
+nt_micro_list <- split(microscopy$`NT Algal Assemblages`, microscopy$`NT Algal Assemblages`$site)
 for(i in 1:length(nt_micro_list)) {
-  cluster_analyses(nt_micro_list[[i]], 7, names(nt_micro_list)[i])
+  nt_cluster = cluster_analyses(nt_micro_list[[i]], 7, names(nt_micro_list)[i])
+  print(paste(nt_micro_list[[i]]$site[1], ": ", opt_clusters(nt_micro_list[[i]], nt_cluster),
+              sep = ""))
 }
-# Meh, I think NMDS is better for this stuff, definitely distinct September in Salmon
-# distinct through time seems more apparent with Russian maybe then South Fork Eel?
+
+# subsetting by river for TM...
+tm_micro_list <- split(microscopy$`TM Algal Assemblages`, microscopy$`TM Algal Assemblages`$site)
+for(i in 1:length(tm_micro_list)) {
+  cluster_analyses(tm_micro_list[[i]], 7, names(tm_micro_list)[i])
+}
+
+# subsetting by river for TAC...
+tac_micro_list <- split(microscopy$`TAC Algal Assemblages`, microscopy$`TAC Algal Assemblages`$site)
+tac_micro_list <- tac_micro_list[-2]
+for(i in 1:length(tac_micro_list)) {
+  cluster_analyses(tac_micro_list[[i]], 7, names(tac_micro_list)[i])
+}
+
+# thoughts: maybe won't be distinct upon sampling date but maybe for 
