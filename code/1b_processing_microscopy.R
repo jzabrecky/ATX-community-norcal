@@ -1,16 +1,10 @@
-#### Processing microscopy data and adding in environmental & atx data
+#### Processing microscopy data
 ### Jordan Zabrecky
-## last edited 03.15.2025
+## last edited 10.10.2025
 
-## This code processes microscopy data from the EDI data release 
-## (averaging across slides and evaluting rsd), remove non-algal portion
-## and recalculates relative abundance, and, lastly adds in water 
-## chemistry data and anatoxin concentrations
-
-## For code processing of water chemistry and target sample anatoxin 
-## data from original EDI csv's, see
-## https://github.com/jzabrecky/ATX-synchrony-norcal/blob/main/code/2b_water_chemistry.R
-## https://github.com/jzabrecky/ATX-synchrony-norcal/blob/main/code/2e_target_sample_anatoxins.R
+# This code processes microscopy data from the EDI data release 
+# (averaging across slides and evaluting rsd), remove non-algal portion
+# and recalculates relative abundance
 
 #### (1) Loading in libraries & data ####
 
@@ -20,11 +14,6 @@ lapply(c("tidyverse", "lubridate"), require, character.only = T)
 # read in microscopy data
 target <- read.csv("./data/EDI_data_package/microscopy_target_samples.csv")
 nontarget <- read.csv("./data/EDI_data_package/microscopy_non_target_samples.csv")
-
-# read in processed anatoxin & water chemistry data
-atx_target <- read.csv("./data/field_and_lab/cyano_atx.csv") # processed version
-water_chemistry <- read.csv("./data/field_and_lab/water_chemistry.csv") %>% 
-  select(!c(time, reach))
 
 #### (2) Analyzing microscopy data (w/ multiple slides) ####
 
@@ -147,7 +136,7 @@ check_t2 <- which(rowSums(target_processed2[4:ncol(target_processed2)]) != 100)
 rowSums(target_processed2[4:ncol(target_processed2)])[check_t2] # all are 100
 rowSums(nt_processed2[4:ncol(nt_processed2)])[check_nt2] # all are 100
 
-#### (3) Joining in Anatoxin & Water Chemistry Data ####
+#### (3) Final edits to match environmental covariate data ####
 
 # separate out TAC and TM 
 tm_processed2 <- target_processed2 %>% 
@@ -155,46 +144,23 @@ tm_processed2 <- target_processed2 %>%
 tac_processed2 <- target_processed2 %>% 
   filter(sample_type == "TAC")
 
-# replace 2022-09-06 microcoleus sample with one from 2022-09-08
-# (substitute technician accidentally took 2022-09-06 with different methods)
+# change label on 9/8/2022 sample to 9/6/2022
+# (substitute technician accidentally took 2022-09-06 with different methods, not in this dataset)
 tm_processed2$field_date[which(tm_processed2$field_date == "2022-09-08")] <- "2022-09-06"
-atx_target$field_date[which(atx_target$field_date == "2022-09-08")] <- "2022-09-06"
 
 # put all processed data into a list
 processed <- list(tm_processed2, tac_processed2, nt_processed2)
 names(processed) <- c("tm", "tac", "nt")
 
-# left join in water data and change column organization
-for(i in 1:length(processed)) {
-  processed[[i]] <- left_join(processed[[i]], water_chemistry, 
-                              by = c("site_reach", "field_date")) %>%  
-    relocate(site, .after = site_reach)
-}
-
-# left join in anatoxin data (TM gets TM, TAC gets TAC, and NT gets both)
-processed$tm <- left_join(processed$tm, atx_target %>% filter(sample_type == "TM"), 
-                          by = c("site_reach", "field_date", "sample_type"))
-processed$tac <- left_join(processed$tac, atx_target %>% filter(sample_type == "TAC"), 
-                           by = c("site_reach", "field_date", "sample_type"))
-processed$nt <- left_join(processed$nt, atx_target %>% filter (sample_type == "TM") 
-                          %>% select(!sample_type),
-                          by = c("site_reach", "field_date")) %>% 
-  rename(TM_ATX_all_ug_chla_ug = ATX_all_ug_chla_ug,
-         TM_ATX_all_ug_orgmat_g = ATX_all_ug_orgmat_g) %>% 
-  select(!(ATXa_ug_g:percent_organic_matter))
-processed$nt <- left_join(processed$nt, atx_target %>% filter (sample_type == "TAC") 
-                       %>% select(!sample_type),
-                       by = c("site_reach", "field_date")) %>% 
-  rename(TAC_ATX_all_ug_chla_ug = ATX_all_ug_chla_ug,
-         TAC_ATX_all_ug_orgmat_g = ATX_all_ug_orgmat_g) %>% 
-  select(!(ATXa_ug_g:percent_organic_matter))
-
-# turns out we don't have ATX data for TM SFE-M-4 08-23-2022
-# I think we weren't clear if it would be Microcoleus and did not have enough
-# so let's just remove that row
-processed$tm <- processed$tm[-22,]
+# make a column for the site name
+processed <- lapply(processed, function(x) x %>% 
+                      mutate(site = case_when(grepl("RUS", site_reach) ~ "RUS",
+                                              grepl("SFE-M", site_reach) ~ "SFE-M",
+                                              grepl("SAL", site_reach) ~ "SAL",
+                                              grepl("SFE-SH", site_reach) ~ "SFE-SH")) %>% 
+                      relocate(site, .before = "site_reach"))
 
 # saving csv's
 path <- paste(getwd(), "/data/morphological/", sep = "")
-lapply(names(processed), function(x) write.csv(processed[[x]], file = paste(path, x, "_algalonly_with_covar.csv", 
+lapply(names(processed), function(x) write.csv(processed[[x]], file = paste(path, x, "_algalonly.csv", 
                                                                               sep = ""), row.names = FALSE))

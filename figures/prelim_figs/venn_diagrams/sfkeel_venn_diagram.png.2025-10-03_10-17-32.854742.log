@@ -1,0 +1,22 @@
+INFO [2025-10-03 10:17:32] $x
+INFO [2025-10-03 10:17:32] list(sample_type$`SFE-M`$NT, sample_type$`SFE-M`$TM, sample_type$`SFE-M`$TAC)
+INFO [2025-10-03 10:17:32] 
+INFO [2025-10-03 10:17:32] $filename
+INFO [2025-10-03 10:17:32] [1] "sfkeel_venn_diagram.png"
+INFO [2025-10-03 10:17:32] 
+INFO [2025-10-03 10:17:32] $category.names
+INFO [2025-10-03 10:17:32] c("Non-target", "Microcoleus", "Anabaena")
+INFO [2025-10-03 10:17:32] 
+INFO [2025-10-03 10:17:32] $lwd
+INFO [2025-10-03 10:17:32] [1] 2
+INFO [2025-10-03 10:17:32] 
+INFO [2025-10-03 10:17:32] $lty
+INFO [2025-10-03 10:17:32] [1] "blank"
+INFO [2025-10-03 10:17:32] 
+INFO [2025-10-03 10:17:32] $fill
+INFO [2025-10-03 10:17:32] c("#416f16", "#6eab35", "#9ddb63")
+INFO [2025-10-03 10:17:32] 
+INFO [2025-10-03 10:17:32] [[7]]
+INFO [2025-10-03 10:17:32] 
+INFO [2025-10-03 10:17:32] 
+ERROR [2025-10-03 10:17:33] NAs in dataset

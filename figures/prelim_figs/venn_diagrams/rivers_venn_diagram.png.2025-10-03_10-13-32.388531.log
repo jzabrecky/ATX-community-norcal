@@ -1,0 +1,21 @@
+INFO [2025-10-03 10:13:32] $x
+INFO [2025-10-03 10:13:32] list(sites$RUS$feature_ID, sites$SAL$feature_ID, sites$`SFE-M`$feature_ID)
+INFO [2025-10-03 10:13:32] 
+INFO [2025-10-03 10:13:32] $filename
+INFO [2025-10-03 10:13:32] [1] "rivers_venn_diagram.png"
+INFO [2025-10-03 10:13:32] 
+INFO [2025-10-03 10:13:32] $category.names
+INFO [2025-10-03 10:13:32] c("Russian", "Salmon ", "South Fork Eel")
+INFO [2025-10-03 10:13:32] 
+INFO [2025-10-03 10:13:32] $lwd
+INFO [2025-10-03 10:13:32] [1] 2
+INFO [2025-10-03 10:13:32] 
+INFO [2025-10-03 10:13:32] $lty
+INFO [2025-10-03 10:13:32] [1] "blank"
+INFO [2025-10-03 10:13:32] 
+INFO [2025-10-03 10:13:32] $fill
+INFO [2025-10-03 10:13:32] c("#ebdf38", "#62a7f8", "#416f16")
+INFO [2025-10-03 10:13:32] 
+INFO [2025-10-03 10:13:32] [[7]]
+INFO [2025-10-03 10:13:32] 
+INFO [2025-10-03 10:13:32] 
