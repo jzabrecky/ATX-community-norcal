@@ -1,32 +1,200 @@
 #### Comparing microscopy data among rivers
 ### Jordan Zabrecky
-## last edited: 11.16.2025
+## last edited: 12.22.2025
 
-## This code compares 16s rRNA (microbial community) data from NT, TM, and TAC samples
-## across rivers to answer Q1
+# This code compares 16s rRNA (microbial community) data from NT, TM, and TAC samples
+# across rivers to answer Q1
+
+# FOLLOW script 4a but also want to look at diversity metrics
 
 #### (1) Loading libraries & data ####
 
 # set seed for reproducibility
 set.seed(2025)
 
-# libraries
-lapply(c("tidyverse", "plyr", "vegan", "cowplot"), require, character.only = T)
+## libraries
+lapply(c("tidyverse", "plyr", "vegan", "cowplot", "indicspecies"), require, character.only = T)
 
-# read in files (note: two target taxa csvs- one with target taxa included, other with it excluded)
-# doing as a list rather than one csv as each has a different # of columns
-files <- list.files(path = "./data/molecular/", pattern = "16s")
-data_original <- lapply(files, function(x) read.csv(paste("./data/molecular/", x, sep = "")))
-names(data_original) <- files
+# we will use the NT data, and TM excluding Microcoleus, and TAC excluding Anabaena and Green Algae
+nt <- read.csv("./data/molecular/16s_nochimera_rarefied_95_FINAL.csv") %>% 
+  filter(sample_type == "NT")
+tm <- read.csv("./data/molecular/16s_nochimera_rarefied_95_TM_nomicro.csv")
+tac <- read.csv("./data/molecular/16s_nochimera_rarefied_95_TAC_noanacyl.csv")
 
-# separate out sample types from first csv
-data <- split(data_original$`16s_nochimera_rarefied_90_FINAL.csv`,
-                   data_original$`16s_nochimera_rarefied_90_FINAL.csv`$sample_type)
+# add into list
+data_long <- list(nt, tm, tac)
+names(data_long) <- c("nt", "tm", "tac")
 
-# add two without target taxa
-data[[4]] <- data_original$`16s_nochimera_rarefied_90_TAC_noanacyl.csv`
-data[[5]] <- data_original$`16s_nochimera_rarefied_90_TM_nomicro.csv`
-names(data)[4:5] <- c("TAC_no_AC", "TM_no_M")
+# pivot wider using ASVs for community matrix
+data <- lapply(data_long, function(x) {
+  # subset columns we care about and pivot wider
+  y = x %>% 
+    select(site_reach, site, field_date, sample_type, triplicate, feature_ID, relative_abundance) %>% 
+    pivot_wider(names_from = feature_ID, values_from = relative_abundance)
+  # replace NA (indicating that ASV was not present in sample) with 0
+  y[,6:ncol(y)][is.na(y[,6:ncol(y)])] = 0
+  return(y)})
+
+# set start col for community matrix
+start_col <- 6  
+
+# see our exploration with data transformation in another script, "S4a_testing_data_transformations.R"
+# decided on square-root transformation on the relative abundances (Hellinger transformation)
+for(i in 1:length(data)) {
+  data[[i]][,start_col:ncol(data[[i]])] <- sqrt(data[[i]][,start_col:ncol(data[[i]])])
+}
+
+
+# save this data to use in future scripts (RUN ONCE)
+#write.csv(data$nt, "./data/molecular/transformed/16s_nochimera_rarefied_95_NT_sqrttransformed.csv",
+#          row.names = FALSE)
+#write.csv(data$tm, "./data/molecular/transformed/16s_nochimera_rarefied_95_TM_nomicro_sqrttransformed.csv",
+#          row.names = FALSE)
+#write.csv(data$tac, "./data/molecular/transformed/16s_nochimera_rarefied_95_TAC_noanacyl_sqrttransformed.csv",
+#          row.names = FALSE)
+
+# lastly, add in broader categories to data_long so we don't have several with barplots
+# could do this quickly with forcats package, but since we are lumping, may make sense
+# to have more customized categories
+phylums <- lapply(data_long, function(x) x %>%
+                    # calculate average abundance for each phylum
+                    group_by(phylum) %>% 
+                    dplyr::summarize(mean = mean(relative_abundance)) %>% 
+                    # put into "Other" category if NA or % is less than #%
+                    mutate(phylum_cat = case_when(is.na(phylum) ~ "Other",
+                                                  mean < 0.03  ~ "Other",
+                                                  TRUE ~ phylum)) %>% 
+                    select(phylum, phylum_cat))
+classes <- lapply(data_long, function(x) x %>%
+                    # calculate average abundance for each class
+                    group_by(class) %>% 
+                    dplyr::summarize(mean = mean(relative_abundance)) %>% 
+                    # put into "Other" category if NA or % is less than #%
+                    mutate(classes_cat = case_when(is.na(class) ~ "Other",
+                                                  mean < 0.05  ~ "Other",
+                                                  TRUE ~ class)) %>% 
+                    select(class, classes_cat))
+cyano_order <- lapply(data_long, function(x) x %>%
+                        # filter for cyanobacteria phylum
+                        filter(phylum == "Cyanobacteria") %>% 
+                        # calculate average abundance for each order
+                        group_by(order) %>% 
+                        dplyr::summarize(mean = mean(relative_abundance)) %>% 
+                        # put into "Other" category if NA or % is less than #%
+                        mutate(cyano_order_cat = case_when(is.na(order) ~ "Other",
+                                                      mean < 0.035  ~ "Other",
+                                                      TRUE ~ order)) %>% 
+                        select(order, cyano_order_cat))
+cyano_genus <- lapply(data_long, function(x) x %>%
+                        # filter for cyanobacteria phylum
+                        filter(phylum == "Cyanobacteria") %>% 
+                        # calculate average abundance for each genus
+                        group_by(genus) %>% 
+                        dplyr::summarize(mean = mean(relative_abundance)) %>% 
+                        # put into "Other" category if NA or % is less than #%
+                        mutate(cyano_genus_cat = case_when(is.na(genus) ~ "Other",
+                                                      mean < 0.11  ~ "Other",
+                                                      TRUE ~ genus)) %>% 
+                        select(genus, cyano_genus_cat))
+# add these categories into our long dataframes
+data_long_broader <- data_long
+for(i in 1:length(data_long)) {
+  data_long_broader[[i]] <- left_join(data_long_broader[[i]], phylums[[i]], by = "phylum")
+  data_long_broader[[i]] <- left_join(data_long_broader[[i]], classes[[i]], by = "class")
+  data_long_broader[[i]] <- left_join(data_long_broader[[i]], cyano_order[[i]], by = "order")
+  data_long_broader[[i]] <- left_join(data_long_broader[[i]], cyano_genus[[i]], by = "genus")
+}
+
+
+#### (2) Functions for Analyses ####
+
+# load from supplemental script
+source("./code/supplemental_code/S4a_community_analyses_func.R")
+source("./code/supplemental_code/S4c_barplot_func.R")
+
+# function to calculate diversity of ASVs
+# @param data is dataframe of wide abundances
+# @param start_col is column where abundance data starts
+calc_diversity <- function(data, start_col) {
+  vector = diversity(data[,start_col:ncol(data)])
+}
+
+#### (3) Relative Abundance Bar Plots ####
+
+# put bar plots into lists
+# (note if issues- something is masked; restart R)
+barplot_phylum_plots <- lapply(data_long_broader, function(x) barplot(x, x = "site", y = "relative_abundance",
+                                                              fill = "phylum_cat"))
+barplot_class_plots <- lapply(data_long_broader, function(x) barplot(x, x = "site", y = "relative_abundance",
+                                                              fill = "classes_cat"))
+barplot_cyanoorder_plots <- lapply(data_long_broader, function(x) barplot(x %>% filter(phylum == "Cyanobacteria"),
+                                                             x = "site", y = "relative_abundance",
+                                                              fill = "cyano_order_cat"))
+barplot_cyanogenus_plots <- lapply(data_long_broader, function(x) barplot(x %>% filter(phylum == "Cyanobacteria"),
+                                                                  x = "site", y = "relative_abundance",
+                                                                  fill = "cyano_genus_cat"))
+
+# titles for plots
+titles <- c("Non-Target Samples", 
+            "Microcoleus Samples (excluding M)",
+            "Anabaena/Cylindrospermum Samples (excluding AC & GA)")
+
+# view plots (all bacteria categories)
+for(i in 1:length(barplot_phylum_plots)) {
+  print(barplot_phylum_plots[[i]] + labs(title = titles[i]))
+  print(barplot_class_plots[[i]] + labs(title = titles[i]))
+}
+# could combine TAC categories more!
+
+# view plots (cyanobacteria categories)
+for(i in 1:length(barplot_phylum_plots)) {
+  print(barplot_cyanoorder_plots[[i]] + labs(title = titles[i]))
+  print(barplot_cyanogenus_plots[[i]] + labs(title = titles[i]))
+}
+# could also probably customize more here
+
+#### (4) Alpha Diversity Metrics ####
+
+# calculate diversity for each dataframe
+diversity <- lapply(data, function(x) {
+  x = x %>% 
+    mutate(shannon_diversity = calc_diversity(x, start_col)) %>% 
+    select(field_date, site_reach, site, shannon_diversity)})
+
+# plot diversity as boxplots
+for(i in 1:length(diversity)) {
+  boxplot = ggplot(data = diversity[[i]], aes(x = site, y = shannon_diversity, fill = site)) +
+    geom_boxplot()
+  print(boxplot)
+}
+
+# Does diversity differ across rivers?
+lapply(diversity, function(x) kruskal.test(shannon_diversity~site, data = x))
+# not significantly different for any group but close for TM (p = 0.06)
+
+#### (5) NMDS Plots ####
+
+# NEED TO TRY THIS ON REMOTE DESKTOP
+
+# get NMDS for each dataframe (sqrt-transformed!)
+NMDS_list <- lapply(data, function(x) getNMDSdata(x, start_col))
+
+# making plots
+NMDS_plots <- lapply(NMDS_list, function(x) makeNMDSplot(x, TRUE, TRUE, 
+                                                         color = "site", shape = "month"))
+
+lapply(NMDS_plots, print)
+# RESULT: TM and NT groups are visually distinct among rivers, but not for TAC
+
+?vegan::richness()
+
+diversity(data$nt[,6:ncol(data$nt)])
+
+
+
+
+
+
 
 #### (2) Data Transformations ####
 

@@ -2,10 +2,10 @@
 ### Jordan Zabrecky
 ## last edited 12.15.2025
 
-## This code processes target microscopy data from processed from the previous
-## code by removing the target taxa (i.e. Microcoleus or Anabaena/Cylindrospermum)
-## and recalculates the relative abundance of other taxa. This is also done
-## again for TAC samples removing green algae (the substrate)
+# This code processes target microscopy data from processed from the previous
+# code by removing the target taxa (i.e. Microcoleus or Anabaena/Cylindrospermum)
+# and recalculates the relative abundance of other taxa. This is also done
+# again for TAC samples removing green algae (the substrate)
 
 #### (1) Loading libraries ####
 

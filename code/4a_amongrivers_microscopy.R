@@ -2,11 +2,10 @@
 ### Jordan Zabrecky
 ## last edited: 12.18.2025
 
-## This code compares microscopy data from NT, TM, and TAC samples
-## across rivers to answer Q1. First data is transformed (sqrt). For reference
-## we also complete analyses on untransformed data and data with rare taxa removed.
-## Data is analyzed using NMDS, PERMANOVA, and ISA. We also averaged across all samples
-## from a river and created bar plots to visually compare average samples at each river
+# This code compares microscopy data from NT, TM, and TAC samples
+# across rivers to answer Q1. First data is transformed (sqrt).
+# Data is analyzed using NMDS, PERMANOVA, and ISA. We also averaged across all samples
+# from a river and created bar plots to visually compare average samples at each river
 
 #### (1) Loading libraries & data ####
 
@@ -142,7 +141,6 @@ for(i in 1:length(barplot_taxa_plots)) {
   print(barplot_broader_plots[[i]] + labs(title = titles[i]))
 }
 
-
 #### (4) Q: What is dominant taxa across samples? ####
 
 # get summaries for each boader group
@@ -195,6 +193,7 @@ for(i in 1:length(data)) {
 #### (7) Q: What explains these differences? Loading & Species Indicator Analyses ####
 
 ## (a) NMDS loadings
+# note these are to be interpretted as supplemental, not explanatory
 # get p-values from envfit in vegan ran earlier
 envfit_pvalues <- lapply(NMDS_list, function(x) {
   newdata = as.data.frame(x$vs$vectors$pvals)

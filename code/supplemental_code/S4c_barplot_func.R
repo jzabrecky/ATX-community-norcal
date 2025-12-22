@@ -2,7 +2,7 @@
 ### Jordan Zabrecky
 ## last edited: 12.17.2025
 
-## This script has functions to plot relative abundance bar plots
+# This script has functions to plot relative abundance bar plots
 
 #### (1) Loading libraries & setting plot themes ####
 

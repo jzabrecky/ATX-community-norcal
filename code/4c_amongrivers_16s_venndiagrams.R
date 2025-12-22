@@ -2,10 +2,10 @@
 ### Jordan Zabrecky
 ## 12.16.2025
 
-## This code determines which ASVs are shared across sample types and rivers
-## and illustrates those findings with Venn Diagrams
+# This code determines which ASVs are shared across sample types and rivers
+# and illustrates those findings with Venn Diagrams
 
-## will make VennDiagrams prettier later and maybe move this script to figures folder?
+# will make VennDiagrams prettier later and maybe move this script to figures folder?
 # may also want to include the number of samples per each
 
 #### (1) Loading libraries & data ####

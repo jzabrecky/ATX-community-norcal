@@ -2,13 +2,13 @@
 ### Jordan Zabrecky
 ## last edited: 10.02.2025
 
-## This script creates a dataframe with environmental covariates (water chemistry
-## and anatoxin data) to use with both microscopy and molecular data
+# This script creates a dataframe with environmental covariates (water chemistry
+# and anatoxin data) to use with both microscopy and molecular data
 
-## For code processing of water chemistry and target sample anatoxin 
-## data from original EDI csv's, see
-## https://github.com/jzabrecky/ATX-synchrony-norcal/blob/main/code/2b_water_chemistry.R
-## https://github.com/jzabrecky/ATX-synchrony-norcal/blob/main/code/2e_target_sample_anatoxins.R
+# For code processing of water chemistry and target sample anatoxin 
+# data from original EDI csv's, see
+# https://github.com/jzabrecky/ATX-synchrony-norcal/blob/main/code/2b_water_chemistry.R
+# https://github.com/jzabrecky/ATX-synchrony-norcal/blob/main/code/2e_target_sample_anatoxins.R
 
 
 #### (1) Loading libraries & data ####

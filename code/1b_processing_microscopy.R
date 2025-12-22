@@ -2,9 +2,9 @@
 ### Jordan Zabrecky
 ## last edited 10.10.2025
 
-## This code processes microscopy data from the EDI data release 
-## (averaging across slides and evaluting rsd), remove non-algal portion
-## and recalculates relative abundance
+# This code processes microscopy data from the EDI data release 
+# (averaging across slides and evaluting rsd), remove non-algal portion
+# and recalculates relative abundance
 
 #### (1) Loading in libraries & data ####
 

@@ -2,11 +2,11 @@
 ### Jordan Zabrecky
 ## last edited: 10.10.2025
 
-## This code reads in the csv of assembled QIIME2 outputs and metadata
-## and further processes it by removing reads that are "Mitochondria"
-## or "Chloroplasts", removes low confidence (<0.85) reads, removes "fake"
-## field target samples, and analyzes/processes blanks and triplicates,
-## and saves to a final csv (one with raw reads [triplicates not averaged] 
+# This code reads in the csv of assembled QIIME2 outputs and metadata
+# and further processes it by removing reads that are "Mitochondria"
+# or "Chloroplasts", removes low confidence (<0.85) reads, removes "fake"
+# field target samples, and analyzes/processes blanks and triplicates,
+# and saves to a final csv (one with raw reads [triplicates not averaged] 
 # and one with relative)
 
 #### (1) Loading libraries and data ####
@@ -188,7 +188,6 @@ lapply(names(raw_reads), function(x) write.csv(raw_reads[[x]] %>% select(!file),
                                            paste("./data/molecular/intermediate_csvs/", x, 
                                                  "_filtered_rawreads.csv", sep = ""), 
                                            row.names = FALSE))
-
 
 # calculate total abundances/reads per vial for each file
 total_abundance_per_vial <- data_ver5_noblanks %>% 

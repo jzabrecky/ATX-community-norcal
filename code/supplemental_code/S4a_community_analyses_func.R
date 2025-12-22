@@ -2,7 +2,7 @@
 ### Jordan Zabrecky
 ## last edited: 12.17.2025
 
-## This script hosts functions used to create NMDS plots
+# This script hosts functions used to create NMDS plots
 
 #### (1) Loading libraries & set plot theme ####
 

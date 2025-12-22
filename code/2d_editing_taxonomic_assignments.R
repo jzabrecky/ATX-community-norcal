@@ -1,11 +1,11 @@
 #### Editing taxonomic assignments
 ### Jordan Zabrecky
-## last edited: 12.15.2025
+## last edited: 12.22.2025
 
-## This code takes the processed QIIME outputs (presently, just the 95% rarefied)
-## and adjusts taxonomic assignments to make sure they are all clean and correct
-## (e.g., had a lot of Cyanobacteria phylum assignments with a specified, real genus 
-## but order "Cyanobacteriales" which does not exist)
+# This code takes the processed QIIME outputs (presently, just the 95% rarefied)
+# and adjusts taxonomic assignments to make sure they are all clean and correct
+# (e.g., had a lot of Cyanobacteria phylum assignments with a specified, real genus 
+# but order "Cyanobacteriales" which does not exist)
 
 # Referencing NCBI Taxonomy database and Strunecky et al. (2023) to do this
 
@@ -205,10 +205,12 @@ data[which(data$genus == "Gleocapsa" & grepl("Chroococcus", data$species)), "fam
 data[which(data$genus == "Gleocapsa" & data$species == "Chroococcales_cyanobacterium"), c("family", "genus")] <- NA
 
 # Cyanobiaceaea- Synechococcus-like species, under a reclassification (see Komarek et al. 2020)
-# will just leave as is despite it not currently being in NCBI taxonomy or Strunecky et al. (2023)
+# but the genus is Cyanobium which is listed under family Prochlorococcaceae in Strunecky et al. 2023
+data[which(data$genu == "Cyanobium"), "family"] <- "Prochlorococcaceae"
 
-# also, Vampirovibrionales is not a family but only an order
-data[which(data$family == "Vampirovibrionales"), c("family")] <- NA
+# NOTE: Vampirovibriophyceae (under Vampirivibrionia here) 
+# is the only other class within cyanobacteria phylum (Strunecky et al. 2023)
+# naming conventions are unclear, but likely low abundance, so we will just leave as is
 
 # final check
 unique(data[which(data$phylum == "Cyanobacteria"),]$family)
@@ -246,13 +248,15 @@ data[which(data$phylum == "Cyanobacteria"), "genus"] <- str_replace(data[which(d
 
 # look again at names
 unique(data[which(data$phylum == "Cyanobacteria"),]$genus)
-# checking to make sure all of these are legit in NCBI taxonomy
+# checking to make sure all of these are legit in Strunecky et al. (2023)
+
+# Sericytochromatia not seeming to be anything
 
 # Nostocaceae is a family
 unique(data[which(data$phylum == "Cyanobacteria" & data$genus == "Nostocaceae"),])
 # they are Calothrix species that are matching to a Calothrix genus, etc. on BLAST
 data[which(data$genus == "Nostocaceae" & grepl("Calothrix", data$species)), "order"] <- "Nostocales"
-data[which(data$genus == "Nostocaceae" & grepl("Calothrix", data$species)), "family"] <- "Calotrichaceae"
+data[which(data$genus == "Nostocaceae" & grepl("Calothrix", data$species)), "family"] <- "Rivulariaceae"
 data[which(data$genus == "Nostocaceae" & grepl("Calothrix", data$species)), "genus"] <- "Calothrix"
 
 # candidatus is not a  genus
@@ -274,7 +278,7 @@ data[which(data$genus == "Vampirovibrionaceae"), "genus"] <- NA
 data[which(data$genus == "Vampirovibrionales"), c("genus")] <- NA
 
 # other notes:
-# Sericytochromatia is an unranked clade, going to leave as is
+# Sericytochromatia is an unranked clade, going to leave as is but not in Strunecky et al. (2023)
 # Gleocapsa not in NCBI but in Phycokey so keeping it
 
 #### (9) Checking consistency across genera ####
@@ -285,7 +289,7 @@ names <- unique(data[which(data$phylum == "Cyanobacteria"), c("order", "family",
 view(names) # going through genus in this dataframe
 
 # Aliterella family is wrong and order is the "Cyanobacteriales"
-data[which(data$genus == "Aliterella"), "family"] <- "Aliterellaceae"
+data[which(data$genus == "Aliterella"), "family"] <- "Chroococcidiopsidaceae"
 data[which(data$genus == "Aliterella"), "order"] <- "Chroococcidiopsidales"
 
 # Anabaena & Aphanizomenon order is wrong ("Cyanobacteriales")
@@ -295,25 +299,30 @@ data[which(data$genus == "Anabaena" | data$genus == "Aphanizomenon"), "order"] <
 data[which(data$genus == "Aphanizomenon"), "family"] <- "Aphanizomenonaceae"
 
 # two incorrect labels for Calothrix
-data[which(data$genus == "Calothrix"), "family"] <- "Calotrichaceae"
+data[which(data$genus == "Calothrix"), "family"] <- "Rivulariaceae"
 data[which(data$genus == "Calothrix"), "order"] <- "Nostocales"
 
 # Chamaesiphon also has incorrect "Cyanobacteriales" order
 data[which(data$genus == "Chamaesiphon"), "order"] <- "Gomontiellales"
+# also sometimes listed under wrong family
+data[which(data$genus == "Chamaesiphon"), "family"] <- "Chamaesiphonaceae"
 
 # Chroococcidiopsis and Chroococcopsis also have wrong family and incorrect "Cyanobacteriales" order
 data[which(data$genus == "Chroococcidiopsis"), "family"] <- "Chroococcidiopsidaceae"
 data[which(data$genus == "Chroococcidiopsis"), "order"] <- "Chroococcidiopsidales"
 data[which(data$genus == "Chroococcopsis"), "family"] <- "Hyellaceae"
 data[which(data$genus == "Chroococcopsis"), "order"] <- "Pleurocapsales"
+# Note: seems poorly resolved/documents (Strunecky et al. 2023)
 
 # Cuspidothrix has incorrect "Cyanobacteriales" order
 data[which(data$genus == "Cuspidothrix"), "order"] <- "Nostocales"
 data[which(data$genus == "Cuspidothrix"), "family"] <- "Aphanizomenonaceae"
+# NOTE: ambiguous placement from Strunecky et al. (2023)
 
 # Cyanothece incorrect Cyanobacteriales order
 data[which(data$genus == "Cyanothece"), "order"] <- "Gomontiellales"
 data[which(data$genus == "Cyanothece"), "family"] <- "Cyanothecaceae"
+# NOTE: poorly resolved (Strunecky et al. 2023)
 
 # Cylindrospermum & Cylindrospermopsis have been reassigned to Aphanizomenonaceae family
 # also both have incorrect Cyanobacteriales order
@@ -374,7 +383,7 @@ data[which(data$genus == "Planktothricoides" | data$genus == "Planktothrix"), "o
 
 # Incorrect family & "Cyanobacteriales" order for Pleurocapsa
 data[which(data$genus == "Pleurocapsa"), "order"] <- "Pleurocapsales"
-data[which(data$genus == "Pleurocapsa"), "family"] <- "Hyellaceae"
+data[which(data$genus == "Pleurocapsa"), "family"] <- "Chroococcales"
 
 # Incorrect family & "Cyanobacteriales" order for Potamolinea
 data[which(data$genus == "Potamolinea"), "order"] <- "Coleofasciculales"
@@ -384,16 +393,17 @@ data[which(data$genus == "Potamolinea"), "family"] <- "Wilmottiaceae"
 data[which(data$genus == "Pseudanabaena"), "order"] <- "Pseudanabaenales"
 data[which(data$genus == "Pseudanabaena"), "family"] <- "Pseudanabaenaceae"
 
-# Incorrect "Cyanobacteriales" order for Richelia
+# Incorrect "Cyanobacteriales" order for Richelia and Family
 data[which(data$genus == "Richelia"), "order"] <- "Nostocales"
+data[which(data$genus == "Richelia"), "family"] <- "Rivulariaceae"
 
 # Incorrect "Cyanobacteriales" order and family for Scytonema
 data[which(data$genus == "Scytonema"), "order"] <- "Nostocales"
 data[which(data$genus == "Scytonema"), "family"] <- "Scytonemataceae"
 
 # Incorrect "Cyanobacteriales" order and family for Snowella
-data[which(data$genus == "Scytonema"), "order"] <- "Synechococcales"
-data[which(data$genus == "Scytonema"), "family"] <- "Coelosphaeriaceae"
+data[which(data$genus == "Snowella"), "order"] <- "Chroococcales"
+data[which(data$genus == "Snowella"), "family"] <- "Microcystaceae"
 
 # Incorrect "Cyanobacteriales" order and family for Sphaerospermopsis
 data[which(data$genus == "Sphaerospermopsis"), "order"] <- "Nostocales"
@@ -410,6 +420,7 @@ data[which(data$genus == "Synechocystis"), "family"] <- "Merismopediaceae"
 # Incorrect "Cyanobacteriales" order and family for Tolypothrix
 data[which(data$genus == "Tolypothrix"), "order"] <- "Nostocales"
 data[which(data$genus == "Tolypothrix"), "family"] <- "Tolypothrichaceae"
+# NOTE: highly unresolved (Strunecky et al. 2023)
 
 # Incorrect "Cyanobacteriales" order for Trichodesmium
 data[which(data$genus == "Trichodesmium"), "order"] <- "Oscillatoriales"

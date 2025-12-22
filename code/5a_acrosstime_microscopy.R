@@ -2,13 +2,13 @@
 ### Jordan Zabrecky
 ## last edited: 12.15.2025
 
-## This code compares microscopy data from NT, TM, and TAC samples
-## across rivers to answer Q2
+# This code compares microscopy data from NT, TM, and TAC samples
+# across rivers to answer Q2
 
-## to-do:
-## ANOSIM w/ time stamp
-## indicator species analsis? vs. SIMPER?
-## look into how other papers are determining which is the species most responsible
+# to-do:
+# ANOSIM w/ time stamp
+# indicator species analsis? vs. SIMPER?
+# look into how other papers are determining which is the species most responsible
 
 ## CONSIDER WHAT TO DO WITH 2023 DATA
 

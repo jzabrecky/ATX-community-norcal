@@ -2,11 +2,11 @@
 ### Jordan Zabrecky
 ## last edited 10.07.2025
 
-## This code reads in QIIME2 outputs (sequence abundances and SILVA taxonomy assignment;
-## for processing that did not include rarefaction) and matches them with metadata. 
-## The script detects what samples were missing (either due to label misreadings or 
-## low quality reads that were filtered in QIIME2) and summarizes that. It then saves 
-## the final dataframe to be further processed in another script.
+# This code reads in QIIME2 outputs (sequence abundances and SILVA taxonomy assignment;
+# for processing that did not include rarefaction) and matches them with metadata. 
+# The script detects what samples were missing (either due to label misreadings or 
+# low quality reads that were filtered in QIIME2) and summarizes that. It then saves 
+# the final dataframe to be further processed in another script.
 
 #### (1) Loading in libraries and data ####
 

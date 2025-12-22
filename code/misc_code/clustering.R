@@ -2,8 +2,8 @@
 ### Jordan Zabrecky
 ## last edited: 12.16.2025
 
-## This code compares clusters communities using the "cluster" package
-## Instead, for analyses with are just using PERMANOVA and NMDS
+# This code compares clusters communities using the "cluster" package
+# Instead, for analyses with are just using PERMANOVA and NMDS
 
 # TEST SIMPROF
 
