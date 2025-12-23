@@ -225,16 +225,16 @@ for(i in 1:length(algal_untransformed)) {
 
 # HAVING ISSUES with this- Will try again on remote desktop at a later date
 microbial_NMDS_list <- list()
-microbial_NMDS_list$`untransformed` <- lapply(microbial_untransformed, function(x) getNMDSdata(x, start_col))
-microbial_NMDS_list$`hellinger` <- lapply(microbial_hellinger, function(x) getNMDSdata(x, start_col))
-microbial_NMDS_list$`hellinger_raretaxaremoved` <- lapply(microbial_raretaxaremoved, function(x) getNMDSdata(x, start_col))
+microbial_NMDS_list$`untransformed` <- lapply(microbial_untransformed, function(x) getNMDSdata(x, start_col, TRUE))
+microbial_NMDS_list$`hellinger` <- lapply(microbial_hellinger, function(x) getNMDSdata(x, start_col, TRUE))
+microbial_NMDS_list$`hellinger_raretaxaremoved` <- lapply(microbial_raresavsremoved, function(x) getNMDSdata(x, start_col, TRUE))
 
-d# viewing plots against each other
-for(i in 1:length(algal_untransformed)) {
+# viewing plots against each other
+for(i in 1:length(microbial_untransformed)) {
   plots <- list()
-  for(j in 1:length(algal_NMDS_list)) {
-    plots[[j]] = makeNMDSplot(algal_NMDS_list[[j]][[i]], TRUE, TRUE, shape = "month", color = "site") +
-      labs(title = paste(names(algal_untransformed)[i], names(algal_NMDS_list)[j], sep = " "))
+  for(j in 1:length(microbial_NMDS_list)) {
+    plots[[j]] = makeNMDSplot(microbial_NMDS_list[[j]][[i]], FALSE, FALSE, shape = "month", color = "site") +
+      labs(title = paste(names(microbial_untransformed)[i], names(microbial_NMDS_list)[j], sep = " "))
   }
   print(plot_grid(plots[[1]], plots[[2]], plots[[3]], ncol = 1))
 }

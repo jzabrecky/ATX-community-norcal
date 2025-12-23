@@ -20,7 +20,9 @@ theme_set(theme_bw() + theme(panel.grid = element_blank(),
 # creates NMDS data point coordinates and loadings
 # @param data is relative abundance data in wide format with environmental/sampling data on left
 # @param start_col is index of column for which the abundance data starts 
-getNMDSdata <- function(data, start_col) {
+# @param molecular is if the data is molecular (Aka has ASV's or not); this is included because if 
+# we ask for loading from it, it will take forever since there are 100+ ASVs even after trimming
+getNMDSdata <- function(data, start_col, ASV = FALSE) {
   # use vegan to calculate NMDS distances
   nmds = metaMDS(as.matrix(data[,start_col:ncol(data)]),
                  distance = "bray",
@@ -33,15 +35,24 @@ getNMDSdata <- function(data, start_col) {
            year = year(field_date),
            month = as.character(month(field_date)))
   
-  # get loadings for taxa
-  vs = envfit(nmds, as.matrix(data[,6:ncol(data)]), perm = 999)
-  coord = as.data.frame(scores(vs, "vectors"))
-  stress = nmds$stress
-  
-  # return a named list with both dataframes
-  list <- list(nmds_final, vs, coord, stress)
-  names(list) = c("nmds", "vs", "coord", "stress")
-  return(list)
+  # get loadings for taxa (if not ASV-based!)
+  if(ASV == FALSE) {
+    vs = envfit(nmds, as.matrix(data[,6:ncol(data)]), perm = 999)
+    coord = as.data.frame(scores(vs, "vectors"))
+    stress = nmds$stress
+    
+    # return a named list with both dataframes
+    list <- list(nmds_final, vs, coord, stress)
+    names(list) = c("nmds", "vs", "coord", "stress")
+    return(list)
+  } else {
+    stress = nmds$stress 
+    
+    # return a named list with nmds and stress dataframes only
+    list <- list(nmds_final, stress)
+    names(list) <- c("nmds", "stress")
+    return(list)
+  }
 }
 
 ## (b) makeNMDSplot
@@ -57,9 +68,13 @@ makeNMDSplot <- function(data, loading, significant, color, shape) {
   # separating out data to be able to easily call each
   nmds_data = data$nmds
   stress = data$stress
-  loadings = data$coord
-  pvalues = as.data.frame(data$vs$vectors$pvals)
-  colnames(pvalues) = "pvalue"
+  
+  # only specify loadings if those are requested
+  if(loading) {
+    loadings = data$coord
+    pvalues = as.data.frame(data$vs$vectors$pvals)
+    colnames(pvalues) = "pvalue"
+  }
   
   # make plot
   plot = ggplot(nmds_data, aes(x = NMDS1, y = NMDS2)) +
