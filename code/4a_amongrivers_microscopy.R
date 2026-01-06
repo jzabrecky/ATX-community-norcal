@@ -1,6 +1,6 @@
 #### Comparing microscopy data among rivers
 ### Jordan Zabrecky
-## last edited: 12.18.2025
+## last edited: 01.05.2026
 
 # This code compares microscopy data from NT, TM, and TAC samples
 # across rivers to answer Q1. First data is transformed (sqrt).
@@ -47,7 +47,7 @@ for(i in 1:length(data)) {
 
 # create a longer version of the unaltered data for bar plots of relative abundances
 data_longer <- lapply(unaltered_data, 
-                      function(x) pivot_longer(x, cols = c(start_col:ncol(x)), values_to = "percent",
+                      function(x) pivot_longer(x, cols = all_of(c(start_col:ncol(x))), values_to = "percent",
                                                            names_to = "taxa"))
 
 # add in broader group classification
@@ -190,6 +190,25 @@ for(i in 1:length(data)) {
 # which we do see in our NMDS plots (With the exception maybe of the NT plot, but the centroids
 # for those groups are different)
 
+# let's lastly compare the distance between centroids
+# (mostly to compare for Q2 issue that came up)
+centroid_distance <- lapply(NMDS_list, function(x) { 
+  # calculate centroids
+  centroids = x[[1]] %>% 
+    dplyr::group_by(site) %>% 
+    dplyr::summarize(axis1 = mean(NMDS1),
+                     axis2 = mean(NMDS2)) %>% 
+    ungroup()
+  # calculate distances between centroids
+  distances = dist(centroids[,2:3], method = "euclidean")
+  return(mean(distances))}
+  
+)
+lapply(names(centroid_distance), function(x) print(paste(x, ": ", centroid_distance[[x]], sep = "")))
+# nt: 0.658672167241778
+# tm: 0.684185197772008
+# tac: 0.107665714801558
+
 #### (7) Q: What explains these differences? Loading & Species Indicator Analyses ####
 
 ## (a) NMDS loadings
@@ -239,7 +258,7 @@ summary(multipatt(tac_sub[,start_col:ncol(tac_sub)], tac_sub$site, func = "r.g",
 # RUS: phormidium, oscillatoria
 # SFE: nodularia, microcoleus
 
-#### (9) Conclusions ####
+#### (8) Conclusions ####
 
 ## In conclusion, 
 ## come back & revisit this to rewrite this

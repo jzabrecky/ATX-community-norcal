@@ -79,7 +79,7 @@ makeNMDSplot <- function(data, loading, significant, color, shape) {
   # make plot
   plot = ggplot(nmds_data, aes(x = NMDS1, y = NMDS2)) +
     geom_point(aes(color = .data[[color]], shape = .data[[shape]]), size = 4) +
-    stat_ellipse(aes(color = .data[[color]]), type = "t", linetype = 2, size = 0.5) +
+    stat_ellipse(aes(color = .data[[color]]), type = "t", linetype = 2, linewidth = 0.5) +
     labs(subtitle = paste("Stress:", round(stress, 3)),
          x = "NMDS Axis 1",
          y = "NMDS Axis 2")

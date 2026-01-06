@@ -3,18 +3,7 @@
 ## last edited: 12.15.2025
 
 # This code compares microscopy data from NT, TM, and TAC samples
-# across rivers to answer Q2
-
-# to-do:
-# ANOSIM w/ time stamp
-# indicator species analsis? vs. SIMPER?
-# look into how other papers are determining which is the species most responsible
-
-## CONSIDER WHAT TO DO WITH 2023 DATA
-
-# MAYBE MOVE NMDS FUNCTIONS TO SUPPLEMENTAL CODE FILES
-
-# ALSO ADD IN MONTH TO THIS
+# across time to answer Q2
 
 #### (1) Loading libraries & data ####
 
@@ -29,7 +18,7 @@ data <- lapply(list.files(path = "./data/morphological/transformed/", pattern = 
                function(x) read.csv(paste("./data/morphological/transformed/", x, sep = "")))
 names(data) <- c("nt", "tac", "tm")
 
-# load un-transformed relative abundances and make it longer for bar plots through time
+# also load un-transformed relative abundances and make it longer for bar plots through time
 nt <- read.csv("./data/morphological/nt_algalonly.csv")
 tm <- read.csv("./data/morphological/tm_algalonly_nomicro.csv")
 tac <- read.csv("./data/morphological/tac_algalonly_noanacylgreenalgae.csv")
@@ -147,7 +136,58 @@ for(i in 1:length(barplot_taxa_plots)) {
   print(barplot_broader_plots[[i]] + labs(title = titles[i]))
 }
 
-#### (3) PERMANOVA ####
+#### (5) Q: What are the dominant five taxa at each event for each river? ####
+
+temporal_overview <- lapply(data_longer, function(x) {
+  summary = x %>% 
+    group_by(site, event_no, broader, taxa, sample_type) %>% 
+    dplyr::summarize(mean_abun = mean(percent)) %>% 
+    # pivot_wider(names_from = event_no, values_from = mean_abun) %>% 
+    ungroup() %>% 
+    dplyr::group_by(site, event_no) %>% 
+    arrange(desc(mean_abun)) %>% 
+    slice_head(n = 5) %>% 
+    ungroup()
+  
+  #summary = summary %>% # get table
+  #  mutate(ranking = rep(seq(1:5), nrow(summary) / 5)) %>% 
+  #  select(!c(mean_abun, broader)) %>% 
+  #  pivot_wider(names_from = event_no, values_from = taxa)
+  #return(summary)
+  
+  # split to have separate colors for each plot
+  summaries = split(summary, summary$site)
+  for(i in 1:length(summaries)) {
+    plot = ggplot(summaries[[i]], aes(x = event_no, y = mean_abun, color = taxa)) +
+              geom_line() +
+              geom_point() +
+              ggtitle(paste(summary$sample_type[1], ": ", names(summaries)[i], sep = ""))
+    print(plot)
+  }
+})
+# RUS NT: spirogyra largely dominant after event 1, with decreasing amounts of non er diatoms, 
+# epithemia in top 5 after event 2, cladophora, oedogonium, stigeoclonium, also present
+# ana/cyl in top five last two events
+# SAL NT: dominance of diatoms that decreases, increase in microcoleus 2 to 3, 
+# leptolyngyba and homoeothrix also present in early samples with some cladophora
+# other coccoids only in top 5 first event, and geitlernema for event 2, green algaes for event 5
+# SFE-M NT: decrease in nostoc from beginning, and microcoleus, increase in spirogyra,
+# anabaena only present in top 5 2 & 3 and microcoleus 1 & 2, presence of epithemia at 3 that decreases
+
+# SAL TM: mostly diatoms, consistent across the two dates, also present are geitlerinema, 
+# other coccoids, and green algae
+# SFE-M TM: increase in green algae (likely due to sampling), increase in diatoms at 3 & 4 then 
+# a decrease, coccoids present in later samples (3 to 7) and anabaena in top 5 for 2-4,
+# geitlerinema consistently present (sans 2) diatoms fluctuate throughout
+
+# RUS TAC: mostly diatoms, decrease in epithemia after 5, presence of phormidium 6+7
+# oscillatoria in top 5 for 5, microcoleus only for top 5 at 3, geitlerinema was a consistent presence
+# as well as other coccoid cyanobacteria
+# SFE-M TAC: microcoleus in top 5 from 2-5, other coccoids and geitlerinema present steady throughout,
+# e diatoms peak at 3 and inconsistent decrease, oscillatoria present at 7
+# SAL TAC: this sample also has geitlerinema
+
+#### (6) PERMANOVA ####
 
 # set column where abundance data starts
 start_col <- 7
@@ -158,7 +198,8 @@ data_river <- lapply(data, function(x) split(x, x$`site`))
 ## (a) with the strata argument for EVENT NO.
 permanovas_event <- lapply(data, function(x) runPERMANOVA(x, start_col, x$`event_no`, strata = x$'site'))
 lapply(permanovas_event, print)
-# NT, TAC are significant among sampling dates, but not TAC
+# NT***, TAC*** are significant among sampling dates, but not TM
+# TM must have been overshadowed by the two dates of Salmon samples (see below)
 
 ## (b) separated out by river
 
@@ -175,28 +216,73 @@ permanovas_event_TAC_sep <- lapply(data_river$tac, function(x) runPERMANOVA(x, s
 lapply(permanovas_event_TAC_sep, print)
 # TAC significant for SFE-M* and especially RUS*** (only one data point for SAL, so NA)
 
-## (c) check dispersion in groups
-# LEFT OFF HERE
+## (c) check dispersion in groups for event no.
 
-#### (4) CLUSTER ANALYSES!?!??!??!?!???!????!?!?
+for(i in 1:length(data_river$nt)) {
+  print(names(data_river$nt)[i])
+  print(anova(betadisper(vegdist(data_river$nt[[i]][,start_col:ncol(data_river$nt[[i]])], method = "bray"), 
+                         data_river$nt[[i]]$event_no)))
+}
+# dispersion not significant for any NT (as expected!)
 
-# maybe heat map stuff WOULD be cool but like idk right now :)
+for(i in 1:length(data_river$tm)) {
+  print(names(data_river$tm)[i])
+  print(anova(betadisper(vegdist(data_river$tm[[i]][,start_col:ncol(data_river$tm[[i]])], method = "bray"), 
+                         data_river$tm[[i]]$event_no)))
+}
+# also not for TM
 
-#### (3) test indicator species analysis
+# skip the salmon sample which is index 2
+for(i in c(1,3)) {
+  print(names(data_river$tac)[i])
+  print(anova(betadisper(vegdist(data_river$tac[[i]][,start_col:ncol(data_river$tac[[i]])], method = "bray"), 
+                         data_river$tac[[i]]$event_no)))
+}
+# also not for TAC!
 
-# Probably want to add this to script 5a WILL GO BACK AND DO THIS NEXT
-# maybe try out both???
-# can you use indicator species analyses on relative abundances?
+#### (7) Species Indicator Analysis ####
 
-# more curious how this will change over time
+## (a) NT
+for(i in 1:length(data_river$nt)) {
+  print(names(data_river$nt)[i])
+  print(summary(multipatt(data_river$nt[[i]][,start_col:ncol(data_river$nt[[i]])],
+                          data_river$nt[[i]]$event_no, func = "r.g", control = how(nperm = 999))))
+}
+# RUS: 2+3+4+5+6+7 geitlerinema
+# SAL: 1 other coccoids, 2 geitlerinema, 7 green algae (spirogyra, mougeotia, epithemia, oedogonium)
+# SFE-M: 1+2 nostoc, 2+3+4 anabaena & cyl, 3+4+5+6+7 epithemia, 2+5+6+7 spirogyra
+# 3&7 geitlerinema
 
-# does this need to be hellinger transformed and why?
-library(indicspecies)
+## (b) TM
+for(i in 1:length(data_river$tm)) {
+  print(names(data_river$tm)[i])
+  print(summary(multipatt(data_river$tm[[i]][,start_col:ncol(data_river$tm[[i]])],
+                          data_river$tm[[i]]$event_no, func = "r.g", control = how(nperm = 999))))
+}
+# no unique for SAL, but only 2 events
+# SFE-M: 1+2 nostoc, 2+3+4 anabaena
 
-# work with NT data to start
-NT <- data_wide$nt_algalonly_sqrttransformed.csv
+## (c) TAC
+# skipping SAL
+for(i in c(1,3)) {
+  print(names(data_river$tac)[i])
+  print(summary(multipatt(data_river$tac[[i]][,start_col:ncol(data_river$tac[[i]])],
+                          data_river$tac[[i]]$event_no, func = "r.g", control = how(nperm = 999))))
+}
+# RUS: 6 microcoleus, 6+7 phormidium unknown, 5+6+7 oscillatoria, 3+4+5+6 epithemia
+# SFE-M:  2+5 nodularia, e_diatoms 2+3+5
 
-# func = "r.g" is for relative abundances 
-groups <- NT$site
-test <- multipatt(NT[,7:ncol(NT)], groups, func = "r.g", control = how(nperm = 999))
-summary(test)
+#### STILL CURIOUS- which is changing the most??? ####
+# would this just be distances of centroids from start to finish?
+# read the Avolio paper (2019)
+# would likely need all sample types we are comparing on the same NMDS
+# e.g., does NT change more than TM, etc.
+
+#### (8) Rate of community change ####
+
+#### (8) Conclusions ####
+
+# will write when revisiting
+
+# GEITLERINEMA IS ALWAYS PRESENT.
+# curious how consistently present it is in the NT samples
