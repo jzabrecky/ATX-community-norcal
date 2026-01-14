@@ -55,7 +55,8 @@ data_longer <- lapply(unaltered_data,
 for(i in 2:length(data_longer)) {
   data_longer[[i]] <- data_longer[[i]] %>% 
     mutate(broader = case_when(taxa == "lyngbya" | taxa == "nodularia" |  taxa == "calothrix" |
-                                 taxa == "scytonema" | taxa == "gloeotrichia" ~ "Other N-fixing Cyanobacteria",
+                                 taxa == "scytonema" | taxa == "gloeotrichia" | taxa == "rivularia" |
+                               taxa == "tolypothrix" ~ "Other N-fixing Cyanobacteria",
                                taxa == "nostoc" ~ "Nostoc",
                                taxa == "chroococcus" | taxa == "other_coccoids"
                                ~ "Unicellullar Cyanobacteria",

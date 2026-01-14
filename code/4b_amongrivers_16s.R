@@ -173,6 +173,11 @@ for(i in 1:length(diversity)) {
 lapply(diversity, function(x) kruskal.test(shannon_diversity~site, data = x))
 # not significantly different for any group but close for TM (p = 0.06)
 
+# save diversity calculations (RUN ONCE)
+lapply(names(diversity), function(x) write.csv(diversity[[x]], 
+                                               paste("./data/molecular/shannon_diversity/", x, "_diversity.csv", sep = ""),
+                                               row.names = FALSE))
+
 #### (5) NMDS Plots ####
 
 # get NMDS for each dataframe (sqrt-transformed!)

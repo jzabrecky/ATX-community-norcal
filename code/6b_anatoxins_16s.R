@@ -84,3 +84,59 @@ if (!requireNamespace("BiocManager", quietly = TRUE))
 BiocManager::install("ALDEx2")
 
 # left off here
+
+# Q from Grant Johnson: 
+
+# how does bacterial diversity scale with anatoxins?
+
+# calculate diversity for each dataframe
+diversity <- lapply(data, function(x) {
+  x = x %>% 
+    mutate(shannon_diversity = calc_diversity(x, start_col)) %>% 
+    select(field_date, site_reach, site, shannon_diversity)})
+
+# plot diversity as boxplots
+for(i in 1:length(diversity)) {
+  boxplot = ggplot(data = diversity[[i]], aes(x = site, y = shannon_diversity, fill = site)) +
+    geom_boxplot()
+  print(boxplot)
+}
+
+#### Grant Q: Does diversity differ across rivers?
+
+
+
+# calculate diversity for each dataframe
+diversity <- lapply(list.files(path = "./data/molecular/shannon_diversity/", pattern = ".csv"),
+                     function(x) read.csv(paste("./data/molecular/shannon_diversity/", x, sep = "")))
+names(diversity) <- c("nt", "tac", "tm")
+
+# plot diversity as boxplots
+for(i in 1:length(diversity)) {
+  boxplot = ggplot(data = diversity[[i]], aes(x = site, y = shannon_diversity, fill = site)) +
+    geom_boxplot()
+  print(boxplot)
+}
+
+# plot diversity as time plot
+for(i in 1:length(diversity)) {
+  diversity[[i]] = diversity[[i]] %>% 
+    mutate(field_date = ymd(field_date))
+  time = ggplot(data = diversity[[i]], aes(x = field_date, y = shannon_diversity, color = site)) +
+    geom_point()
+  print(time)
+}
+
+# Does diversity differ across rivers?
+lapply(diversity, function(x) kruskal.test(shannon_diversity~site, data = x))
+# not significantly different for any group but close for TM (p = 0.06)
+
+lapply(diversity, function(x) kruskal.test(shannon_diversity~site, data = x))
+# not significantly different for any group but close for TM (p = 0.06)
+
+# how about diversity with anatoxins
+diversity$tm <- left_join(diversity$tm, env_tog, by = c("field_date", "site_reach", "site"))
+ggplot(data = diversity$tm, aes(x = TM_ATX_all_ug_orgmat_g.y, y = shannon_diversity, color = site)) +
+  geom_point()
+cor.test(diversity$tm$shannon_diversity[-7], diversity$tm$TM_ATX_all_ug_orgmat_g.y[-7])
+# p = 0.2667
