@@ -30,7 +30,7 @@ getNMDSdata <- function(data, start_col, ASV = FALSE) {
                  autotransform = TRUE)
   # bind x & y positions to site information
   nmds_final = cbind(as.data.frame(scores(nmds, "sites")), 
-                     data %>% select(site_reach, site, field_date)) %>% 
+                     data %>% select(site_reach, site, field_date, sample_type)) %>% 
     mutate(field_date = ymd(field_date),
            year = year(field_date),
            month = as.character(month(field_date)))
@@ -127,5 +127,20 @@ runPERMANOVA <- function(data, start_col, group, strata = NA) {
   return(results)
 }
 
-## (d) Species Indicator Analyses
-# 
+## (d) add_event_no
+# add event number for 2022 data
+# @param data is wide dataframe with field_date as a column
+add_event_no <- function(data) {
+  data %>% 
+    mutate(field_date = ymd(field_date),
+           month = month(field_date)) %>% 
+    mutate(event_no = case_when((field_date >= ymd("2022-06-24") & field_date <= ymd("2022-06-29")) ~ 1,
+                                (field_date >= ymd("2022-07-06") & field_date <= ymd("2022-07-14")) ~ 2,
+                                (field_date >= ymd("2022-07-20") & field_date <= ymd("2022-07-28")) ~ 3,
+                                (field_date >= ymd("2022-08-02") & field_date <= ymd("2022-08-10")) ~ 4,
+                                (field_date >= ymd("2022-08-17") & field_date <= ymd("2022-08-23")) ~ 5,
+                                (field_date >= ymd("2022-09-01") & field_date <= ymd("2022-09-06")) ~ 6,
+                                (field_date >= ymd("2022-09-15") & field_date <= ymd("2022-09-22")) ~ 7)) %>% 
+    relocate(event_no, .before = "field_date") %>% 
+    relocate(month, .before = "field_date")
+}

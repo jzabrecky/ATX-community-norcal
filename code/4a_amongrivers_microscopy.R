@@ -58,7 +58,7 @@ for(i in 2:length(data_longer)) {
                                  taxa == "scytonema" | taxa == "gloeotrichia" | taxa == "rivularia" |
                                taxa == "tolypothrix" ~ "Other N-fixing Cyanobacteria",
                                taxa == "nostoc" ~ "Nostoc",
-                               taxa == "chroococcus" | taxa == "other_coccoids"
+                               taxa == "chroococcus" | taxa == "other_coccoids" | taxa == "aphanothece"
                                ~ "Unicellullar Cyanobacteria",
                                taxa == "anabaena_and_cylindrospermum" ~ "Anabaena or Cylindrospermum",
                                taxa == "e_diatoms" ~ "Epithemia",
@@ -83,7 +83,6 @@ data_longer$nt <- data_longer$nt %>%
                              taxa == "chroococcus" | taxa == "other_coccoids" | taxa == "aphanothece"
                              ~ "Unicellullar Cyanobacteria",
                              taxa == "anabaena_and_cylindrospermum" ~ "Anabaena or Cylindrospermum",
-                             taxa == "epithemia" ~ "Epithemia",
                              taxa == "geitlerinema" ~ "Other Anatoxin-Associated Cyanobacteria",
                              taxa == "oscillatoria" | taxa == "phormidium_unknown" |
                                taxa == "leptolyngbya" | taxa == "homoeothrix"
@@ -92,7 +91,7 @@ data_longer$nt <- data_longer$nt %>%
                              taxa == "non_e_r_diatoms" ~ "Diatoms Other than Epithemia or Rhopalodia",
                              taxa == "unknown" | taxa == "chantransia" | taxa == "euglenoid" |
                                taxa == "unknown_green_algae"
-                             ~ "Other",
+                             ~ "Misc.",
                              taxa == "ankistrodesmus" | taxa == "gloeocystis" | taxa == "lacunastrum" | 
                                taxa == "oocystis" | taxa == "pediastrum" | taxa == "scenedesmus_no_spines" |
                                taxa == "stauridium" | taxa == "tetraedron" | taxa == "coelastrum" |
@@ -100,10 +99,9 @@ data_longer$nt <- data_longer$nt %>%
                              ~ "Unicellular Green Algae",
                              taxa == "cladophora" ~ "Cladophora",
                              taxa == "mougeotia" | taxa == "ulothrix" | taxa == "zygnema" |
-                               taxa == "stigeoclonium"
+                               taxa == "stigeoclonium" | taxa == "oedogonium"
                              ~ "Other Filamentous Green Algae",
-                             taxa == "oedogonium" ~ "Oedogonium",
-                             taxa == "rhopalodia" ~ "Rhopalodia",
+                             taxa == "rhopalodia" | taxa == "epithemia" ~ "Epithemia or Rhopalodia",
                              taxa == "spirogyra" ~ "Spirogyra"
   ))
 
@@ -120,7 +118,8 @@ summarize_site <- function(data_long, grouping) {
   data = data_long %>% 
     dplyr::group_by(site, .data[[grouping]]) %>%
     dplyr::summarize(avg_percent = mean(percent)) %>% 
-    arrange(-avg_percent)
+    arrange(-avg_percent) %>% 
+    ungroup()
   
   return(data)
 }

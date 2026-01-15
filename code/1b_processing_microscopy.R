@@ -26,7 +26,8 @@ target_multislides <- target %>%
   dplyr::group_by(taxa, site_reach, field_date, sample_type) %>% 
   dplyr::summarize(mean = mean(percent),
                    sd = sd(percent),
-                   rsd = (sd * 100) / mean)
+                   rsd = (sd * 100) / mean) %>% 
+  ungroup()
 view(target_multislides) # the highest are all samples where one slide had 0.1% cover
 mean(target_multislides$rsd, na.rm = TRUE) # 44.3% high but let's look at taxa 
                                            # that have >5% mean cover
@@ -65,7 +66,8 @@ nontarget_multislides <- nontarget %>%
   dplyr::group_by(taxa, site_reach, field_date, sample_type) %>% 
   dplyr::summarize(mean = mean(percent),
                    sd = sd(percent),
-                   rsd = (sd * 100) / mean)
+                   rsd = (sd * 100) / mean) %>% 
+  ungroup()
 view(nontarget_multislides) # the highest are all samples where one slide had 0.1% cover
 mean(nontarget_multislides$rsd, na.rm = TRUE) # 97.6% high but let's look at taxa 
                                               # that have >5% mean cover

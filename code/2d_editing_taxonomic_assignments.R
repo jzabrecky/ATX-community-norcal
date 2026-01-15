@@ -83,6 +83,7 @@ unique(data$class)
 classes <- data %>% 
   dplyr::group_by(class) %>% 
   dplyr::summarize(total = sum(relative_abundance)) %>% 
+  ungroup()
   filter(total > 1)
 
 # BLASTing the weird names shows that they are mostly random cultured bacteriums

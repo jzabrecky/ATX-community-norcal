@@ -285,6 +285,7 @@ classes <- lapply(data_long, function(x) {
     dplyr::group_by(site_reach, site, field_date, sample_type, class) %>% 
     # remove multiples of phylums due to differing ASVs
     dplyr::summarize(relative_abundance = sum(relative_abundance)) %>% 
+    ungroup()
     pivot_wider(names_from = class, values_from = relative_abundance)
   # if there is a column NA, remove it
   if("NA" %in% colnames(y)) {

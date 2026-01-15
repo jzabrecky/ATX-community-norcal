@@ -130,7 +130,8 @@ data_ver3_conf %>% filter(sample_type != "blank" & fake_target == "n") %>%
   select(site_reach, sample_type, field_date, file) %>% 
   dplyr::group_by(file) %>% 
   unique() %>%
-  dplyr::summarize(count = n())
+  dplyr::summarize(count = n()) %>% 
+  ungroup()
 # lost 1 for non-rarefied but won't be using that anyways, let's continue!
 
 #### (4) Removing "fake" target samples ####
@@ -192,7 +193,8 @@ lapply(names(raw_reads), function(x) write.csv(raw_reads[[x]] %>% select(!file),
 # calculate total abundances/reads per vial for each file
 total_abundance_per_vial <- data_ver5_noblanks %>% 
   dplyr::group_by(vial_ID, file) %>% 
-  dplyr::summarize(total_reads = sum(abundance))
+  dplyr::summarize(total_reads = sum(abundance)) %>% 
+  ungroup()
 
 # left join in this data to full dataframe and calculate relative abundance
 data_ver6_relativized <- left_join(data_ver5_noblanks, total_abundance_per_vial, by = c("vial_ID", "file")) %>% 
@@ -203,7 +205,8 @@ data_ver6_relativized <- left_join(data_ver5_noblanks, total_abundance_per_vial,
 # check to make sure all add up to 100%
 relativized_check <- data_ver6_relativized %>% 
   dplyr::group_by(vial_ID, file) %>% 
-  dplyr::summarize(total = sum(relative_abundance))
+  dplyr::summarize(total = sum(relative_abundance)) %>% 
+  ungroup()
 
 #### (7) Processing Triplicates ####
 
@@ -242,12 +245,14 @@ triplicates_adjusted <- triplicates_adjusted %>%
   # need to do mean of relative abundance as each vial has different number of reads!
   dplyr::summarize(relative_abundance_means = mean(relative_abundance), # may not sum to 100!
                    confidence = mean(confidence)) %>% 
-  mutate(vial_ID = NA)
+  mutate(vial_ID = NA) %>% 
+  ungroup()
 
 # to ensure they still sum to 100, take the total of relative abundances
 total_relative_abundances <- triplicates_adjusted %>% 
   dplyr::group_by(full_sample_name, file) %>% 
-  dplyr::summarize(relative_abundance_totals = sum(relative_abundance_means))
+  dplyr::summarize(relative_abundance_totals = sum(relative_abundance_means)) %>% 
+  ungroup()
 
 # then re-relativize triplicates
 triplicates_adjusted_final <- left_join(triplicates_adjusted, total_relative_abundances, 
@@ -258,7 +263,8 @@ triplicates_adjusted_final <- left_join(triplicates_adjusted, total_relative_abu
 # check that they all sum to 100
 triplicate_relativize_check <- triplicates_adjusted_final %>% 
   dplyr::group_by(full_sample_name, file) %>% 
-  dplyr::summarize(total = sum(relative_abundance)) # all summing to 100!
+  dplyr::summarize(total = sum(relative_abundance)) %>%  # all summing to 100!
+  ungroup()
 
 # plot merged triplicates
 triplicates_adjusted_list <- split(triplicates_adjusted_final, triplicates_adjusted_final$full_sample_name) 

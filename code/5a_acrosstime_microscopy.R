@@ -11,7 +11,7 @@
 set.seed(2025)
 
 # libraries
-lapply(c("tidyverse", "plyr", "vegan", "cowplot"), require, character.only = T)
+lapply(c("tidyverse", "plyr", "vegan", "cowplot", "indicspecies"), require, character.only = T)
 
 # read in files (data transformed in previous script, "4a_amongrivers_microscopy.R")
 data <- lapply(list.files(path = "./data/morphological/transformed/", pattern = ".csv"),
@@ -33,26 +33,15 @@ data_longer <- lapply(unaltered_data,
                                                names_to = "taxa") %>% 
                         filter(year(ymd(field_date)) == 2022))
 
-#### (2) Add  Columns for Sampling Event & Broader Taxa ####
+##### (2) Function for Analyses ####
 
-# we have field dates for sampling distinguishing samples, however, let's change it
-# to be the the number of sampling event (where x is data)
-add_event_no <- function(data) {
-  data %>% 
-    mutate(field_date = ymd(field_date),
-           month = month(field_date)) %>% 
-    mutate(event_no = case_when((field_date >= ymd("2022-06-24") & field_date <= ymd("2022-06-29")) ~ 1,
-                                (field_date >= ymd("2022-07-06") & field_date <= ymd("2022-07-14")) ~ 2,
-                                (field_date >= ymd("2022-07-20") & field_date <= ymd("2022-07-28")) ~ 3,
-                                (field_date >= ymd("2022-08-02") & field_date <= ymd("2022-08-10")) ~ 4,
-                                (field_date >= ymd("2022-08-17") & field_date <= ymd("2022-08-23")) ~ 5,
-                                (field_date >= ymd("2022-09-01") & field_date <= ymd("2022-09-06")) ~ 6,
-                                (field_date >= ymd("2022-09-15") & field_date <= ymd("2022-09-22")) ~ 7)) %>% 
-    relocate(event_no, .before = "field_date") %>% 
-    relocate(month, .before = "field_date")
-}
+# load from supplemental script
+source("./code/supplemental_code/S4a_community_analyses_func.R")
+source("./code/supplemental_code/S4c_barplot_func.R")
 
-# apply to all dataframes
+#### (3) Add  Columns for Sampling Event & Broader Taxa ####
+
+# add event/sampling number to all dataframes
 data <- lapply(data, add_event_no)
 data_longer <- lapply(data_longer, add_event_no)
 
@@ -111,12 +100,6 @@ data_longer$nt <- data_longer$nt %>%
                              taxa == "rhopalodia" ~ "Rhopalodia",
                              taxa == "spirogyra" ~ "Spirogyra"
   ))
-
-##### (3) Function for Analyses ####
-
-# load from supplemental script
-source("./code/supplemental_code/S4a_community_analyses_func.R")
-source("./code/supplemental_code/S4c_barplot_func.R")
 
 #### (4) Barplots through Time ####
 
@@ -272,15 +255,17 @@ for(i in c(1,3)) {
 # RUS: 6 microcoleus, 6+7 phormidium unknown, 5+6+7 oscillatoria, 3+4+5+6 epithemia
 # SFE-M:  2+5 nodularia, e_diatoms 2+3+5
 
+#### (8) Relative assemblage change in each river ####
+
+##  plotting change of NMDS in figures script
+
+#### (8) Conclusions ####
+
 #### STILL CURIOUS- which is changing the most??? ####
 # would this just be distances of centroids from start to finish?
 # read the Avolio paper (2019)
 # would likely need all sample types we are comparing on the same NMDS
 # e.g., does NT change more than TM, etc.
-
-#### (8) Rate of community change ####
-
-#### (8) Conclusions ####
 
 # will write when revisiting
 

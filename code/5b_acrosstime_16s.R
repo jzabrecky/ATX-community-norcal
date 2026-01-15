@@ -32,26 +32,15 @@ data_longer <- lapply(unaltered_data, function(x) x <- x %>% # change date forma
 data <- lapply(data, function(x) x <- x %>% # change date format for next step
                         mutate(field_date = mdy(field_date)))
 
-#### (2) Add  Columns for Sampling Event and Broader Groupings ####
+##### (2) Function for Analyses ####
 
-# we have field dates for sampling distinguishing samples, however, let's change it
-# to be the the number of sampling event (where x is data)
-add_event_no <- function(data) {
-  data %>% 
-    mutate(field_date = ymd(field_date),
-           month = month(field_date)) %>% 
-    mutate(event_no = case_when((field_date >= ymd("2022-06-24") & field_date <= ymd("2022-06-29")) ~ 1,
-                                (field_date >= ymd("2022-07-06") & field_date <= ymd("2022-07-14")) ~ 2,
-                                (field_date >= ymd("2022-07-20") & field_date <= ymd("2022-07-28")) ~ 3,
-                                (field_date >= ymd("2022-08-02") & field_date <= ymd("2022-08-10")) ~ 4,
-                                (field_date >= ymd("2022-08-17") & field_date <= ymd("2022-08-23")) ~ 5,
-                                (field_date >= ymd("2022-09-01") & field_date <= ymd("2022-09-06")) ~ 6,
-                                (field_date >= ymd("2022-09-15") & field_date <= ymd("2022-09-22")) ~ 7)) %>% 
-    relocate(event_no, .before = "field_date") %>% 
-    relocate(month, .before = "field_date")
-}
+# load from supplemental script
+source("./code/supplemental_code/S4a_community_analyses_func.R")
+source("./code/supplemental_code/S4c_barplot_func.R")
 
-# apply to all dataframes
+#### (3) Add  Columns for Sampling Event & Broader Taxa ####
+
+# add event/sampling number to all dataframes
 data <- lapply(data, add_event_no)
 data_longer <- lapply(data_longer, add_event_no)
 
@@ -230,3 +219,23 @@ for(i in c(1,3)) {
 }
 # SFE-M has significant differences in dispersion ***, but not RUS
 # NEED TO VISUALLY ASSESS THIS
+
+#### (7) Changes in Diversity ####
+
+# read in diversity files
+diversity <- lapply(list.files(path = "./data/molecular/shannon_diversity/", pattern = ".csv"),
+                    function(x) read.csv(paste("./data/molecular/shannon_diversity/", x, sep = "")))
+names(diversity) <- c("nt", "tac", "tm")
+diversity <- lapply(diversity, add_event_no)
+
+# plot diversity changes
+for(i in 1:length(diversity)) {
+  plot = ggplot(data = diversity[[i]], aes(x = as.factor(event_no), y = shannon_diversity,
+                                           fill = site)) +
+    geom_boxplot()
+  print(plot)
+}
+# no clear patterns!
+
+#### (8) 
+
