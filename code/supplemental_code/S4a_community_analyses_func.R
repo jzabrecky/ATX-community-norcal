@@ -1,6 +1,6 @@
 #### Script of functions used in NMDS (and related) analyses
 ### Jordan Zabrecky
-## last edited: 12.17.2025
+## last edited: 01.20.2025
 
 # This script hosts functions used to create NMDS plots
 
@@ -113,15 +113,21 @@ makeNMDSplot <- function(data, loading, significant, color, shape) {
 # runs PERMANOVA test on inputted data
 # @param data is relative abundance data in wide format with environmental/sampling data on left
 # @param start_col is index of column for which the abundance data starts 
-runPERMANOVA <- function(data, start_col, group, strata = NA) {
+# @param end_col is index of column for which abundance data ends 
+# (automatically set to end of givn dataframe unless stated otherwise)
+# @param group is explanatory variable for PERMANOVA test given as data$`col_name`
+# @strata is an optional argument to include a group-level effect
+# @na.action allows option for to remove NAs (automatically set to fail if NAs)
+runPERMANOVA <- function(data, start_col, end_col = ncol(data), group, strata = NA,
+                         na.action = "na.fail") {
   # create distance matrix based on Bray-Curtis distances
-  dist_matrix = vegdist(data[,start_col:ncol(data)], method = "bray")
+  dist_matrix = vegdist(data[,start_col:end_col], method = "bray")
   
   # return PERMANOVA test results
   if(is.na(strata[1])) {
-    results = adonis2(dist_matrix ~ group)
+    results = adonis2(dist_matrix ~ group, na.action = na.action)
   } else {
-    results = adonis2(dist_matrix ~ group, strata = strata)
+    results = adonis2(dist_matrix ~ group, strata = strata, na.action = na.action)
   }
   
   return(results)
@@ -143,4 +149,50 @@ add_event_no <- function(data) {
                                 (field_date >= ymd("2022-09-15") & field_date <= ymd("2022-09-22")) ~ 7)) %>% 
     relocate(event_no, .before = "field_date") %>% 
     relocate(month, .before = "field_date")
+}
+
+## (e) run_dbRDA
+# run distance-based redundancy analysis
+# @param data is wide dataframe of hellinger abundances with environmental covariates on end
+# @param start_col is first column of abundance data
+# @param end_col is last column of abundance data
+# @param mat_atx is the sample type of the community being analyze
+# where "tac" matches to TAC atx concentrations, "tm" to TM, and "nt"
+# to an average or both or, if only one available, the one available
+# TBD about the above though
+# note: covariates are hard-coded in ATM and TM vs. TAC is accessible via if/else statements
+run_dbRDA <- function(data, start_col, end_col, mat_atx, na.action = "na.fail") {
+  
+  # run dbRDA
+  if(mat_atx == "tac") {
+    results = dbrda(data = data, data[,start_col:end_col] ~ 
+                      TAC_ATX_all_ug_orgmat_g + DIN_mg_N_L + oPhos_ug_P_L +
+  } else if (mat_atx == "tm") {
+    results = dbrda(data = data, data[,start_col:end_col] ~ 
+                      TM_ATX_all_ug_orgmat_g + DIN_mg_N_L + oPhos_ug_P_L +
+                      temp_C + TDC_mg_L + DOC_mg_L + Mg_mg_L, na.action = na.action)
+  } else if (mat_atx == "nt") {
+    results = dbrda(data = data, data[,start_col:end_col] ~ 
+                      mean_ATX_all_ug_orgmat_g + DIN_mg_N_L + oPhos_ug_P_L +
+                      temp_C + TDC_mg_L + DOC_mg_L + Mg_mg_L, 
+                      na.action = na.action)
+  }
+  
+  # confirm variance inflation is not high
+  test = as.vector(vif.cca(results))
+  print(paste("VIF above 30:", any(test > 30), sep = " "))
+  
+  # is RDA model significant? # MAY MOVE THESE THINGS
+  model_sig =  anova.cca(results, parallel=getOption("mc.cores"))
+  
+  # how much variation explained by RDA? (adjusted r-squared)
+  model_rsquared = RsquareAdj(results)
+  
+  # which variables are significant?
+  model_sigvariables = anova.cca(results, step = 1000, by = "term")
+  
+  # return list of dbRDA object, model significance test, model rsquared, and significant variable test
+  final = list(results, model_sig, model_rsquared, model_sigvariables)
+  names(final) <- c("object", "model_sig", "rsquared", "sig_variables")
+  return(final)
 }

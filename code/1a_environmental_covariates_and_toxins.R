@@ -1,6 +1,6 @@
 #### Gathering environmental covariates for each field date at each reach
 ### Jordan Zabrecky
-## last edited: 10.02.2025
+## last edited: 01.20.2026
 
 # This script creates a dataframe with environmental covariates (water chemistry
 # and anatoxin data) to use with both microscopy and molecular data
@@ -17,7 +17,14 @@ atx_target <- read.csv("./data/field_and_lab/cyano_atx.csv") # processed version
 water_chemistry <- read.csv("./data/field_and_lab/water_chemistry.csv") %>% 
   select(!c(time, reach))
 
-#### (2) Joining in data and saving csv ####
+#### (2) Calculate DIN ####
+
+# calculate DIN (dissolved inorganic nitrogen) as the sum of nitrate and ammonium
+water_chemistry <- water_chemistry %>% 
+  mutate(DIN_mg_N_L = ammonium_mg_N_L + nitrate_mg_N_L) %>% 
+  relocate(DIN_mg_N_L, .after = ammonium_mg_N_L)
+
+#### (2) Joining data and saving csv ####
 
 # TM sample that was taken on 9/8 was to make up for sample on 9/6 that was taken incorrectly
 atx_target$field_date[which(atx_target$field_date == "2022-09-08")] <- "2022-09-06"

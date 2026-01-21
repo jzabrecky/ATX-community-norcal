@@ -1,6 +1,6 @@
 #### Comparing microscopy data with regard to anatoxin concentrations
 ### Jordan Zabrecky
-## last edited: 01.06.2026
+## last edited: 01.20.2026
 
 # This script examines how communities as identified by microscopy
 # change with increasing anatoxin concentrations by <INSERT>
@@ -18,64 +18,204 @@
 set.seed(2025)
 
 # libraries
-lapply(c("tidyverse", "plyr", "vegan", "cowplot", "TITAN2"), require, character.only = T)
+lapply(c("tidyverse", "plyr", "vegan", "cowplot", "indicspecies"), require, character.only = T)
 
 # read in relative abundance files (data transformed in previous script, "4a_amongrivers_microscopy.R")
 data <- lapply(list.files(path = "./data/morphological/transformed/", pattern = ".csv"),
                function(x) read.csv(paste("./data/morphological/transformed/", x, sep = "")))
-names(data) <- c("nt", "tac", "tm")
+sample_types <- c("nt", "tac", "tm")
+names(data) <- sample_types
 
 # read in environmental covariates & toxin data
-env <- read.csv("data/field_and_lab/environmental_covariates_and_toxins.csv") %>% 
-  # analyze congeners all together, so removed separted congeners
-  select(!c("pH", "TM_ATXa_ug_g", "TAC_ATXa_ug_g", "TM_dhATXa_ug_g", 
-            "TAC_dhATXa_ug_g", "TM_HTXa_ug_g", "TAC_HTXa_ug_g", "TM_Chla_ug_g",
-            "TAC_Chla_ug_g", "TM_Pheo_ug_g", "TAC_Pheo_ug_g", "TM_percent_organic_matter",
-            "TAC_percent_organic_matter", "TM_ATX_all_ug_chla_ug", "TAC_ATX_all_ug_chla_ug",
-            "TM_ATX_all_ug_g", "TAC_ATX_all_ug_g")) %>% 
-  filter(year(ymd(field_date)) == 2022)
+env_tog <- read.csv("./data/field_and_lab/env_tox_standardized_together.csv")
+env_sep <- read.csv("./data/field_and_lab/env_tox_standardized_byriver.csv")
 
-#### (2) Predictor Data Transformation ####
+# lastly, merge with our community data to get rows formatted the same
+data_tog <- lapply(data, function(x) left_join(x, env_tog, by = c("site", "site_reach", "field_date")))
+data_sep <- lapply(data, function(x) left_join(x, env_sep, by = c("site", "site_reach", "field_date")))
 
-# replace 0's with small value for log-transformation (to avoid outweighing outliers)
-# DO NOT replace NAs because in those circumstances, no mat was present for us to sample
-# first look at histogram
-hist(env$TM_ATX_all_ug_orgmat_g, breaks = 30)
-hist(env$TAC_ATX_all_ug_orgmat_g, breaks = 30)
+# for microcoleus & anabaena remove rows where there are NAs for anatoxins
+which(is.na(data_tog$tm$TM_ATX_all_ug_orgmat_g)) #22
+which(is.na(data_tog$tac$TAC_ATX_all_ug_orgmat_g))
 
-# lowest non-zero value is 0.03, how about 0.005 as zero replacement?
-log(0.03) # -3.506558
-log(0.01) # -4.60517
+# TM 22 was a "not sure if this is microcoleus sample" and there was not enough material
+# to analyze for anatoxins
+data_tog$tm <- data_tog$tm[-22,]
+data_sep$tm <- data_sep$tm[-22,]
 
-# replace zeros
-env$TM_ATX_all_ug_orgmat_g <- replace(env$TM_ATX_all_ug_orgmat_g , 
-                                      env$TM_ATX_all_ug_orgmat_g == 0, 0.01)
-env$TAC_ATX_all_ug_orgmat_g <- replace(env$TAC_ATX_all_ug_orgmat_g , 
-                                       env$TAC_ATX_all_ug_orgmat_g == 0, 0.01)
+# split into lists by river
+data_sep_list <- list()
+for(i in 1:length(data_sep)) {
+  data_sep_list[[i]] <- split(data_sep[[i]], data_sep[[i]]$site)
+}
+names(data_sep_list) <- names(data_sep)
 
-# log-transform ATX variables 
-env[,4:ncol(env)] <- log(env[,4:ncol(env)])
+#### (2) Functions for Analyses ####
 
-# center & scale
-# data all-together (standardized across rivers)
-env_tog <- env
-env_tog[,4:ncol(env_tog)] <- apply(env_tog[,4:ncol(env_tog)], 2, scale)
-# rivers separately (group-level variable)
-env_sep <- env
-env_sep[,4:ncol(env_sep)] <- apply(env_sep[,4:ncol(env_sep)], 2,
-                                   function(x) ave(x, env_sep$site, FUN = scale))
+# load community analyses functions from other script
+source("./code/supplemental_code/S4a_community_analyses_func.R")
 
-# compare histograms of the two
-hist(env_tog$TM_ATX_all_ug_orgmat_g)
-hist(env_sep$TM_ATX_all_ug_orgmat_g)
-hist(env_tog$TAC_ATX_all_ug_orgmat_g)
-hist(env_sep$TAC_ATX_all_ug_orgmat_g)
+# set start column of community data
+start_col <- 5
 
-# save to avoid doing this in future scripts (run once)
-#write.csv(env_tog, "./data/field_and_lab/env_tox_standardized_together.csv", 
-#          row.names = FALSE)
-#write.csv(env_sep, "./data/field_and_lab/env_tox_standardized_byriver.csv", 
-#          row.names = FALSE)
+#### (3) PERMANOVA ####
+
+# Do communities significantly change with anatoxin concentrations?
+
+## (a) rivers together
+runPERMANOVA(data_tog$tm, start_col, end_col = ncol(data$tm), 
+             group = data_tog$tm$`TM_ATX_all_ug_orgmat_g`)
+# TM: significant **
+runPERMANOVA(data_tog$tac, start_col, end_col = ncol(data$tac), 
+             group = data_tog$tac$`TAC_ATX_all_ug_orgmat_g`)
+# TAC: significant *
+runPERMANOVA(data_tog$nt, start_col, end_col = ncol(data$nt), 
+             group = data_tog$nt$`mean_ATX_all_ug_orgmat_g`, na.action = "na.omit")
+# NT: significant **
+
+## (b) rivers separately
+# (omitting Salmon because only one sample was toxic and very minorly)
+runPERMANOVA(data_sep_list$tm$`SFE-M`, start_col, end_col = ncol(data$tm),
+             group = data_sep_list$tm$`SFE-M`$TM_ATX_all_ug_orgmat_g)
+# SFE TM: significant: **
+runPERMANOVA(data_sep_list$tac$`SFE-M`, start_col, end_col = ncol(data$tac),
+             group = data_sep_list$tac$`SFE-M`$TAC_ATX_all_ug_orgmat_g)
+# SFE TAC: significant ***
+runPERMANOVA(data_sep_list$tac$`RUS`, start_col, end_col = ncol(data$tac),
+             group = data_sep_list$tac$`RUS`$TAC_ATX_all_ug_orgmat_g)
+# RUS TAC: significant *
+
+lapply(data_sep_list$nt, function(x) runPERMANOVA(x, start_col, end_col = ncol(data$nt),
+                                                  group = x$`mean_ATX_all_ug_orgmat_g`,
+                                                  na.action = "na.omit"))
+# NT: SAL NS, RUS NS, SFE-M *
+
+# How about if we have grouping of anatoxin concentrations, such as:
+# <insert grouping criteria>
+
+# look at un-transformed anatoxin concentrations
+atx <- read.csv("")
+
+#### (4) (db)RDA analyses ####
+
+## (a) variable selection
+
+# check which variables are correlated
+correlations <- cor(env_tog[,4:ncol(env_tog)], use = "complete.obs")
+view(which(correlations > 0.7 & correlations != 1, arr.ind = TRUE))
+# correlated: DO & temp, assumed pH & DO, ammonium & nitrate & DIN, 
+# conductivity & Cl Na K & Mg, DOC & Br amm DIN, SO4 & Cl NA
+# we are missing some conductivity observations, so choose most correlated instead (Mg)
+# will select one from each correlated group:
+# included in RDA analyses: <INSERT>
+
+## (b) analyzing rivers together with data standardized together
+
+# run dbRDA for all sample types with all rivers together
+dbRDA_tog <- lapply(sample_types, function(x) run_dbRDA(data_tog[[x]], 
+                                                       start_col = 5, 
+                                                       end_col = ncol(data[[x]]),
+                                                       mat_atx = x))
+names(dbRDA_tog) <- sample_types
+
+# plot
+lapply(dbRDA_tog, function(x) plot(x$object))
+
+# are models significant?
+lapply(dbRDA_tog, function(x) print(x$model_sig))
+# nt ***, tac ***, tm ***
+
+# what is the rsquared?
+lapply(dbRDA_tog, function(x) print(x$rsquared))
+# adjusted: nt TBD, tac 0.231, tm 0.457
+
+# significant variables?
+lapply(dbRDA_tog, function(x) print(x$sig_variables))
+# NT:
+# TAC: TAC ATX**, oPhos***
+# TM: TM ATX***, oPhos*, TDC**, Mg**
+
+## (c) separated standardization
+
+# run dbRDA for all sample types with all rivers together
+# but covariates standardized for each river
+dbRDA_sep <- lapply(sample_types, function(x) run_dbRDA(data_sep[[x]], 
+                                                        start_col = 5, 
+                                                        end_col = ncol(data[[x]]),
+                                                        mat_atx = x,
+                                                        na.action = "na.omit"))
+names(dbRDA_sep) <- sample_types
+
+# plot
+lapply(dbRDA_sep, function(x) plot(x$object))
+
+# are models significant?
+lapply(dbRDA_sep, function(x) print(x$model_sig))
+# nt NS, tac ***, tm NS
+
+# what is the rsquared?
+lapply(dbRDA_tog, function(x) print(x$rsquared))
+# adjusted: nt TBD, tac 0.265, tm 0.121
+
+# significant variables?
+lapply(dbRDA_tog, function(x) print(x$sig_variables))
+# NT:
+# TAC: TAC ATX***, oPhos**, DOC *
+# TM: none
+
+## (b) apply to each river separately with separate standardization
+
+# run dbRDA for all sample types with all rivers separately - NT
+# want to figure out what to do with ATX
+data_sep$nt
+
+# russian TAC
+russian_TAC = run_dbRDA(data_sep$tac$RUS, 
+                        start_col = 5, 
+                        end_col = ncol(data$tac),
+                        mat_atx = "tac")
+
+# sfkeel TAC
+sfkeel_TAC = run_dbRDA(data_sep$tac$`SFE-M`,
+                       start_col = 5,
+                       end_col = ncol(data$tac),
+                       mat_atx = "tac")
+
+# sfkeel TM
+sfkeel_TM = run_dbRDA(data_sep_list$tm$`SFE-M`,
+                      start_col = 5,
+                      end_col = ncol(data$tm),
+                      mat_atx = "tm")
+
+# add into list
+individual_t_rdas <- list(russian_TAC, sfkeel_TAC, sfkeel_TM)
+names(individual_t_rdas) <- c("russian_TAC", "sfkeel_TAC", "sfkeel_TM")
+
+# plot
+lapply(individual_t_rdas, function(x) plot(x$object))
+
+# are models significant?
+lapply(individual_t_rdas, function(x) print(x$model_sig))
+# russian tac no, sfkeel tac yes, sfkeel tm no
+
+# what is the rsquared?
+lapply(individual_t_rdas, function(x) print(x$rsquared))
+# adjusted: nt TBD, tac 0.265, tm 0.121
+
+# significant variables?
+lapply(individual_t_rdas, function(x) print(x$sig_variables))
+# <insert>
+
+#### (5) Species Indicator Analyses ####
+
+
+
+
+
+
+
+#### OLD CODE BELOW: #####
+
 
 # lastly, merge with our community data to get rows formatted the same
 data_tog <- lapply(data, function(x) left_join(x, env_tog, by = c("site", "site_reach", "field_date")))
@@ -94,6 +234,9 @@ data_sep$tm <- data_sep$tm[-22,]
 for(i in 1:length(data_sep)) {
   data_sep[[i]] <- split(data_sep[[i]], data_sep[[i]]$site)
 }
+
+
+
 
 #### (3) (Distance-Based) Redundancy Analysis ####
 
