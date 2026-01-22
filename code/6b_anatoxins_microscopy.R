@@ -58,7 +58,7 @@ source("./code/supplemental_code/S4a_community_analyses_func.R")
 # set start column of community data
 start_col <- 5
 
-#### (3) PERMANOVA ####
+#### (3) PERMANOVA (& BETADISP) ####
 
 # Do communities significantly change with anatoxin concentrations?
 
@@ -72,6 +72,22 @@ runPERMANOVA(data_tog$tac, start_col, end_col = ncol(data$tac),
 runPERMANOVA(data_tog$nt, start_col, end_col = ncol(data$nt), 
              group = data_tog$nt$`mean_ATX_all_ug_orgmat_g`, na.action = "na.omit")
 # NT: significant **
+# also, check dispersion
+anova(betadisper(vegdist(data_tog$tm[,start_col:ncol(data$tm)], method = "bray"), 
+                 data_tog$tm$TM_ATX_all_ug_orgmat_g))
+# TM: significant dispersion differences ***
+anova(betadisper(vegdist(data_tog$tac[,start_col:ncol(data$tac)], method = "bray"), 
+                 data_tog$tac$TAC_ATX_all_ug_orgmat_g))
+# TAC: no significant dispersion differences
+anova(betadisper(vegdist(data_tog$nt[,start_col:ncol(data$nt)], method = "bray"), 
+                 data_tog$nt$mean_ATX_all_ug_orgmat_g))
+# NT: significant dispersion differences *
+
+# view NMDS to visualize differences
+NMDS_tog <- lapply(names(data_tog), function(x) getNMDSdata(data_tog[[x]], start_col, 
+                                                            end_col = ncol(data[[x]])))
+names(NMDS_tog) <- sample_types
+makeNMDSplot(NMDS_tog$tm, FALSE, FALSE, color = "TM_atx_category", shape = "site")
 
 ## (b) rivers separately
 # (omitting Salmon because only one sample was toxic and very minorly)
@@ -84,17 +100,14 @@ runPERMANOVA(data_sep_list$tac$`SFE-M`, start_col, end_col = ncol(data$tac),
 runPERMANOVA(data_sep_list$tac$`RUS`, start_col, end_col = ncol(data$tac),
              group = data_sep_list$tac$`RUS`$TAC_ATX_all_ug_orgmat_g)
 # RUS TAC: significant *
-
 lapply(data_sep_list$nt, function(x) runPERMANOVA(x, start_col, end_col = ncol(data$nt),
                                                   group = x$`mean_ATX_all_ug_orgmat_g`,
                                                   na.action = "na.omit"))
 # NT: SAL NS, RUS NS, SFE-M *
 
-# How about if we have grouping of anatoxin concentrations, such as:
-# <insert grouping criteria>
+# To-do: PERMDISP, view NMDS to visualize differences
 
-# look at un-transformed anatoxin concentrations
-atx <- read.csv("")
+## How about just comparing samples with and without detectable toxin?
 
 #### (4) (db)RDA analyses ####
 
@@ -208,7 +221,7 @@ lapply(individual_t_rdas, function(x) print(x$sig_variables))
 
 #### (5) Species Indicator Analyses ####
 
-
+# with low, medium, high categories
 
 
 
