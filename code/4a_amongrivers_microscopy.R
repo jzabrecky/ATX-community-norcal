@@ -173,7 +173,9 @@ lapply(NMDS_plots, print)
 #### (6) Q: Are communities from each river significantly different? (PERMANOVA) ####
 
 # run PERMANOVAs
-permanovas <- lapply(data, function(x) runPERMANOVA(x, start_col, x$`site`))
+permanovas <- lapply(data, function(x) runPERMANOVA(data = x, 
+                                                    start_col = start_col, 
+                                                    group = x$`site`))
 lapply(permanovas, print)
 # RESULTS: significant difference for TM and NT across rivers, but not TAC
 
@@ -209,7 +211,7 @@ lapply(names(centroid_distance), function(x) print(paste(x, ": ", centroid_dista
 # tm: 0.684185197772008
 # tac: 0.107665714801558
 
-#### (7) Q: What explains these differences? Loading & Species Indicator Analyses ####
+#### (7) Q: What explains these differences? Loadings & Species Indicator Analyses ####
 
 ## (a) NMDS loadings
 # note these are to be interpretted as supplemental, not explanatory
@@ -258,7 +260,21 @@ summary(multipatt(tac_sub[,start_col:ncol(tac_sub)], tac_sub$site, func = "r.g",
 # RUS: phormidium, oscillatoria
 # SFE: nodularia, microcoleus
 
-#### (8) Conclusions ####
+#### (8) Misc. Q's ####
 
-## In conclusion, 
-## come back & revisit this to rewrite this
+# is Geilerinema present in all TM samples?
+data$tm$geitlerinema
+count(data$tm$geitlerinema > 0)
+# present in 17 out of 23
+
+# what about TAC?
+data$tac$geitlerinema
+count(data$tac$geitlerinema > 0)
+# all of them which is crazy >1%!
+
+# how about microcoleus in TAC? (particularly interested in Russian River)
+data$tac$microcoleus
+count(data$tac$microcoleus > 0 & data$tac$site == "RUS")
+# true for 22/28
+# 10 of those are russian river
+count(data$tac$site == "RUS") # of 15 samples

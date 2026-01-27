@@ -1,6 +1,6 @@
 #### Standardizing anatoxins & environmental covariates for analyses
 ### Jordan Zabrecky
-## last edited: 01.20.2026
+## last edited: 01.26.2026
 
 # This script standardizes anatoxin concentrations and environmental covariates
 # to use in analyses such as an RDA
@@ -30,6 +30,9 @@ env <- read.csv("data/field_and_lab/environmental_covariates_and_toxins.csv") %>
 # <5 is low
 # 0 is none
 
+# we also want binary groupings to see if there is a difference
+# when no anatoxins are detected versus anatoxins detected
+
 # need to make a column for NT samples to compare to toxin concentrations
 # (in case we have both taxa or only one taxa) will take the average of two or the one value
 env <- env %>% 
@@ -55,10 +58,19 @@ env <- env %>%
                                      mean_ATX_all_ug_orgmat_g < 10 & mean_ATX_all_ug_orgmat_g >= 1 ~ "medium",
                                      mean_ATX_all_ug_orgmat_g <= 1 & mean_ATX_all_ug_orgmat_g > 0 ~ "low",
                                      mean_ATX_all_ug_orgmat_g == 0 ~ "none",
-                                     TRUE ~ NA)) %>% 
-  relocate(TM_atx_category, .before = temp_C) %>% 
-  relocate(TAC_atx_category, .before = temp_C) %>% 
-  relocate(NT_atx_category, .before = temp_C)
+                                     TRUE ~ NA),
+         TM_atx_detected = case_when(TM_atx_category == "none" ~ "none",
+                                     is.na(TM_atx_category) ~ NA,
+                                     TRUE ~ "detected"),
+         TAC_atx_detected = case_when(TAC_atx_category == "none" ~ "none",
+                                      is.na(TAC_atx_category) ~ NA,
+                                      TRUE ~ "detected"),
+         NT_atx_detected = case_when(NT_atx_category == "none" ~ "none",
+                                     is.na(NT_atx_category) ~ NA,
+                                     TRUE ~ "detected")) %>% 
+  relocate(TM_atx_category, TAC_atx_category, NT_atx_category,
+           TM_atx_detected, TAC_atx_detected, NT_atx_detected, 
+           .before = temp_C)
 
 #### (3) Log-Transforming ATX data ####
 
@@ -95,11 +107,11 @@ hist(env$TAC_ATX_all_ug_orgmat_g, breaks = 100)
 
 # standardize data all-together
 env_tog <- env
-env_tog[,8:ncol(env_tog)] <- apply(env_tog[,8:ncol(env_tog)], 2, scale)
+env_tog[,10:ncol(env_tog)] <- apply(env_tog[,10:ncol(env_tog)], 2, scale)
 
 # standardize data within each river separately
 env_sep <- env
-env_sep[,8:ncol(env_sep)] <- apply(env_sep[,8:ncol(env_sep)], 2,
+env_sep[,10:ncol(env_sep)] <- apply(env_sep[,10:ncol(env_sep)], 2,
                                    function(x) ave(x, env_sep$site, FUN = scale))
 
 # save csvs

@@ -19,25 +19,36 @@ theme_set(theme_bw() + theme(panel.grid = element_blank(),
 ## (a) getNMDSdata
 # creates NMDS data point coordinates and loadings
 # @param data is relative abundance data in wide format with environmental/sampling data on left
-# @param start_col is index of column for which the abundance data starts 
+# @param start_col is index of column for which the abundance data starts
+# @param end_col is index of column for which the abundance data ends (default is end of dataframe)
 # @param molecular is if the data is molecular (Aka has ASV's or not); this is included because if 
 # we ask for loading from it, it will take forever since there are 100+ ASVs even after trimming
-getNMDSdata <- function(data, start_col, ASV = FALSE) {
+getNMDSdata <- function(data, start_col, end_col = NA, ASV = FALSE) {
+  
+  # if end_col not given, assume end of the dataframe
+  if(is.na(end_col)) {
+    end_col = ncol(data)
+  }
+  
   # use vegan to calculate NMDS distances
-  nmds = metaMDS(as.matrix(data[,start_col:ncol(data)]),
+  nmds = metaMDS(as.matrix(data[,start_col:end_col]),
                  distance = "bray",
                  trymax = 500,
                  autotransform = TRUE)
   # bind x & y positions to site information
   nmds_final = cbind(as.data.frame(scores(nmds, "sites")), 
-                     data %>% select(site_reach, site, field_date, sample_type)) %>% 
+                     data %>% select(any_of(c("site_reach", "site", "field_date", 
+                                              "sample_type", "TM_atx_category",
+                                              "TAC_atx_category", "NT_atx_category",
+                                              "TM_atx_detected", "TAC_atx_detected",
+                                              "NT_atx_detected")))) %>% 
     mutate(field_date = ymd(field_date),
            year = year(field_date),
            month = as.character(month(field_date)))
   
   # get loadings for taxa (if not ASV-based!)
   if(ASV == FALSE) {
-    vs = envfit(nmds, as.matrix(data[,6:ncol(data)]), perm = 999)
+    vs = envfit(nmds, as.matrix(data[,start_col:end_col]), perm = 999)
     coord = as.data.frame(scores(vs, "vectors"))
     stress = nmds$stress
     
@@ -118,8 +129,14 @@ makeNMDSplot <- function(data, loading, significant, color, shape) {
 # @param group is explanatory variable for PERMANOVA test given as data$`col_name`
 # @strata is an optional argument to include a group-level effect
 # @na.action allows option for to remove NAs (automatically set to fail if NAs)
-runPERMANOVA <- function(data, start_col, end_col = ncol(data), group, strata = NA,
+runPERMANOVA <- function(data, start_col, end_col = NA, group, strata = NA,
                          na.action = "na.fail") {
+  
+  # if "end_col" not given, use the number of columns in dataframe
+  if(is.na(end_col)) {
+    end_col = ncol(data)
+  }
+  
   # create distance matrix based on Bray-Curtis distances
   dist_matrix = vegdist(data[,start_col:end_col], method = "bray")
   
@@ -167,6 +184,7 @@ run_dbRDA <- function(data, start_col, end_col, mat_atx, na.action = "na.fail") 
   if(mat_atx == "tac") {
     results = dbrda(data = data, data[,start_col:end_col] ~ 
                       TAC_ATX_all_ug_orgmat_g + DIN_mg_N_L + oPhos_ug_P_L +
+                      temp_C + TDC_mg_L + DOC_mg_L + Mg_mg_L, na.action = na.action)
   } else if (mat_atx == "tm") {
     results = dbrda(data = data, data[,start_col:end_col] ~ 
                       TM_ATX_all_ug_orgmat_g + DIN_mg_N_L + oPhos_ug_P_L +
