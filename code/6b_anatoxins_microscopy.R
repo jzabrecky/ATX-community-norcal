@@ -1,6 +1,6 @@
 #### Comparing microscopy data with regard to anatoxin concentrations
 ### Jordan Zabrecky
-## last edited: 01.20.2026
+## last edited: 01.26.2026
 
 # This script examines how communities as identified by microscopy
 # change with increasing anatoxin concentrations by <INSERT>
@@ -13,9 +13,6 @@
 # also explore collinearity there
 
 #### (1) Loading libraries & data ####
-
-# set seed for reproducibility
-set.seed(2025)
 
 # libraries
 lapply(c("tidyverse", "plyr", "vegan", "cowplot", "indicspecies"), require, character.only = T)
@@ -60,16 +57,28 @@ start_col <- 5
 
 #### (3) PERMANOVA (& BETADISP) ####
 
-# Do communities significantly change with anatoxin concentrations?
+## Do communities significantly change with anatoxin concentrations?
+## Using log-transformed and cenetered anatoxin concentrations here...
 
 ## (a) rivers together
+set.seed(1)
 runPERMANOVA(data_tog$tm, start_col, end_col = ncol(data$tm), 
-             group = data_tog$tm$`TM_ATX_all_ug_orgmat_g`)
-# TM: significant **
+             group = data_tog$tm$`TM_ATX_all_ug_orgmat_g`, 
+             strata = data_tog$tm$site)
+anova(betadisper(vegdist(data_tog$tm[,start_col:ncol(data$tm)], method = "bray"), 
+                 data_tog$tm$`TM_ATX_all_ug_orgmat_g`))
+# TM: PERMANOVA (barely) significant*, but dispersion ***
+# which makes me think that visually, these would not be different
+set.seed(1)
 runPERMANOVA(data_tog$tac, start_col, end_col = ncol(data$tac), 
-             group = data_tog$tac$`TAC_ATX_all_ug_orgmat_g`)
-# TAC: significant *
+             group = data_tog$tac$`TAC_ATX_all_ug_orgmat_g`,
+             strata = data_tog$tac$site)
+anova(betadisper(vegdist(data_tog$tac[,start_col:ncol(data$tac)], method = "bray"), 
+                 data_tog$tac$`TAC_ATX_all_ug_orgmat_g`))
+# TAC: not significant, also no significant dispersion differences
+set.seed(1)
 runPERMANOVA(data_tog$nt, start_col, end_col = ncol(data$nt), 
+<<<<<<< HEAD
              group = data_tog$nt$`mean_ATX_all_ug_orgmat_g`, na.action = "na.omit")
 # NT: significant **
 # also, check dispersion
@@ -88,28 +97,141 @@ NMDS_tog <- lapply(names(data_tog), function(x) getNMDSdata(data_tog[[x]], start
                                                             end_col = ncol(data[[x]])))
 names(NMDS_tog) <- sample_types
 makeNMDSplot(NMDS_tog$tm, FALSE, FALSE, color = "TM_atx_category", shape = "site")
+=======
+             group = data_tog$nt$`mean_ATX_all_ug_orgmat_g`,
+             strata = data_tog$nt$`site`[-which(is.na(data_tog$nt$mean_ATX_all_ug_orgmat_g))],
+             na.action = "na.omit")
+anova(betadisper(vegdist(data_tog$nt[,start_col:ncol(data$nt)], method = "bray"), 
+                 data_tog$nt$`mean_ATX_all_ug_orgmat_g`))
+# NT: significant * but also significant dispersion *
+>>>>>>> aac9ab7456d7548273e268593b9919b453cf0ef2
 
 ## (b) rivers separately
 # (omitting Salmon because only one sample was toxic and very minorly)
+set.seed(1)
 runPERMANOVA(data_sep_list$tm$`SFE-M`, start_col, end_col = ncol(data$tm),
              group = data_sep_list$tm$`SFE-M`$TM_ATX_all_ug_orgmat_g)
-# SFE TM: significant: **
+anova(betadisper(vegdist(data_sep_list$tm$`SFE-M`[,start_col:ncol(data$tm)], method = "bray"), 
+                 data_sep_list$tm$`SFE-M`$`TM_ATX_all_ug_orgmat_g`))
+# SFE TM: significant: **, so is dispersion **
+set.seed(1)
 runPERMANOVA(data_sep_list$tac$`SFE-M`, start_col, end_col = ncol(data$tac),
              group = data_sep_list$tac$`SFE-M`$TAC_ATX_all_ug_orgmat_g)
-# SFE TAC: significant ***
+anova(betadisper(vegdist(data_sep_list$tac$`SFE-M`[,start_col:ncol(data$tac)], method = "bray"), 
+                 data_sep_list$tac$`SFE-M`$`TAC_ATX_all_ug_orgmat_g`))
+# SFE TAC: significant ***, dispersion ***
+set.seed(1)
 runPERMANOVA(data_sep_list$tac$`RUS`, start_col, end_col = ncol(data$tac),
              group = data_sep_list$tac$`RUS`$TAC_ATX_all_ug_orgmat_g)
+<<<<<<< HEAD
 # RUS TAC: significant *
+=======
+anova(betadisper(vegdist(data_sep_list$tac$`RUS`[,start_col:ncol(data$tac)], method = "bray"), 
+                 data_sep_list$tac$`RUS`$`TAC_ATX_all_ug_orgmat_g`))
+# RUS TAC: significant **, but dispersion is not
+
+set.seed(1)
+>>>>>>> aac9ab7456d7548273e268593b9919b453cf0ef2
 lapply(data_sep_list$nt, function(x) runPERMANOVA(x, start_col, end_col = ncol(data$nt),
                                                   group = x$`mean_ATX_all_ug_orgmat_g`,
                                                   na.action = "na.omit"))
-# NT: SAL NS, RUS NS, SFE-M *
+lapply(data_sep_list$nt, function(x) 
+  anova(betadisper(vegdist(x[,start_col:ncol(data$nt)], method = "bray"), 
+                  x$`mean_ATX_all_ug_orgmat_g`)))
+# NT: SAL NS, RUS NS, SFE-M * with dispersion only significantly different in Russian
 
+<<<<<<< HEAD
 # To-do: PERMDISP, view NMDS to visualize differences
 
 ## How about just comparing samples with and without detectable toxin?
+=======
 
-#### (4) (db)RDA analyses ####
+## How about if we do it by grouping of anatoxin concentrations?
+>>>>>>> aac9ab7456d7548273e268593b9919b453cf0ef2
+
+## (a) rivers together
+set.seed(1)
+runPERMANOVA(data_tog$tm, start_col, end_col = ncol(data$tm), 
+             group = data_tog$tm$`TM_atx_category`,
+             strata = data_tog$tm$site)
+# TM: not significant (but very close- results may be influenced by Salmon?)
+set.seed(1)
+runPERMANOVA(data_tog$tac, start_col, end_col = ncol(data$tac), 
+             group = data_tog$tac$`TAC_atx_category`,
+             strata = data_tog$tac$site)
+# TAC: not significant, could be do to separate scaling equalizing both SFE-M and RUS
+set.seed(1)
+runPERMANOVA(data_tog$nt, start_col, end_col = ncol(data$nt), 
+             group = data_tog$nt$`NT_atx_category`, 
+             strata = data_tog$nt$site[-which(is.na(data_tog$nt$mean_ATX_all_ug_orgmat_g))],
+             na.action = "na.omit")
+# NT: not significant (same note as above)
+
+## (b) rivers separately
+# (omitting Salmon because only one sample was toxic and very minorly)
+set.seed(1)
+runPERMANOVA(data_sep_list$tm$`SFE-M`, start_col, end_col = ncol(data$tm),
+             group = data_sep_list$tm$`SFE-M`$TM_atx_category)
+anova(betadisper(vegdist(data_sep_list$tm$`SFE-M`[,start_col:ncol(data$tm)], method = "bray"), 
+                 data_sep_list$tm$`SFE-M`$TM_atx_category))
+# SFE TM: significant: **, dispersion is not!
+set.seed(1)
+runPERMANOVA(data_sep_list$tac$`SFE-M`, start_col, end_col = ncol(data$tac),
+             group = data_sep_list$tac$`SFE-M`$TAC_atx_category)
+anova(betadisper(vegdist(data_sep_list$tac$`SFE-M`[,start_col:ncol(data$tac)], method = "bray"), 
+                 data_sep_list$tac$`SFE-M`$TAC_atx_category))
+# SFE TAC: significant *, dispersion is not!
+set.seed(1)
+runPERMANOVA(data_sep_list$tac$`RUS`, start_col, end_col = ncol(data$tac),
+             group = data_sep_list$tac$`RUS`$TAC_atx_category)
+anova(betadisper(vegdist(data_sep_list$tac$`RUS`[,start_col:ncol(data$tac)], method = "bray"), 
+                 data_sep_list$tac$`RUS`$TAC_atx_category))
+# RUS TAC: significant *, dispersion is not!
+
+lapply(data_sep_list$nt, function(x) runPERMANOVA(x, start_col, end_col = ncol(data$nt),
+                                                  group = x$`NT_atx_category`,
+                                                  na.action = "na.omit"))
+# not for any river, especially Russian and Salmon
+
+## Lastly, what about with a binary?
+
+# (a) just doing single within rivers
+# (omitting Salmon because only one sample was toxic and very minorly)
+set.seed(1)
+runPERMANOVA(data_sep_list$tm$`SFE-M`, start_col, end_col = ncol(data$tm),
+             group = data_sep_list$tm$`SFE-M`$TM_atx_detected)
+anova(betadisper(vegdist(data_sep_list$tm$`SFE-M`[,start_col:ncol(data$tm)], method = "bray"), 
+                 data_sep_list$tm$`SFE-M`$TM_atx_detected))
+# SFE TM: significant: ***, dispersion is not!
+set.seed(1)
+runPERMANOVA(data_sep_list$tac$`SFE-M`, start_col, end_col = ncol(data$tac),
+             group = data_sep_list$tac$`SFE-M`$TAC_atx_detected)
+anova(betadisper(vegdist(data_sep_list$tac$`SFE-M`[,start_col:ncol(data$tac)], method = "bray"), 
+                 data_sep_list$tac$`SFE-M`$TAC_atx_detected))
+# SFE TAC: significant *, dispersion is not!
+set.seed(1)
+runPERMANOVA(data_sep_list$tac$`RUS`, start_col, end_col = ncol(data$tac),
+             group = data_sep_list$tac$`RUS`$TAC_atx_detected)
+anova(betadisper(vegdist(data_sep_list$tac$`RUS`[,start_col:ncol(data$tac)], method = "bray"), 
+                 data_sep_list$tac$`RUS`$TAC_atx_detected))
+# RUS TAC: significant *, dispersion is not!
+
+#### (4) NMDS Visualization ####
+
+# South Fork Eel Microcoleus
+makeNMDSplot(getNMDSdata(data_sep_list$tm$`SFE-M`, start_col, end_col = ncol(data$tm)),
+             color = "TM_atx_detected", shape = "TM_atx_category", loading = FALSE)
+
+# Russian Anabaena
+makeNMDSplot(getNMDSdata(data_sep_list$tac$`RUS`, start_col, end_col = ncol(data$tac)),
+             color = "TAC_atx_detected", shape = "TAC_atx_category", loading = FALSE)
+
+# Russian Anabaena
+makeNMDSplot(getNMDSdata(data_sep_list$tac$`SFE-M`, start_col, end_col = ncol(data$tac)),
+             color = "TAC_atx_detected", shape = "TAC_atx_category", loading = FALSE)
+# difference between those with toxins detected and those without?
+
+#### (5) (db)RDA analyses ####
 
 ## (a) variable selection
 
@@ -128,7 +250,8 @@ view(which(correlations > 0.7 & correlations != 1, arr.ind = TRUE))
 dbRDA_tog <- lapply(sample_types, function(x) run_dbRDA(data_tog[[x]], 
                                                        start_col = 5, 
                                                        end_col = ncol(data[[x]]),
-                                                       mat_atx = x))
+                                                       mat_atx = x,
+                                                       na))
 names(dbRDA_tog) <- sample_types
 
 # plot
@@ -183,13 +306,13 @@ lapply(dbRDA_tog, function(x) print(x$sig_variables))
 data_sep$nt
 
 # russian TAC
-russian_TAC = run_dbRDA(data_sep$tac$RUS, 
+russian_TAC = run_dbRDA(data_sep_list$tac$`SFE-M`, 
                         start_col = 5, 
                         end_col = ncol(data$tac),
                         mat_atx = "tac")
 
 # sfkeel TAC
-sfkeel_TAC = run_dbRDA(data_sep$tac$`SFE-M`,
+sfkeel_TAC = run_dbRDA(data_sep_list$tac$`SFE-M`,
                        start_col = 5,
                        end_col = ncol(data$tac),
                        mat_atx = "tac")
@@ -209,7 +332,7 @@ lapply(individual_t_rdas, function(x) plot(x$object))
 
 # are models significant?
 lapply(individual_t_rdas, function(x) print(x$model_sig))
-# russian tac no, sfkeel tac yes, sfkeel tm no
+# russian tac yes, sfkeel tac yes, sfkeel tm no
 
 # what is the rsquared?
 lapply(individual_t_rdas, function(x) print(x$rsquared))
@@ -217,214 +340,63 @@ lapply(individual_t_rdas, function(x) print(x$rsquared))
 
 # significant variables?
 lapply(individual_t_rdas, function(x) print(x$sig_variables))
-# <insert>
 
 #### (5) Species Indicator Analyses ####
 
+<<<<<<< HEAD
 # with low, medium, high categories
+=======
+## (a) within river, ATX groupings
 
+# South Fork Eel Microcoleus
+summary(multipatt(data_sep_list$tm$`SFE-M`[,start_col:ncol(data$tm)], 
+                  data_sep_list$tm$`SFE-M`$TM_atx_category,
+                  func = "r.g", control = how(nperm = 999)))
+# uniquely assigned to "high"- Epithemia and Leptolyngbya
+>>>>>>> aac9ab7456d7548273e268593b9919b453cf0ef2
 
+# South Fork Eel Anabaena
+summary(multipatt(data_sep_list$tac$`SFE-M`[,start_col:ncol(data$tac)], 
+                  data_sep_list$tac$`SFE-M`$TAC_atx_category,
+                  func = "r.g", control = how(nperm = 999)))
+# nothing uniquely identified here
 
+# Russian Anabaena
+summary(multipatt(data_sep_list$tac$`RUS`[,start_col:ncol(data$tac)], 
+                  data_sep_list$tac$`RUS`$TAC_atx_category,
+                  func = "r.g", control = how(nperm = 999)))
+# medium (which is highest for the Russian)- oscillatoria
 
+# Non-Target within each River
+lapply(data_sep_list$nt, function(x) {
+       
+  # remove rows with NA
+  y <- x %>% 
+    filter(!is.na(NT_atx_category))
+  
+  print(x$site[1])
+  summary(multipatt(y[,start_col:ncol(data$nt)], y$NT_atx_category,
+                    func = "r.g", control = how(nperm = 999)))})
+# RUS: medium: phomidium*, none: scenedesmus*, low+none: leptolynbya*
+# SFE: high: rhopalodia, epithemia, anabaena
+# SAL: nothing (which to be expected, only one sample has low anatoxins)
 
-#### OLD CODE BELOW: #####
+## (b) within river ATX binary
 
+# South Fork Eel Microcoleus
+summary(multipatt(data_sep_list$tm$`SFE-M`[,start_col:ncol(data$tm)], 
+                  data_sep_list$tm$`SFE-M`$TM_atx_detected,
+                  func = "r.g", control = how(nperm = 999)))
+# coccoids** and geilerinema* for detected samples, nostoc** for undetected
 
-# lastly, merge with our community data to get rows formatted the same
-data_tog <- lapply(data, function(x) left_join(x, env_tog, by = c("site", "site_reach", "field_date")))
-data_sep <- lapply(data, function(x) left_join(x, env_sep, by = c("site", "site_reach", "field_date")))
+# South Fork Eel Anabaena
+summary(multipatt(data_sep_list$tac$`SFE-M`[,start_col:ncol(data$tac)], 
+                  data_sep_list$tac$`SFE-M`$TAC_atx_detected,
+                  func = "r.g", control = how(nperm = 999)))
+# nostoc* with none that's it
 
-# for microcoleus & anabaena remove rows where there are NAs for anatoxins
-which(is.na(data_tog$tm$TM_ATX_all_ug_orgmat_g)) #22
-which(is.na(data_tog$tac$TAC_ATX_all_ug_orgmat_g)) #none!
-
-# 22 was a "not sure if this is microcoleus sample" and there was not enough material
-# to analyze for anatoxins
-data_tog$tm <- data_tog$tm[-22,]
-data_sep$tm <- data_sep$tm[-22,]
-
-# split into lists by river
-for(i in 1:length(data_sep)) {
-  data_sep[[i]] <- split(data_sep[[i]], data_sep[[i]]$site)
-}
-
-
-
-
-#### (3) (Distance-Based) Redundancy Analysis ####
-
-## ADD IN VARIABLE SELECTION
-
-## (a) TAC
-
-# all samples together
-tac_all_rda <- dbrda(data = data_tog$tac, 
-                     data_tog$tac[,5:ncol(data$tac)] ~ 
-                       TAC_ATX_all_ug_orgmat_g + nitrate_mg_N_L + oPhos_ug_P_L + ammonium_mg_N_L +
-                       temp_C + cond_uS_cm + TDC_mg_L + DOC_mg_L, na.action = "na.exclude")
-plot(tac_all_rda)
-anova.cca(tac_all_rda, step = 1000, by = "term") # significant for atx*** and orthophosphate*
-
-# Russian River
-tac_rus_rda <- dbrda(data = data_sep$tac$RUS, 
-                     data_sep$tac$RUS[,5:ncol(data$tac)] ~ 
-                       TAC_ATX_all_ug_orgmat_g + nitrate_mg_N_L + oPhos_ug_P_L + ammonium_mg_N_L +
-                       temp_C + cond_uS_cm + TDC_mg_L + DOC_mg_L, na.action = "na.exclude")
-plot(tac_rus_rda)
-anova.cca(tac_rus_rda, step = 1000, by = "term") # significant for atx*
-
-# South Fork Eel River
-tac_sfe_rda <- dbrda(data = data_sep$tac$`SFE-M`, 
-                     data_sep$tac$`SFE-M`[,5:ncol(data$tac)] ~ 
-                       TAC_ATX_all_ug_orgmat_g + nitrate_mg_N_L + oPhos_ug_P_L + ammonium_mg_N_L +
-                       temp_C + cond_uS_cm + TDC_mg_L + DOC_mg_L, na.action = "na.exclude")
-plot(tac_sfe_rda)
-anova.cca(tac_sfe_rda, step = 1000, by = "term") # not significant for anything
-
-## (b) TM
-
-# all samples together
-tm_all_rda <- dbrda(data = data_tog$tm, 
-                     data_tog$tm[,5:ncol(data$tm)] ~ 
-                       TM_ATX_all_ug_orgmat_g + nitrate_mg_N_L + oPhos_ug_P_L + ammonium_mg_N_L +
-                       temp_C + cond_uS_cm, na.action = "na.exclude")
-plot(tm_all_rda)
-anova.cca(tm_all_rda, step = 1000, by = "term") # significant: ATX***, ophos*, cond*
-
-# salmon river only (EXCLUDING AS THERE ARE ONLY TWO TIME POINTS)
-tm_sal_rda <- dbrda(data = data_sep$tm$SAL, 
-                    data_sep$tm$SAL[,5:ncol(data$tm)] ~ 
-                      TM_ATX_all_ug_orgmat_g + nitrate_mg_N_L + oPhos_ug_P_L + 
-                      ammonium_mg_N_L, na.action = "na.exclude")
-plot(tm_sal_rda)
-anova.cca(tm_sal_rda, step = 1000, by = "term") # no signficant
-
-# south fork eel only
-tm_sfe_rda <- dbrda(data = data_sep$tm$`SFE-M`, 
-                    data_sep$tm$`SFE-M`[,5:ncol(data$tm)] ~ 
-                      TM_ATX_all_ug_orgmat_g + nitrate_mg_N_L + oPhos_ug_P_L + ammonium_mg_N_L +
-                      temp_C + cond_uS_cm, na.action = "na.exclude")
-plot(tm_sfe_rda)
-anova.cca(tm_sfe_rda, step = 1000, by = "term") # anatoxins significant *, cond significant *
-
-## (c) NT
-
-# will complete after TITAN analysis
-
-#### (4) TITAN ####
-
-## (a) TM
-
-# first establish that anatoxin is associated with significant changes in composition
-adonis2(data = data_tog$tm, data_tog$tm[,5:ncol(data$tm)] ~ 
-          TM_ATX_all_ug_orgmat_g) # yes**
-
-# rivers separately
-adonis2(data = data_sep$tm$`SFE-M`, data_sep$tm$`SFE-M`[,5:ncol(data$tm)] ~ 
-          TM_ATX_all_ug_orgmat_g) # yes**
-adonis2(data = data_sep$tm$`SAL`, data_sep$tm$`SAL`[,5:ncol(data$tm)] ~ 
-          TM_ATX_all_ug_orgmat_g)
-# no, but only one sample had small amounts of atx so dropping this site
-
-## (b) TAC
-
-# first establish that anatoxin is associated with significant changes in composition
-adonis2(data = data_tog$tac, data_tog$tac[,5:ncol(data$tac)] ~ 
-          TAC_ATX_all_ug_orgmat_g) # yes*
-
-# rivers separately
-adonis2(data = data_sep$tac$`SFE-M`, data_sep$tac$`SFE-M`[,5:ncol(data$tac)] ~ 
-          TAC_ATX_all_ug_orgmat_g) # yes**
-adonis2(data = data_sep$tac$`RUS`, data_sep$tac$`RUS`[,5:ncol(data$tac)] ~ 
-          TAC_ATX_all_ug_orgmat_g) # yes*
-# no, but only one sample had small amounts of atx so dropping this site
-
-
-# still need to look at dispersion
-
-# Our data is too sparse and imperfect for TITAN :(
-# will move attempts to external script as well as RDA
-titan.PDIR <- titan(env = test$TAC_ATX_all_ug_orgmat_g,
-                    txa =  test[,5:14])
-
-plot_taxa_ridges(titan.PDIR,
-                 xlabel = "PDIR")
-
-?txa.screen()
-TITAN2::txa.screen(data_tog$tac[,5:ncol(data$tac)])
-view(data_tog$tac)
-
-titan.PDIR$sppmax %>%
-  as.data.frame() %>%
-  select(zenv.cp, freq, maxgrp, IndVal, purity, reliability, filter) %>%
-  filter(filter != 0) %>%
-  arrange(maxgrp, zenv.cp)
-
-# remove taxa that occur in less than 3 samples
-test <- data_tog$tac[,-which(colSums(data_tog$tac[,5:ncol(data$tac)]) < 3)]
-
-test <- data_tog$tac[,-(4 + which(apply(data_tog$tac[,5:ncol(data$tac)], 2, function(x) length(which(x != 0))) < 3))]
-which(colSums())
-
-glades.titan <- titan(glades.env, glades.taxa,
-                      minSplt = 5, numPerm = 250, boot = TRUE, nBoot = 500, imax = FALSE,
-                      ivTot = FALSE, pur.cut = 0.95, rel.cut = 0.95, ncpus = 8, memory = FALSE
-)
-
-## (c) NT
-
-# to be completed for both TM atx and TAC atx
-
-# maybe TITAN will work for bacterial data
-
-##### (5) Species Indicator Analysis for Groupings ####
-
-# determine categories for ATX:
-
-# based on river separately
-ggplot(data = data_sep$tac$RUS, aes(x = TAC_ATX_all_ug_orgmat_g)) +
-  geom_histogram() +
-  facet_wrap(~site)
-
-# maybe don't want to use log-transformed data here but will do a prelim
-# <-1 no anatoxins detected
-# 0-1 is low anatoxins
-# >1 is high anatoxins
-
-test <- lapply(data_tog, function(x) x <- x %>% 
-                                    mutate(atx_group = case_when(TAC_ATX_all_ug_orgmat_g < -0.5 ~ "non-detect",
-                                                                 TAC_ATX_all_ug_orgmat_g < 0 ~ "low",
-                                                                 TAC_ATX_all_ug_orgmat_g < 1 ~ "medium",
-                                                                 TAC_ATX_all_ug_orgmat_g > 1 ~ "high")))
-test2 <- lapply(data_tog, function(x) x <- x %>% 
-                 mutate(atx_group = case_when(TM_ATX_all_ug_orgmat_g < -0.5 ~ "non-detect",
-                                              TM_ATX_all_ug_orgmat_g < 0 ~ "low",
-                                              TM_ATX_all_ug_orgmat_g < 1 ~ "medium",
-                                              TM_ATX_all_ug_orgmat_g > 1 ~ "high")))
-
-summary(multipatt(test$tac[,5:ncol(data$tac)], test$tac$atx_group, func = "r.g", control = how(nperm = 999)))
-summary(multipatt(test2$tm[,5:ncol(data$tm)], test2$tm$atx_group, func = "r.g", control = how(nperm = 999)))
-# epithemia associated with high and medium
-# non epithemia diatoms associated with low and non-detect
-
-# how about within a river
-test3 <- lapply(data_sep$tac, function(x) x <- x %>% 
-                  mutate(atx_group = case_when(TAC_ATX_all_ug_orgmat_g < -0.5 ~ "non-detect",
-                                               TAC_ATX_all_ug_orgmat_g < 0 ~ "low",
-                                               TAC_ATX_all_ug_orgmat_g < 1 ~ "medium",
-                                               TAC_ATX_all_ug_orgmat_g > 1 ~ "high")))
-summary(multipatt(test3$`SFE-M`[,5:ncol(data$tac)], test3$`SFE-M`$atx_group, func = "r.g", control = how(nperm = 999)))
-# high is microcoleus while low is nodularia, nostoc, low-medium is epithemia
-
-summary(multipatt(test3$`RUS`[,5:ncol(data$tac)], test3$`RUS`$atx_group, func = "r.g", control = how(nperm = 999)))
-# medium + non-detect
-# aka unclear
-
-test4 <- lapply(data_sep$tm, function(x) x <- x %>% 
-                  mutate(atx_group = case_when(TM_ATX_all_ug_orgmat_g < -0.5 ~ "non-detect",
-                                               TM_ATX_all_ug_orgmat_g < 0 ~ "low",
-                                               TM_ATX_all_ug_orgmat_g < 1 ~ "medium",
-                                               TM_ATX_all_ug_orgmat_g > 1 ~ "high")))
-summary(multipatt(test4$`SFE-M`[,5:ncol(data$tac)], test4$`SFE-M`$atx_group, func = "r.g", control = how(nperm = 999)))
-# maybe try differential abundance analysis
-# epithemia and leptolyngbya for high
+# Russian Anabaena
+summary(multipatt(data_sep_list$tac$`RUS`[,start_col:ncol(data$tac)], 
+                  data_sep_list$tac$`RUS`$TAC_atx_detected,
+                  func = "r.g", control = how(nperm = 999)))
+# nothing here either

@@ -16,49 +16,39 @@ theme_set(theme_bw() + theme(panel.grid = element_blank(),
 
 #### (2) Functions ####
 
-## (a) barplot
-# function to create barplots
-# @param data is data in long format
-# @param x is x-axis given in "string"
-# @param y is y-axis given in "string"
-# @param fill is aesthetic grouping for fill of barplots given in "string"
-# @param facet_wrap is aesthetic grouping for facet wrap (if called)
-barplot <- function(data, x, y, fill, facet_wrap = NA) {
-  plot = ggplot(data = data, aes(x = .data[[x]], y = .data[[y]], fill = .data[[fill]])) +
-    geom_bar(position = "fill", stat = "identity")
-  
-  if(!is.na(facet_wrap)) {
-    plot = plot + facet_wrap(~.data[[facet_wrap]])
-  }
-  
-  return(plot)
-}
-
-
-## (b) getNMDSdata
+## (a) getNMDSdata
 # creates NMDS data point coordinates and loadings
 # @param data is relative abundance data in wide format with environmental/sampling data on left
-# @param start_col is index of column for which the abundance data starts 
-# @param end_col is index of column for which abundance data ends 
-# (automatically set to end of givn dataframe unless stated otherwise)
-# @param ASV is if the data is molecular (Aka has ASV's or not); this is included because if 
+# @param start_col is index of column for which the abundance data starts
+# @param end_col is index of column for which the abundance data ends (default is end of dataframe)
+# @param molecular is if the data is molecular (Aka has ASV's or not); this is included because if 
 # we ask for loading from it, it will take forever since there are 100+ ASVs even after trimming
-getNMDSdata <- function(data, start_col, end_col = ncol(data), ASV = FALSE) {
+getNMDSdata <- function(data, start_col, end_col = NA, ASV = FALSE) {
+  
+  # if end_col not given, assume end of the dataframe
+  if(is.na(end_col)) {
+    end_col = ncol(data)
+  }
+  
   # use vegan to calculate NMDS distances
   nmds = metaMDS(as.matrix(data[,start_col:end_col]),
                  distance = "bray",
                  trymax = 500,
                  autotransform = TRUE)
-  # bind x & y positions to site information (all info exluding abundance data)
+  # bind x & y positions to site information
   nmds_final = cbind(as.data.frame(scores(nmds, "sites")), 
-                     data %>% select(!start_col:end_col)) %>% 
+                     data %>% select(any_of(c("site_reach", "site", "field_date", 
+                                              "sample_type", "TM_atx_category",
+                                              "TAC_atx_category", "NT_atx_category",
+                                              "TM_atx_detected", "TAC_atx_detected",
+                                              "NT_atx_detected")))) %>% 
     mutate(field_date = ymd(field_date),
            year = year(field_date),
            month = as.character(month(field_date)))
   
   # get loadings for taxa (if not ASV-based!)
   if(ASV == FALSE) {
-    vs = envfit(nmds, as.matrix(data[,6:end_col]), perm = 999)
+    vs = envfit(nmds, as.matrix(data[,start_col:end_col]), perm = 999)
     coord = as.data.frame(scores(vs, "vectors"))
     stress = nmds$stress
     
@@ -76,7 +66,7 @@ getNMDSdata <- function(data, start_col, end_col = ncol(data), ASV = FALSE) {
   }
 }
 
-## (c) makeNMDSplot
+## (b) makeNMDSplot
 # makes NMDS plot
 # @param data is list output from function "getNMDSdata"
 # @param loading is TRUE/FALSE argument for placing loadings on plot
@@ -130,17 +120,23 @@ makeNMDSplot <- function(data, loading, significant, color, shape) {
   return(plot)
 }
 
-## (d) runPERMANOVA
+## (c) runPERMANOVA
 # runs PERMANOVA test on inputted data
 # @param data is relative abundance data in wide format with environmental/sampling data on left
 # @param start_col is index of column for which the abundance data starts 
 # @param end_col is index of column for which abundance data ends 
-# (automatically set to end of given dataframe unless stated otherwise)
+# (automatically set to end of givn dataframe unless stated otherwise)
 # @param group is explanatory variable for PERMANOVA test given as data$`col_name`
 # @strata is an optional argument to include a group-level effect
 # @na.action allows option for to remove NAs (automatically set to fail if NAs)
-runPERMANOVA <- function(data, start_col, end_col = ncol(data), group, strata = NA,
+runPERMANOVA <- function(data, start_col, end_col = NA, group, strata = NA,
                          na.action = "na.fail") {
+  
+  # if "end_col" not given, use the number of columns in dataframe
+  if(is.na(end_col)) {
+    end_col = ncol(data)
+  }
+  
   # create distance matrix based on Bray-Curtis distances
   dist_matrix = vegdist(data[,start_col:end_col], method = "bray")
   
@@ -154,7 +150,7 @@ runPERMANOVA <- function(data, start_col, end_col = ncol(data), group, strata = 
   return(results)
 }
 
-## (e) add_event_no
+## (d) add_event_no
 # add event number for 2022 data
 # @param data is wide dataframe with field_date as a column
 add_event_no <- function(data) {
@@ -172,7 +168,7 @@ add_event_no <- function(data) {
     relocate(month, .before = "field_date")
 }
 
-## (f) run_dbRDA
+## (e) run_dbRDA
 # run distance-based redundancy analysis
 # @param data is wide dataframe of hellinger abundances with environmental covariates on end
 # @param start_col is first column of abundance data
@@ -189,11 +185,11 @@ run_dbRDA <- function(data, start_col, end_col, mat_atx, na.action = "na.fail") 
     results = dbrda(data = data, data[,start_col:end_col] ~ 
                       TAC_ATX_all_ug_orgmat_g + DIN_mg_N_L + oPhos_ug_P_L +
                       temp_C + TDC_mg_L + DOC_mg_L + Mg_mg_L, na.action = na.action)
-  } else if(mat_atx == "tm") {
+  } else if (mat_atx == "tm") {
     results = dbrda(data = data, data[,start_col:end_col] ~ 
                       TM_ATX_all_ug_orgmat_g + DIN_mg_N_L + oPhos_ug_P_L +
                       temp_C + TDC_mg_L + DOC_mg_L + Mg_mg_L, na.action = na.action)
-  } else if(mat_atx == "nt") {
+  } else if (mat_atx == "nt") {
     results = dbrda(data = data, data[,start_col:end_col] ~ 
                       mean_ATX_all_ug_orgmat_g + DIN_mg_N_L + oPhos_ug_P_L +
                       temp_C + TDC_mg_L + DOC_mg_L + Mg_mg_L, 
