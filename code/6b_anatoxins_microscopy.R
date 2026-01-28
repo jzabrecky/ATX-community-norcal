@@ -1,6 +1,6 @@
 #### Comparing microscopy data with regard to anatoxin concentrations
 ### Jordan Zabrecky
-## last edited: 01.26.2026
+## last edited: 01.27.2026
 
 # This script examines how communities as identified by microscopy
 # change with increasing anatoxin concentrations by <INSERT>
@@ -205,7 +205,7 @@ makeNMDSplot(getNMDSdata(data_sep_list$tac$`SFE-M`, start_col, end_col = ncol(da
 ## (a) variable selection
 
 # check which variables are correlated
-correlations <- cor(env_tog[,4:ncol(env_tog)], use = "complete.obs")
+correlations <- cor(env_tog[,10:ncol(env_tog)], use = "complete.obs")
 view(which(correlations > 0.7 & correlations != 1, arr.ind = TRUE))
 # correlated: DO & temp, assumed pH & DO, ammonium & nitrate & DIN, 
 # conductivity & Cl Na K & Mg, DOC & Br amm DIN, SO4 & Cl NA
@@ -217,14 +217,17 @@ view(which(correlations > 0.7 & correlations != 1, arr.ind = TRUE))
 
 # run dbRDA for all sample types with all rivers together
 dbRDA_tog <- lapply(sample_types, function(x) run_dbRDA(data_tog[[x]], 
-                                                       start_col = 5, 
+                                                       start_col = start_col, 
                                                        end_col = ncol(data[[x]]),
                                                        mat_atx = x,
-                                                       na))
+                                                       na.action = "na.omit"))
 names(dbRDA_tog) <- sample_types
 
 # plot
 lapply(dbRDA_tog, function(x) plot(x$object))
+
+plot(dbRDA_tog$tm$object, type = "n", scaling = 3)
+points(dbRDA_tog$tm$object, display = "sites", pch=20, cex=0.7, col="gray32", scaling=3)
 
 # are models significant?
 lapply(dbRDA_tog, function(x) print(x$model_sig))

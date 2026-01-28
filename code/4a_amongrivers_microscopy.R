@@ -1,6 +1,6 @@
 #### Comparing microscopy data among rivers
 ### Jordan Zabrecky
-## last edited: 01.05.2026
+## last edited: 01.27.2026
 
 # This code compares microscopy data from NT, TM, and TAC samples
 # across rivers to answer Q1. First data is transformed (sqrt).
@@ -8,9 +8,6 @@
 # from a river and created bar plots to visually compare average samples at each river
 
 #### (1) Loading libraries & data ####
-
-# set seed for reproducibility
-set.seed(2025)
 
 # libraries
 lapply(c("tidyverse", "plyr", "vegan", "cowplot", "indicspecies"), require, character.only = T)
@@ -62,7 +59,7 @@ for(i in 2:length(data_longer)) {
                                ~ "Unicellullar Cyanobacteria",
                                taxa == "anabaena_and_cylindrospermum" ~ "Anabaena or Cylindrospermum",
                                taxa == "e_diatoms" ~ "Epithemia",
-                               taxa == "geitlerinema" ~ "Other Anatoxin-Associated Cyanobacteria",
+                               taxa == "geitlerinema" ~ "Geitlerinema",
                                taxa == "green_algae" ~ "Green Algae",
                                taxa == "oscillatoria" | taxa == "phormidium_unknown" |
                                  taxa == "leptolyngbya" | taxa == "homoeothrix"
@@ -83,7 +80,7 @@ data_longer$nt <- data_longer$nt %>%
                              taxa == "chroococcus" | taxa == "other_coccoids" | taxa == "aphanothece"
                              ~ "Unicellullar Cyanobacteria",
                              taxa == "anabaena_and_cylindrospermum" ~ "Anabaena or Cylindrospermum",
-                             taxa == "geitlerinema" ~ "Other Anatoxin-Associated Cyanobacteria",
+                             taxa == "geitlerinema" ~ "Geitlerinema",
                              taxa == "oscillatoria" | taxa == "phormidium_unknown" |
                                taxa == "leptolyngbya" | taxa == "homoeothrix"
                              ~ "Other Filamentous Cyanobacteria",
@@ -161,6 +158,7 @@ lapply(summaries_taxa, function(x) head(x))
 #### (5) NMDS Plots ####
 
 # get NMDS for each dataframe (sqrt-transformed!)
+set.seed(1)
 NMDS_list <- lapply(data, function(x) getNMDSdata(x, start_col))
 
 # making plots
@@ -182,6 +180,7 @@ lapply(permanovas, print)
 # check dispersion to see if that influences results
 for(i in 1:length(data)) {
   print(names(data)[i])
+  set.seed(1)
   print(anova(betadisper(vegdist(data[[i]][,start_col:ncol(data[[i]])], method = "bray"), 
                          data[[i]]$site)))
 }
@@ -262,19 +261,59 @@ summary(multipatt(tac_sub[,start_col:ncol(tac_sub)], tac_sub$site, func = "r.g",
 
 #### (8) Misc. Q's ####
 
-# is Geilerinema present in all TM samples?
+## How many more taxa groups were identified in South Fork Eel samples than Salmon River samples?
+lapply(data, function(x) specnumber(x[,start_col:ncol(x)], groups = x$`site`))
+# NT: RUS 30, SAL 32, SFE-M 37
+# TM: SAL 7, SFE-M 12
+# TAC: RUS 11, SAL 7, SFE-M 14
+
+## Is Geilerinema present in all TM samples?
 data$tm$geitlerinema
 count(data$tm$geitlerinema > 0)
 # present in 17 out of 23
 
-# what about TAC?
+## What about the presence of Geitlerinema in TAC samples?
 data$tac$geitlerinema
 count(data$tac$geitlerinema > 0)
 # all of them which is crazy >1%!
 
-# how about microcoleus in TAC? (particularly interested in Russian River)
+## How about Microcoleus in TAC samples? 
+## (particularly interested in Russian River where we did not obsere M. macroscopically)
 data$tac$microcoleus
 count(data$tac$microcoleus > 0 & data$tac$site == "RUS")
 # true for 22/28
 # 10 of those are russian river
 count(data$tac$site == "RUS") # of 15 samples
+
+## Let's look at only other anatoxin associated taxa in all samples
+# using list from Christensen & Khan et al. (2019): Anabaena, Aphanizomenon,
+# Aphanothece, Arthospira, Cylindrospermopsis, Cylindrospermum, Gomphosphaeria,
+# Limnothrix, Lyngbya, Microcystis, Nostoc, Oscillatoria, Phormidium/Microcoleus,
+# Planktothrix, Planktolyngbia, Synechocystis, Psuedoanabaena,
+# Raphidopsis, Tychonema
+# noting that it doesn't have Geilerinema, so we should also include list
+# of ATX producers from Wood et al. (2020) which adds: Fisherella, 
+# Geitlerinema, Leptolyngbya, Microseira (formerly Lyngbya), planktothrix
+lapply(data, function(x) colnames(x[,5:ncol(x)]))
+atx_taxa_only <- lapply(data_longer, function(x) {
+  
+  # make dataframe with only taxa in list above 
+  # (only writing what taxa we recorded from that list)
+  df = x %>% 
+    filter(taxa %in% c("aphanothece", "anabaena_and_cylindrospermum",
+                       "other_coccoids", "geitlerinema", "leptolyngbya", 
+                       "lyngbya", "other_coccoids", "nostoc",
+                       "oscillatoria", "phormidium_unknown", "microcoleus")) %>% 
+    mutate(sample_name = paste("(", month(field_date), "-", day(field_date), ") ", site_reach, sep = ""))
+  
+  # make bar plot (show each sample individually)
+  plot <- ggplot(data = df, aes(x = sample_name, y = percent / 100, fill = taxa)) +
+    geom_bar(stat = "identity") +
+    scale_x_discrete(guide = guide_axis(angle = 90)) +
+    labs(x = NULL, y = "Relative Abundance") +
+    facet_wrap(~site, scales = "free_x")
+  print(plot) # view plot
+    
+  # return a list including dataframe, then plot
+  return(list(df, plot))
+})
