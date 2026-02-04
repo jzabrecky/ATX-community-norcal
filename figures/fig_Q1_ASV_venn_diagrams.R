@@ -1,11 +1,9 @@
 #### Venn Diagrams for ASVs shared across sample types
 ### Jordan Zabrecky
-## 12.16.2025
+## last edited: 02.02.2026
 
 # This code determines which ASVs are shared across sample types and rivers
 # and illustrates those findings with Venn Diagrams
-
-# will make VennDiagrams prettier later and may also want to include the number of samples per each
 
 #### (1) Loading libraries & data ####
 
@@ -23,7 +21,18 @@ eel <- split(data %>% filter(site == "SFE-M"), (data %>% filter(site == "SFE-M")
 rus <- split(data %>% filter(site == "RUS"), (data %>% filter(site == "RUS"))$sample_type)
 sal <- split(data %>% filter(site == "SAL"), (data %>% filter(site == "SAL"))$sample_type)
 
-#### (2) Making Venn Diagrams ####
+#### (2) Get sample counts ####
+
+# calculate number of samples per each to include (manually) on venn diagrams below
+sample_counts <- data %>% 
+  select(site, sample_type, site_reach, field_date) %>% 
+  unique() %>% 
+  dplyr::group_by(site, sample_type) %>% 
+  dplyr::summarize(n = length(sample_type))
+# reminder: some are not the total amount of samples we collected as some were
+# lost during processing steps, etc.
+
+#### (3) Making Venn Diagrams ####
 
 # figures save instead of popping up in viewer window, so set working directory
 setwd("./figures/venn_diagrams")
@@ -34,8 +43,12 @@ setwd("./figures/venn_diagrams")
 venn.diagram(
   x = list(TM$SAL$feature_ID, TM$`SFE-M`$feature_ID),
   filename = "tm_venn_diagram.png",
-  category.names = c("Salmon Microcoleus" , "South Fork Eel Microcoleus"),
+  category.names = c("Salmon Microcoleus \n n = 5" , "South Fork Eel Microcoleus \n n = 17"),
   print.mode = c("raw", "percent"),
+  fontfamily = "sans",
+  cat.fontfamily = "sans",
+  cat.pos = c(-27, 27),
+  cat.dist = c(0.055, 0.055),
   
   # Circles
   lwd = 2,

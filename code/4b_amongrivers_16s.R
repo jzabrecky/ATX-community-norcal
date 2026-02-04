@@ -1,14 +1,11 @@
 #### Comparing molecular 16s data among rivers
 ### Jordan Zabrecky
-## last edited: 01.05.2026
+## last edited: 02.02.2026
 
 # This code compares 16s rRNA (bacterial assemblage) data from NT, TM, and TAC samples
 # across rivers to answer Q1
 
 #### (1) Loading libraries & data ####
-
-# set seed for reproducibility
-set.seed(2025)
 
 ## libraries
 lapply(c("tidyverse", "plyr", "vegan", "cowplot", "indicspecies"), require, character.only = T)
@@ -111,7 +108,6 @@ for(i in 1:length(data_long)) {
 
 # load from supplemental script
 source("./code/supplemental_code/S4a_community_analyses_func.R")
-source("./code/supplemental_code/S4c_barplot_func.R")
 
 # function to calculate diversity of ASVs
 # @param data is dataframe of wide abundances
@@ -174,13 +170,14 @@ lapply(diversity, function(x) kruskal.test(shannon_diversity~site, data = x))
 # not significantly different for any group but close for TM (p = 0.06)
 
 # save diversity calculations (RUN ONCE)
-lapply(names(diversity), function(x) write.csv(diversity[[x]], 
-                                               paste("./data/molecular/shannon_diversity/", x, "_diversity.csv", sep = ""),
-                                               row.names = FALSE))
+#lapply(names(diversity), function(x) write.csv(diversity[[x]], 
+#                                               paste("./data/molecular/shannon_diversity/", x, "_diversity.csv", sep = ""),
+#                                               row.names = FALSE))
 
 #### (5) NMDS Plots ####
 
 # get NMDS for each dataframe (sqrt-transformed!)
+set.seed(1) # set seed for reproducibility
 NMDS_list <- lapply(data, function(x) getNMDSdata(x, start_col, ASV = TRUE))
 
 # making plots
@@ -193,12 +190,15 @@ lapply(NMDS_plots, print)
 #### (6) Q: Are communities from each river significantly different? (PERMANOVA) ####
 
 # run PERMANOVAs
-permanovas <- lapply(data, function(x) runPERMANOVA(x, start_col, x$`site`))
+set.seed(1)
+permanovas <- lapply(data, function(x) runPERMANOVA(x, start_col, group = x$`site`))
 lapply(permanovas, print)
 # RESULTS: significant difference for all but not convinced about the TAC
+# as visually they plotted on top of each other but had different dispersion
 
 # check dispersion to see if that influences results
 for(i in 1:length(data)) {
+  set.seed(1)
   print(names(data)[i])
   print(anova(betadisper(vegdist(data[[i]][,start_col:ncol(data[[i]])], method = "bray"), 
                          data[[i]]$site)))
@@ -229,14 +229,18 @@ lapply(names(centroid_distance), function(x) print(paste(x, ": ", centroid_dista
 
 ## what if we remove the single salmon sample?
 test <- data$tac %>% filter(site != "SAL")
+set.seed(1)
 print(anova(betadisper(vegdist(test[start_col:ncol(test)], method = "bray"), 
                        test$site)))
 # still significantly different, but less so (**)
-runPERMANOVA(test, start_col, test$`site`) # still very significant here (***)
+set.seed(1)
+runPERMANOVA(test, start_col, group = test$`site`) # still very significant here (***)
 
 #### (7) Q: What explains these differences? Species Indicator Analyses ####
 
 # not doing loadings for ASVs, etc. because there are several categories and groupings
+# furthermore, may report only on signficant functional groupings, as 
+# bacteria is broad (as seen below)
 
 ## (a) phylums
 
@@ -285,7 +289,7 @@ classes <- lapply(data_long, function(x) {
     dplyr::group_by(site_reach, site, field_date, sample_type, class) %>% 
     # remove multiples of phylums due to differing ASVs
     dplyr::summarize(relative_abundance = sum(relative_abundance)) %>% 
-    ungroup()
+    ungroup() %>% 
     pivot_wider(names_from = class, values_from = relative_abundance)
   # if there is a column NA, remove it
   if("NA" %in% colnames(y)) {
@@ -399,7 +403,24 @@ summary(multipatt(cyano_genera$tac[,5:ncol(cyano_genera$tac)], cyano_genera$tac$
 # only identified for SAL: Aphanizomenon *, Gastranerophilales **, Kamptonema *, Arthronema *,
 # Vampirovibrio **
 
-#### (8) Conclusions ####
+#### (8) Misc. Questions ####
 
-## In conclusion, 
-## come back & revisit this to rewrite this
+## What is the average Shannon diversity for each sample type among rivers?
+diversity_summary <- lapply(diversity, function(x) {
+  y = x %>% 
+    group_by(site) %>% 
+    dplyr::summarize(mean_diversity = mean(shannon_diversity),
+                     median_diversity = median(shannon_diversity)) %>% 
+    ungroup()
+})
+
+## Is Geitlerinema present in all TM samples?
+data_long$tm %>% 
+  filter(genus == "Geitlerinema") %>% 
+  select(site, site_reach, field_date) %>% 
+  unique()
+# also searching geitlerinema in dataframe view mode showed low abundance <0.01
+
+## Is Geilerinema present in all TAC samples?
+
+## For questions about ASVs shared or total ASVs, see: "./figures/fig_Q1_ASV_venn_diagrams.R"

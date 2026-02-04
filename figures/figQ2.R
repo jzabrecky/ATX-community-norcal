@@ -32,8 +32,10 @@ NMDS_morphological <- lapply(NMDS_list, function(x) {
 plot <- list()
 for(i in 1:length(NMDS_morphological)) {
   plot[[i]] <- ggplot(NMDS_morphological[[i]], aes(x = mean1, y = mean2)) +
-                  geom_errorbar(aes(ymin = mean2 - sd2, ymax = mean2 + sd2, color = site), alpha = 0.2) +
-                  geom_errorbarh(aes(xmin = mean1 - sd1, xmax = mean1 + sd1, color = site), alpha = 0.2) +
+                  geom_errorbar(aes(ymin = mean2 - sd2, ymax = mean2 + sd2, color = site), 
+                                alpha = 0.2, linewidth = 1.2) +
+                  geom_errorbarh(aes(xmin = mean1 - sd1, xmax = mean1 + sd1, color = site), 
+                                 alpha = 0.2, linewidth = 1.2) +
                   geom_point(aes(color = site, shape = as.factor(month)), size = 4) +
                   geom_segment(aes(x = start_mean1, y = start_mean2, xend = mean1, yend = mean2),
                     arrow = arrow(length = unit(0.2, "cm"), type = "closed"), # Adds an arrow head

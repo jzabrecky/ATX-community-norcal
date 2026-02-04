@@ -1,6 +1,6 @@
 #### Script of functions used in NMDS (and related) analyses
 ### Jordan Zabrecky
-## last edited: 01.20.2025
+## last edited: 02.02.2026
 
 # This script hosts functions used to create NMDS plots
 
@@ -16,7 +16,25 @@ theme_set(theme_bw() + theme(panel.grid = element_blank(),
 
 #### (2) Functions ####
 
-## (a) getNMDSdata
+## (a) barplot
+# function to create barplots
+# @param data is data in long format
+# @param x is x-axis given in "string"
+# @param y is y-axis given in "string"
+# @param fill is aesthetic grouping for fill of barplots given in "string"
+# @param facet_wrap is aesthetic grouping for facet wrap (if called)
+barplot <- function(data, x, y, fill, facet_wrap = NA) {
+  plot = ggplot(data = data, aes(x = .data[[x]], y = .data[[y]], fill = .data[[fill]])) +
+    geom_bar(position = "fill", stat = "identity")
+  
+  if(!is.na(facet_wrap)) {
+    plot = plot + facet_wrap(~.data[[facet_wrap]])
+  }
+  
+  return(plot)
+}
+
+## (b) getNMDSdata
 # creates NMDS data point coordinates and loadings
 # @param data is relative abundance data in wide format with environmental/sampling data on left
 # @param start_col is index of column for which the abundance data starts
@@ -66,7 +84,7 @@ getNMDSdata <- function(data, start_col, end_col = NA, ASV = FALSE) {
   }
 }
 
-## (b) makeNMDSplot
+## (c) makeNMDSplot
 # makes NMDS plot
 # @param data is list output from function "getNMDSdata"
 # @param loading is TRUE/FALSE argument for placing loadings on plot
@@ -120,7 +138,7 @@ makeNMDSplot <- function(data, loading, significant, color, shape) {
   return(plot)
 }
 
-## (c) runPERMANOVA
+## (d) runPERMANOVA
 # runs PERMANOVA test on inputted data
 # @param data is relative abundance data in wide format with environmental/sampling data on left
 # @param start_col is index of column for which the abundance data starts 
@@ -150,7 +168,7 @@ runPERMANOVA <- function(data, start_col, end_col = NA, group, strata = NA,
   return(results)
 }
 
-## (d) add_event_no
+## (e) add_event_no
 # add event number for 2022 data
 # @param data is wide dataframe with field_date as a column
 add_event_no <- function(data) {
@@ -168,7 +186,7 @@ add_event_no <- function(data) {
     relocate(month, .before = "field_date")
 }
 
-## (e) run_dbRDA
+## (f) run_dbRDA
 # run distance-based redundancy analysis
 # @param data is wide dataframe of hellinger abundances with environmental covariates on end
 # @param start_col is first column of abundance data
@@ -215,6 +233,8 @@ run_dbRDA <- function(data, start_col, end_col, mat_atx, na.action = "na.fail") 
   return(final)
 }
 
+
+## TO-DO finish and fill in description
 plotRDA <- function(dbrda_list, original_data) {
   
   # get (db)RDA object from "run_dbRDA" function

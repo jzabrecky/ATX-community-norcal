@@ -179,29 +179,36 @@ start_col <- 7
 data_river <- lapply(data, function(x) split(x, x$`site`))
 
 ## (a) with the strata argument for EVENT NO.
-permanovas_event <- lapply(data, function(x) runPERMANOVA(x, start_col, x$`event_no`, strata = x$'site'))
+set.seed(1)
+permanovas_event <- lapply(data, function(x) runPERMANOVA(x, start_col, group = x$`event_no`, strata = x$'site'))
 lapply(permanovas_event, print)
 # NT***, TAC*** are significant among sampling dates, but not TM
 # TM must have been overshadowed by the two dates of Salmon samples (see below)
 
 ## (b) separated out by river
 
-permanovas_event_NT_sep <- lapply(data_river$nt, function(x) runPERMANOVA(x, start_col, x$`event_no`))
+set.seed(1)
+permanovas_event_NT_sep <- lapply(data_river$nt, function(x) 
+  runPERMANOVA(x, start_col, group = x$`event_no`))
 lapply(permanovas_event_NT_sep, print)
 # NT significantly different for SAL**, RUS**, and SFE-M***
 
-permanovas_event_TM_sep <- lapply(data_river$tm, function(x) runPERMANOVA(x, start_col, x$`event_no`))
+set.seed(1)
+permanovas_event_TM_sep <- lapply(data_river$tm, function(x) 
+  runPERMANOVA(x, start_col, group = x$`event_no`))
 lapply(permanovas_event_TM_sep, print)
 # TM significant for SFE-M** but not SAL but only 2 days
 # this is likely influencing the results of strata above, thus we should use this result
 
-permanovas_event_TAC_sep <- lapply(data_river$tac, function(x) runPERMANOVA(x, start_col, x$`event_no`))
+permanovas_event_TAC_sep <- lapply(data_river$tac, function(x) 
+  runPERMANOVA(x, start_col, group = x$`event_no`))
 lapply(permanovas_event_TAC_sep, print)
 # TAC significant for SFE-M* and especially RUS*** (only one data point for SAL, so NA)
 
 ## (c) check dispersion in groups for event no.
 
 for(i in 1:length(data_river$nt)) {
+  set.seed(1)
   print(names(data_river$nt)[i])
   print(anova(betadisper(vegdist(data_river$nt[[i]][,start_col:ncol(data_river$nt[[i]])], method = "bray"), 
                          data_river$nt[[i]]$event_no)))
@@ -209,6 +216,7 @@ for(i in 1:length(data_river$nt)) {
 # dispersion not significant for any NT (as expected!)
 
 for(i in 1:length(data_river$tm)) {
+  set.seed(1)
   print(names(data_river$tm)[i])
   print(anova(betadisper(vegdist(data_river$tm[[i]][,start_col:ncol(data_river$tm[[i]])], method = "bray"), 
                          data_river$tm[[i]]$event_no)))
@@ -217,6 +225,7 @@ for(i in 1:length(data_river$tm)) {
 
 # skip the salmon sample which is index 2
 for(i in c(1,3)) {
+  set.seed(1)
   print(names(data_river$tac)[i])
   print(anova(betadisper(vegdist(data_river$tac[[i]][,start_col:ncol(data_river$tac[[i]])], method = "bray"), 
                          data_river$tac[[i]]$event_no)))

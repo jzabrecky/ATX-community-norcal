@@ -1,6 +1,6 @@
 #### Comparing microscopy data among rivers
 ### Jordan Zabrecky
-## last edited: 01.27.2026
+## last edited: 02.03.2026
 
 # This code compares microscopy data from NT, TM, and TAC samples
 # across rivers to answer Q1. First data is transformed (sqrt).
@@ -106,7 +106,6 @@ data_longer$nt <- data_longer$nt %>%
 
 # load from supplemental script
 source("./code/supplemental_code/S4a_community_analyses_func.R")
-source("./code/supplemental_code/S4c_barplot_func.R")
 
 # summarize function
 # @param data_long is relative abundance data in long format
@@ -171,6 +170,7 @@ lapply(NMDS_plots, print)
 #### (6) Q: Are communities from each river significantly different? (PERMANOVA) ####
 
 # run PERMANOVAs
+set.seed(1)
 permanovas <- lapply(data, function(x) runPERMANOVA(data = x, 
                                                     start_col = start_col, 
                                                     group = x$`site`))
@@ -238,6 +238,7 @@ lapply(envfit_pvalues, function(x) head(x, 15))
 # run each separately:
 
 # (i) NT
+set.seed(1)
 summary(multipatt(data$nt[,start_col:ncol(data$nt)], data$nt$site, func = "r.g", control = how(nperm = 999)))
 # SAL: homoethrix, leptolyngbya, coccoids, unknown green algae
 # SFE: cladophora, stauridium, nostoc, coelastrum, unknown, tetraedron, cosmarium, rivularia,
@@ -248,6 +249,7 @@ summary(multipatt(data$nt[,start_col:ncol(data$nt)], data$nt$site, func = "r.g",
 # SAL + SFE: microcoleus
 
 # (ii) TM
+set.seed(1)
 summary(multipatt(data$tm[,start_col:ncol(data$tm)], data$tm$site, func = "r.g", control = how(nperm = 999)))
 # SAL: diatoms
 # SFE: anabaena, nostoc

@@ -25,7 +25,7 @@ source("./code/4b_amongrivers_16s.R")
 lapply(c("viridisLite", "cowplot"), require, character.only = T)
 
 # set universal plot theme (just text size for now)
-theme_set(theme(text = element_text(size = 10)))
+theme_set(theme_bw() + theme(text = element_text(size = 10)))
 
 #### (2) Creating Individual Plots ####
 

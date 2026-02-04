@@ -1,7 +1,10 @@
+lapply(c("tidyverse", "plyr", "vegan", "cowplot", "indicspecies"), require, character.only = T)
 
+# read in files (data transformed in previous script, "4b_amongrivers_16s.R")
+data <- lapply(list.files(path = "./data/molecular/transformed/", pattern = ".csv"),
+               function(x) read.csv(paste("./data/molecular/transformed/", x, sep = "")))
+names(data) <- c("nt", "tac", "tm")
 
-# set seed for reproducibility
-set.seed(2025)
 
 # libraries
 lapply(c("tidyverse", "plyr", "vegan", "cowplot"), require, character.only = T)
@@ -108,7 +111,7 @@ for(i in 1:length(diversity)) {
 
 # calculate diversity for each dataframe
 diversity <- lapply(list.files(path = "./data/molecular/shannon_diversity/", pattern = ".csv"),
-                     function(x) read.csv(paste("./data/molecular/shannon_diversity/", x, sep = "")))
+                    function(x) read.csv(paste("./data/molecular/shannon_diversity/", x, sep = "")))
 names(diversity) <- c("nt", "tac", "tm")
 
 # plot diversity as boxplots

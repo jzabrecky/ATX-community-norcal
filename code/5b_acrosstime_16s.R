@@ -1,14 +1,11 @@
 #### Comparing molecular 16s data across time
 ### Jordan Zabrecky
-## last edited: 01.05.2026
+## last edited: 02.02.2026
 
 # This code compares 16s rRNA (bacterial assemblage) data from NT, TM, and TAC samples
 # across rivers to answer Q2
 
 #### (1) Loading libraries & data ####
-
-# set seed for reproducibility
-set.seed(2025)
 
 # libraries
 lapply(c("tidyverse", "plyr", "vegan", "cowplot"), require, character.only = T)
@@ -30,13 +27,12 @@ names(unaltered_data) <- c("nt", "tm", "tac")
 data_longer <- lapply(unaltered_data, function(x) x <- x %>% # change date format for next step
                         mutate(field_date = mdy(field_date)))
 data <- lapply(data, function(x) x <- x %>% # change date format for next step
-                        mutate(field_date = mdy(field_date)))
+                        mutate(field_date = ymd(field_date)))
 
 ##### (2) Function for Analyses ####
 
 # load from supplemental script
 source("./code/supplemental_code/S4a_community_analyses_func.R")
-source("./code/supplemental_code/S4c_barplot_func.R")
 
 #### (3) Add  Columns for Sampling Event & Broader Taxa ####
 
@@ -95,13 +91,6 @@ for(i in 1:length(data_longer)) {
   data_long_broader[[i]] <- left_join(data_long_broader[[i]], cyano_order[[i]], by = "order")
   data_long_broader[[i]] <- left_join(data_long_broader[[i]], cyano_genus[[i]], by = "genus")
 }
-
-
-##### (3) Function for Analyses ####
-
-# load from supplemental script
-source("./code/supplemental_code/S4a_community_analyses_func.R")
-source("./code/supplemental_code/S4c_barplot_func.R")
 
 #### (4) Barplots through Time ####
 
@@ -177,21 +166,28 @@ start_col <- 8
 data_river <- lapply(data, function(x) split(x, x$`site`))
 
 ## (a) with the strata argument for EVENT NO.
-permanovas_event <- lapply(data, function(x) runPERMANOVA(x, start_col, x$`event_no`, strata = x$'site'))
+set.seed(1)
+permanovas_event <- lapply(data, function(x) 
+  runPERMANOVA(x, start_col, group = x$`event_no`, strata = x$'site'))
 lapply(permanovas_event, print)
 # TM ***, TAC *, NT ***, so yes for all
 
 ## (b) separated out by river
 
-permanovas_event_NT_sep <- lapply(data_river$nt, function(x) runPERMANOVA(x, start_col, x$`event_no`))
+set.seed(1)
+permanovas_event_NT_sep <- lapply(data_river$nt, function(x) 
+  runPERMANOVA(x, start_col, group = x$`event_no`))
 lapply(permanovas_event_NT_sep, print)
 # NT significantly different for SAL***, RUS*, and SFE-M**
 
-permanovas_event_TM_sep <- lapply(data_river$tm, function(x) runPERMANOVA(x, start_col, x$`event_no`))
+set.seed(1)
+permanovas_event_TM_sep <- lapply(data_river$tm, function(x) 
+  runPERMANOVA(x, start_col, group = x$`event_no`))
 lapply(permanovas_event_TM_sep, print)
 # TM significant for SFE-M** but not SAL but only 2 days that are not significantly different (p = 0.1)
 
-permanovas_event_TAC_sep <- lapply(data_river$tac, function(x) runPERMANOVA(x, start_col, x$`event_no`))
+permanovas_event_TAC_sep <- lapply(data_river$tac, function(x) 
+  runPERMANOVA(x, start_col, group = x$`event_no`))
 lapply(permanovas_event_TAC_sep, print)
 # TAC significant for SFE-M* but not for RUS (0.353)
 
