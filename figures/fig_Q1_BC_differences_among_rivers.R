@@ -61,6 +61,7 @@ for(i in sample_types) {
 lapply(fig_b, print)
 
 # TO-DO: maybe want to reorder or rechoose groups / merge some together
+# unknown needs to be removed for TM (no taxa contain unknown)
 
 ## (c) NMDS bacterial
 

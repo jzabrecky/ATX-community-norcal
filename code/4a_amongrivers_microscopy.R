@@ -48,64 +48,18 @@ data_longer <- lapply(unaltered_data,
                                                            names_to = "taxa"))
 
 # add in broader group classification
-# grouping for TM & TAC
-for(i in 2:length(data_longer)) {
-  data_longer[[i]] <- data_longer[[i]] %>% 
-    mutate(broader = case_when(taxa == "lyngbya" | taxa == "nodularia" |  taxa == "calothrix" |
-                                 taxa == "scytonema" | taxa == "gloeotrichia" | taxa == "rivularia" |
-                               taxa == "tolypothrix" ~ "Other N-fixing Cyanobacteria",
-                               taxa == "nostoc" ~ "Nostoc",
-                               taxa == "chroococcus" | taxa == "other_coccoids" | taxa == "aphanothece"
-                               ~ "Unicellullar Cyanobacteria",
-                               taxa == "anabaena_and_cylindrospermum" ~ "Anabaena or Cylindrospermum",
-                               taxa == "e_diatoms" ~ "Epithemia",
-                               taxa == "geitlerinema" ~ "Geitlerinema",
-                               taxa == "green_algae" ~ "Green Algae",
-                               taxa == "oscillatoria" | taxa == "phormidium_unknown" |
-                                 taxa == "leptolyngbya" | taxa == "homoeothrix"
-                               ~ "Other Filamentous Cyanobacteria",
-                               taxa == "microcoleus" ~ "Microcoleus",
-                               taxa == "non_e_diatoms" ~ "Diatoms Other than Epithemia",
-                               taxa == "unknown" ~ "Unknown"
-    ))
-}
+# load in functions
+source("./code/supplemental_code/S4c_grouping_func.R")
 
-# grouping for NT
-data_longer$nt <- data_longer$nt %>% 
-  mutate(broader = case_when(taxa == "lyngbya" | taxa == "nodularia" |  taxa == "calothrix" |
-                               taxa == "scytonema" | taxa == "gloeotrichia" | taxa == "rivularia" |
-                               taxa == "tolypothrix"
-                             ~ "Other N-fixing Cyanobacteria",
-                             taxa == "nostoc" ~ "Nostoc",
-                             taxa == "chroococcus" | taxa == "other_coccoids" | taxa == "aphanothece"
-                             ~ "Unicellullar Cyanobacteria",
-                             taxa == "anabaena_and_cylindrospermum" ~ "Anabaena or Cylindrospermum",
-                             taxa == "geitlerinema" ~ "Geitlerinema",
-                             taxa == "oscillatoria" | taxa == "phormidium_unknown" |
-                               taxa == "leptolyngbya" | taxa == "homoeothrix"
-                             ~ "Other Filamentous Cyanobacteria",
-                             taxa == "microcoleus" ~ "Microcoleus",
-                             taxa == "non_e_r_diatoms" ~ "Diatoms Other than Epithemia or Rhopalodia",
-                             taxa == "unknown" | taxa == "chantransia" | taxa == "euglenoid" |
-                               taxa == "unknown_green_algae"
-                             ~ "Misc.",
-                             taxa == "ankistrodesmus" | taxa == "gloeocystis" | taxa == "lacunastrum" | 
-                               taxa == "oocystis" | taxa == "pediastrum" | taxa == "scenedesmus_no_spines" |
-                               taxa == "stauridium" | taxa == "tetraedron" | taxa == "coelastrum" |
-                               taxa == "cosmarium" | taxa == "desmodesmus_spines" | taxa == "closterium"
-                             ~ "Unicellular Green Algae",
-                             taxa == "cladophora" ~ "Cladophora",
-                             taxa == "mougeotia" | taxa == "ulothrix" | taxa == "zygnema" |
-                               taxa == "stigeoclonium" | taxa == "oedogonium"
-                             ~ "Other Filamentous Green Algae",
-                             taxa == "rhopalodia" | taxa == "epithemia" ~ "Epithemia or Rhopalodia",
-                             taxa == "spirogyra" ~ "Spirogyra"
-  ))
+# use functions
+data_longer$tm <- target_broader(data_longer$tm)
+data_longer$tac <- target_broader(data_longer$tac)
+data_longer$nt <- target_broader(data_longer$nt)
 
 #### (2) Functions for Analyses ####
 
 # load from supplemental script
-source("./code/supplemental_code/S4a_community_analyses_func.R")
+source("./code/supplemental_code/S4b_community_analyses_func.R")
 
 # summarize function
 # @param data_long is relative abundance data in long format
