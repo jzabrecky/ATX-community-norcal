@@ -83,8 +83,8 @@ unique(data$class)
 classes <- data %>% 
   dplyr::group_by(class) %>% 
   dplyr::summarize(total = sum(relative_abundance)) %>% 
+  filter(total > 1) %>%
   ungroup()
-  filter(total > 1)
 
 # BLASTing the weird names shows that they are mostly random cultured bacteriums
 # unassigned passed phylum, let's just add them to NA after class level
@@ -474,4 +474,4 @@ write.csv(TM_data, "./data/molecular/16s_nochimera_rarefied_95_TM_nomicro.csv", 
 TAC_data <- data %>% 
   filter(genus != "Anabaena" | genus != "Cylindropsermum" | genus != "Trichormus") %>% 
   filter(sample_type == "TAC")
-write.csv(TAC_data, "./data/molecular/16s_nochimera_rarefied_95_TAC_noanacyl.csv")
+write.csv(TAC_data, "./data/molecular/16s_nochimera_rarefied_95_TAC_noanacyl.csv", row.names = FALSE)

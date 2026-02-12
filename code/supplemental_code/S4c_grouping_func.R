@@ -78,9 +78,18 @@ nontarget_broader <- function(data) {
 
 ## (c) microbial_grouping
 # @param data is molecular data in long format
-# @rank is the column to group_by (within the "Cyanobacteria" phylum)
-# @param threshold is the mean relative abundance under which the phylum gets categorized under "Other"
-microbial_grouping <- function(data, rank, threshold) {
+# @rank is the column to group_by
+# @param threshold is the mean relative abundance under which the phylum 
+# gets categorized under "Other"
+# @param cyanobacteria is binary for if we want to filter for cyanobacteria phylum only
+microbial_grouping <- function(data, rank, threshold, cyanobacteria = FALSE) {
+  
+  # optional- filter for cyanobacteria
+  if(cyanobacteria) {
+      data <- data %>% 
+        filter(phylum == "Cyanobacteria")
+  }
+  
   # calculate average abundance for each phylum
   grouped <- data %>% 
     dplyr::group_by(.data[[rank]]) %>% 
@@ -89,7 +98,7 @@ microbial_grouping <- function(data, rank, threshold) {
     mutate(broader = case_when(mean < threshold  ~ "Other"))
   
   # put into "Other" if NA
-  grouped[which(str_detect(grouped[,1], "NA")), 3] <- "Other"
+  grouped[which(apply(grouped[,1], 1, function(x) str_detect(x, "NA"))), 3] <- "Other"
   # keep rank if not NA
   grouped[which(is.na(grouped[,3])), 3] <- grouped[which(is.na(grouped[,3])), 1]
   
@@ -99,21 +108,3 @@ microbial_grouping <- function(data, rank, threshold) {
   return(new)
 }
 
-## (d) cyano_grouping NEEDS 2 BE FIXED :)
-# @param data is molecular data in long format
-# @rank is the column to group_by (within the "Cyanobacteria" phylum)
-# @param threshold is the mean relative abundance under which the cyanobacterial 
-# order gets categorized under "Other"
-cyano_grouping <- function(data, rank, threshold) {
-  # filter for cyanobacteria phylum
-  new <- data %>% 
-    filter(phylum == "Cyanobacteria") %>% 
-    # calculate average abundance for each order
-    group_by(order) %>% 
-    dplyr::summarize(mean = mean(relative_abundance)) %>% 
-    # put into "Other" category if NA or % is less than #%
-    mutate(broader = case_when(is.na(order) ~ "Other",
-                                       mean < threshold  ~ "Other",
-                                       TRUE ~ order))
-  return(new)
-}
