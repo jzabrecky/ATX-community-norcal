@@ -1,6 +1,8 @@
 ## take two, plotting all sample types of one river, together
 # cannot omit target taxa!!!!
 
+library(tidyverse)
+
 #### morphology ####
 tac <- read.csv("./data/morphological/tac_algalonly.csv") %>% 
   filter(year(field_date) == 2022)

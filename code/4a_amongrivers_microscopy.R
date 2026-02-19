@@ -54,7 +54,7 @@ source("./code/supplemental_code/S4c_grouping_func.R")
 # use functions
 data_longer$tm <- target_broader(data_longer$tm)
 data_longer$tac <- target_broader(data_longer$tac)
-data_longer$nt <- target_broader(data_longer$nt)
+data_longer$nt <- nontarget_broader(data_longer$nt)
 
 #### (2) Functions for Analyses ####
 
@@ -273,3 +273,5 @@ atx_taxa_only <- lapply(data_longer, function(x) {
   # return a list including dataframe, then plot
   return(list(df, plot))
 })
+
+# NOTE: may shove this to a later script
