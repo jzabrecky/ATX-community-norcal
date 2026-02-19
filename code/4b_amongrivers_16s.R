@@ -1,9 +1,11 @@
 #### Comparing molecular 16s data among rivers
 ### Jordan Zabrecky
-## last edited: 02.02.2026
+## last edited: 02.18.2026
 
-# This code compares 16s rRNA (bacterial assemblage) data from NT, TM, and TAC samples
-# across rivers to answer Q1
+# This code compares 16s data from NT, TM, and TAC samples
+# across rivers to answer Q1. First data is transformed (sqrt).
+# Data is analyzed using NMDS, PERMANOVA, and ISA. We also averaged across all samples
+# from a river and created bar plots to visually compare average samples at each river
 
 #### (1) Loading libraries & data ####
 
@@ -141,7 +143,7 @@ for(i in 1:length(barplot_phylum_plots)) {
   print(barplot_phylum_plots[[i]] + labs(title = titles[i]))
   print(barplot_class_plots[[i]] + labs(title = titles[i]))
 }
-# could combine TAC categories more!
+# could combine TAC categories more! will do so in figure script
 
 # view plots (cyanobacteria categories)
 for(i in 1:length(barplot_phylum_plots)) {
@@ -167,7 +169,7 @@ for(i in 1:length(diversity)) {
 
 # Does diversity differ across rivers?
 lapply(diversity, function(x) kruskal.test(shannon_diversity~site, data = x))
-# not significantly different for any group but close for TM (p = 0.06)
+# not significantly different for any group but close for TM (p = 0.06) and for TAC (p = 0.44)
 
 # save diversity calculations (RUN ONCE)
 #lapply(names(diversity), function(x) write.csv(diversity[[x]], 

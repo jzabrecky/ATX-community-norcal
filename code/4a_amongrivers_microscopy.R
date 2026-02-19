@@ -48,7 +48,7 @@ data_longer <- lapply(unaltered_data,
                                                            names_to = "taxa"))
 
 # add in broader group classification
-# load in functions
+# load in functions from supplemental script
 source("./code/supplemental_code/S4c_grouping_func.R")
 
 # use functions

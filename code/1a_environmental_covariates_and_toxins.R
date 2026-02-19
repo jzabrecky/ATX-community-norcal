@@ -2,8 +2,8 @@
 ### Jordan Zabrecky
 ## last edited: 02.03.2026
 
-# This script creates a dataframe with environmental covariates (water chemistry
-# and anatoxin data) to use with both microscopy and molecular data
+# This script creates merges environmental covariate data (water chemistry
+# and anatoxin data) to create a single csv to use in downstream analyses
 
 # For code processing of water chemistry and target sample anatoxin 
 # data from original EDI csv's, see

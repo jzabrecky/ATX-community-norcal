@@ -7,7 +7,7 @@
 # or "Chloroplasts", removes low confidence (<0.85) reads, removes "fake"
 # field target samples, and analyzes/processes blanks and triplicates,
 # and saves to a final csv (one with raw reads [triplicates not averaged] 
-# and one with relative)
+# and one with relative abundance calculated for each sample [triplicates averaged])
 
 #### (1) Loading libraries and data ####
 
