@@ -1,4 +1,4 @@
-#### Main figure to show differences in assemblages associated with target taxa among rivers
+#### Main figure to show differences in morphologically-identified assemblages among rivers
 ### Jordan Zabrecky
 ## last edited: 01.15.2026
 
@@ -73,8 +73,8 @@ fig_d <- list()
 col_num <- list(14, 9, 10) # list for number of fill colors
 names(col_num) <- sample_types
 for(i in sample_types) {
- fig_d[[i]] <- barplot_broader_plots[[i]] +
-   scale_fill_discrete(palette = palette)
+  fig_d[[i]] <- barplot_broader_plots[[i]] +
+    scale_fill_discrete(palette = palette)
 }
 lapply(fig_d, print)
 
@@ -124,12 +124,12 @@ for(i in sample_types) {
                       fig_c[[i]] + theme(legend.position = "none"), 
                       # will add legends for the above separately, as they are small 
                       # and can fit into a different space!
-                       fig_d[[i]] + theme(legend.position = "none"), 
+                      fig_d[[i]] + theme(legend.position = "none"), 
                       nrow = 1, rel_widths = c(1.5, 1.5, 1))
   bottom_row = plot_grid(fig_b[[i]] + theme(legend.position = "right"), 
-                        fig_b[[i]] + theme(legend.position = "right"), 
-                        fig_d[[i]] + theme(legend.position = "none"), 
-                        nrow = 1, rel_widths = c(1.5, 1.5, 1))
+                         fig_b[[i]] + theme(legend.position = "right"), 
+                         fig_d[[i]] + theme(legend.position = "none"), 
+                         nrow = 1, rel_widths = c(1.5, 1.5, 1))
   final_figure[[i]] <- plot_grid(top_row, bottom_row, 
                                  ncol = 1, rel_heights = c(1.25, 1),
                                  scale = 0.95)

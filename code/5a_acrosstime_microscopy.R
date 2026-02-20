@@ -36,8 +36,7 @@ data_longer <- lapply(unaltered_data,
 ##### (2) Function for Analyses ####
 
 # load from supplemental script
-source("./code/supplemental_code/S4a_community_analyses_func.R")
-source("./code/supplemental_code/S4c_barplot_func.R")
+source("./code/supplemental_code/S4b_community_analyses_func.R")
 
 #### (3) Add  Columns for Sampling Event & Broader Taxa ####
 
@@ -45,61 +44,14 @@ source("./code/supplemental_code/S4c_barplot_func.R")
 data <- lapply(data, add_event_no)
 data_longer <- lapply(data_longer, add_event_no)
 
-# add in broader group classification
-# grouping for TM & TAC
-for(i in 2:length(data_longer)) {
-  data_longer[[i]] <- data_longer[[i]] %>% 
-    mutate(broader = case_when(taxa == "lyngbya" | taxa == "nodularia" |  taxa == "calothrix" |
-                                 taxa == "scytonema" | taxa == "gloeotrichia" ~ "Other N-fixing Cyanobacteria",
-                               taxa == "nostoc" ~ "Nostoc",
-                               taxa == "chroococcus" | taxa == "other_coccoids"
-                               ~ "Unicellullar Cyanobacteria",
-                               taxa == "anabaena_and_cylindrospermum" ~ "Anabaena or Cylindrospermum",
-                               taxa == "e_diatoms" ~ "Epithemia",
-                               taxa == "geitlerinema" ~ "Other Anatoxin-Associated Cyanobacteria",
-                               taxa == "green_algae" ~ "Green Algae",
-                               taxa == "oscillatoria" | taxa == "phormidium_unknown" |
-                                 taxa == "leptolyngbya" | taxa == "homoeothrix"
-                               ~ "Other Filamentous Cyanobacteria",
-                               taxa == "microcoleus" ~ "Microcoleus",
-                               taxa == "non_e_diatoms" ~ "Diatoms Other than Epithemia",
-                               taxa == "unknown" ~ "Unknown"
-    ))
-}
+# add in broader group classification to longer dataframe
+# load in functions from supplemental script
+source("./code/supplemental_code/S4c_grouping_func.R")
 
-# grouping for NT
-data_longer$nt <- data_longer$nt %>% 
-  mutate(broader = case_when(taxa == "lyngbya" | taxa == "nodularia" |  taxa == "calothrix" |
-                               taxa == "scytonema" | taxa == "gloeotrichia" | taxa == "rivularia" |
-                               taxa == "tolypothrix"
-                             ~ "Other N-fixing Cyanobacteria",
-                             taxa == "nostoc" ~ "Nostoc",
-                             taxa == "chroococcus" | taxa == "other_coccoids" | taxa == "aphanothece"
-                             ~ "Unicellullar Cyanobacteria",
-                             taxa == "anabaena_and_cylindrospermum" ~ "Anabaena or Cylindrospermum",
-                             taxa == "epithemia" ~ "Epithemia",
-                             taxa == "geitlerinema" ~ "Other Anatoxin-Associated Cyanobacteria",
-                             taxa == "oscillatoria" | taxa == "phormidium_unknown" |
-                               taxa == "leptolyngbya" | taxa == "homoeothrix"
-                             ~ "Other Filamentous Cyanobacteria",
-                             taxa == "microcoleus" ~ "Microcoleus",
-                             taxa == "non_e_r_diatoms" ~ "Diatoms Other than Epithemia or Rhopalodia",
-                             taxa == "unknown" | taxa == "chantransia" | taxa == "euglenoid" |
-                               taxa == "unknown_green_algae"
-                             ~ "Other",
-                             taxa == "ankistrodesmus" | taxa == "gloeocystis" | taxa == "lacunastrum" | 
-                               taxa == "oocystis" | taxa == "pediastrum" | taxa == "scenedesmus_no_spines" |
-                               taxa == "stauridium" | taxa == "tetraedron" | taxa == "coelastrum" |
-                               taxa == "cosmarium" | taxa == "desmodesmus_spines" | taxa == "closterium"
-                             ~ "Unicellular Green Algae",
-                             taxa == "cladophora" ~ "Cladophora",
-                             taxa == "mougeotia" | taxa == "ulothrix" | taxa == "zygnema" |
-                               taxa == "stigeoclonium"
-                             ~ "Other Filamentous Green Algae",
-                             taxa == "oedogonium" ~ "Oedogonium",
-                             taxa == "rhopalodia" ~ "Rhopalodia",
-                             taxa == "spirogyra" ~ "Spirogyra"
-  ))
+# use functions
+data_longer$tm <- target_broader(data_longer$tm)
+data_longer$tac <- target_broader(data_longer$tac)
+data_longer$nt <- nontarget_broader(data_longer$nt)
 
 #### (4) Barplots through Time ####
 

@@ -6,6 +6,8 @@
 # by time, river, etc. One supplemental figure will be created for each
 # sample type
 
+# NEED TO REVISIT BEFORE FINALIZING !!!!
+
 #### (1) Loading libraries & data ####
 
 # libraries
@@ -69,10 +71,6 @@ palette <- c("#FBF6B0", "#C5BD53", "#777122", "#C2DFFF", "#5E9DE0", "#205288",
 
 # color for other or unknown
 end_color <- "lightgray"
-
-# no unknown in TM samples- remove that category
-microscopy$tm <- microscopy$tm %>% 
-  filter(broader != "Unknown")
 
 # put "misc. other" at the end of NT
 microscopy$nt <- microscopy$nt %>% 

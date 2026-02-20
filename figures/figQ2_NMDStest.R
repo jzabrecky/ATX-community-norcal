@@ -57,6 +57,13 @@ for(i in 1:length(NMDS_morphological)) {
 }
 lapply(plot, print)
 
+# try plotting multiple site_reaches on one plot
+eeltmonly <- getNMDSdata(data$tm %>% filter(site == "SFE-M"), start_col)
+makeNMDSplot(eeltmonly, TRUE, TRUE, color = "site_reach", shape = "month")
+
+eelntonly <- getNMDSdata(data$nt %>% filter(site == "SFE-M"), start_col)
+makeNMDSplot(eelntonly, TRUE, TRUE, color = "site_reach", shape = "month")
+
 ## bacterial
 
 source("./code/4b_amongrivers_16s.R")
@@ -207,3 +214,5 @@ ggplot(rustac_sum, aes(x = mean1, y = mean2)) +
   scale_color_manual(values = c("SAL" = "#62a7f8",
                                 "SFE-M" = "#416f16",
                                 "RUS" = "#bdb000"))
+
+

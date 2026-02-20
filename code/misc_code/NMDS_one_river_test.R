@@ -67,7 +67,7 @@ sfkeel <- bind_rows(tm$`SFE-M`, tac$`SFE-M`, nt$`SFE-M`)
 sfkeel <- replace(sfkeel, is.na(sfkeel), 0)
 
 # source functions
-source("./code/supplemental_code/S4a_community_analyses_func.R")
+source("./code/supplemental_code/S4b_community_analyses_func.R")
 
 eelNMDS <- getNMDSdata(sfkeel, 7, ASV = TRUE) # some issue with vectors, so leaving it out
 makeNMDSplot(eelNMDS, FALSE, FALSE, color = "month", shape = "sample_type")

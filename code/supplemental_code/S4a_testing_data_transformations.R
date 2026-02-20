@@ -75,7 +75,7 @@ start_col <- 6 # same for microbial data
 # remove any taxa where there are no observations at any river for each sample type
 # note, need to add 4 to match the subset taken for colSums
 algal_notaxa <- lapply(algal_untransformed, function(x) colnames(x)[c((start_col - 1) 
-                                                                      + which(colSums(x[,start_col:ncol(x)]) == 0))]) # no aphanothece ever recorded in TM samples
+                                                                      + which(colSums(x[,start_col:ncol(x)]) == 0))])
 # since we pivot wider from the long data format where there are no zeros, this is not an issue for microbial data
 
 # remove these taxa (that are not present in any samples) from the dataframes

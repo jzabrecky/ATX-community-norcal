@@ -1,6 +1,6 @@
 #### Comparing microscopy data among rivers
 ### Jordan Zabrecky
-## last edited: 02.03.2026
+## last edited: 02.19.2026
 
 # This code compares microscopy data from NT, TM, and TAC samples
 # across rivers to answer Q1. First data is transformed (sqrt).
@@ -27,9 +27,23 @@ unaltered_data <- lapply(unaltered_data, function(x) x %>% filter(year(ymd(field
 # set column where abundance data starts in dataframe
 start_col <- 5
 
+# remove any taxa where there are no observations at any river for each sample type
+# note, need to add 4 to match the subset taken for colSums
+no_taxa <- lapply(unaltered_data, function(x) colnames(x)[c((start_col - 1) 
+                                                                      + which(colSums(x[,start_col:ncol(x)]) == 0))])
+# all taxa recorded in NT, whereas there are quite a few for TM and TAC
+# remove these taxa (that are not present in any samples) from the dataframes
+data <- lapply(c(1:3), function(x) unaltered_data[[x]] %>% 
+                 dplyr::select(!c(no_taxa[[x]])))
+names(data) <- names(unaltered_data)
+
+# create a longer version of the unaltered data for bar plots of relative abundances
+data_longer <- lapply(data, 
+                      function(x) pivot_longer(x, cols = all_of(c(start_col:ncol(x))), values_to = "percent",
+                                               names_to = "taxa"))
+
 # see our exploration with data transformation in another script, "S4a_testing_data_transformations.R"
 # decided on square-root transformation on the relative abundances (Hellinger transformation)
-data <- unaltered_data
 for(i in 1:length(data)) {
   data[[i]][,start_col:ncol(data[[i]])] <- sqrt(data[[i]][,start_col:ncol(data[[i]])])
 }
@@ -39,15 +53,10 @@ for(i in 1:length(data)) {
 #          row.names = FALSE)
 #write.csv(data$tm, "./data/morphological/transformed/tm_algalonly_nomicro_sqrttransformed.csv",
 #          row.names = FALSE)
-#write.csv(data$tac, "./data/morphological/transformed/nt_algalonly_noanacylgreenalgae_sqrttransformed.csv",
+#write.csv(data$tac, "./data/morphological/transformed/tac_algalonly_noanacylgreenalgae_sqrttransformed.csv",
 #          row.names = FALSE)
 
-# create a longer version of the unaltered data for bar plots of relative abundances
-data_longer <- lapply(unaltered_data, 
-                      function(x) pivot_longer(x, cols = all_of(c(start_col:ncol(x))), values_to = "percent",
-                                                           names_to = "taxa"))
-
-# add in broader group classification
+# add in broader group classification to longer dataframe
 # load in functions from supplemental script
 source("./code/supplemental_code/S4c_grouping_func.R")
 
@@ -193,7 +202,9 @@ lapply(envfit_pvalues, function(x) head(x, 15))
 
 # (i) NT
 set.seed(1)
-summary(multipatt(data$nt[,start_col:ncol(data$nt)], data$nt$site, func = "r.g", control = how(nperm = 999)))
+nt_test <- multipatt(data$nt[,start_col:ncol(data$nt)], data$nt$site, func = "r.g", control = how(nperm = 999))
+summary(nt_test)
+#write.csv(nt_test$sign, "./data/ISA_results/Q1_nt_microscopy.csv")
 # SAL: homoethrix, leptolyngbya, coccoids, unknown green algae
 # SFE: cladophora, stauridium, nostoc, coelastrum, unknown, tetraedron, cosmarium, rivularia,
 # ankistrodesmus, lacunastrum
@@ -204,14 +215,17 @@ summary(multipatt(data$nt[,start_col:ncol(data$nt)], data$nt$site, func = "r.g",
 
 # (ii) TM
 set.seed(1)
-summary(multipatt(data$tm[,start_col:ncol(data$tm)], data$tm$site, func = "r.g", control = how(nperm = 999)))
+tm_test <- multipatt(data$tm[,start_col:ncol(data$tm)], data$tm$site, func = "r.g", control = how(nperm = 999))
+summary(tm_test)
+#write.csv(tm_test$sign, "./data/ISA_results/Q1_tm_microscopy.csv")
 # SAL: diatoms
 # SFE: anabaena, nostoc
 
 # (iii) TAC
-# omit single salmon sample
-tac_sub <- data$tac %>% filter(site != "SAL")
-summary(multipatt(tac_sub[,start_col:ncol(tac_sub)], tac_sub$site, func = "r.g", control = how(nperm = 999)))
+set.seed(1)
+tac_test <- multipatt(data$tac[,start_col:ncol(data$tac)], data$tac$site, func = "r.g", control = how(nperm = 999))
+summary(tac_test)
+#write.csv(tac_test$sign, "./data/ISA_results/Q1_tac_microscopy.csv")
 # RUS: phormidium, oscillatoria
 # SFE: nodularia, microcoleus
 
