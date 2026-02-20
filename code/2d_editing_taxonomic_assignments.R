@@ -1,6 +1,6 @@
 #### Editing taxonomic assignments
 ### Jordan Zabrecky
-## last edited: 12.22.2025
+## last edited: 02.20.2026
 
 # This code takes the processed QIIME outputs (presently, just the 95% rarefied)
 # and adjusts taxonomic assignments to make sure they are all clean and correct
@@ -472,6 +472,8 @@ write.csv(TM_data, "./data/molecular/16s_nochimera_rarefied_95_TM_nomicro.csv", 
 
 # for anabaena/cylindrospermum
 TAC_data <- data %>% 
-  filter(genus != "Anabaena" | genus != "Cylindropsermum" | genus != "Trichormus") %>% 
+  # note: cylindrospermopsis is also reading a highly close match to anabaena in BLAST so will
+  # remove that as well
+  filter(! genus %in% c("Anabaena","Cylindrospermum","Trichormus",  "Cylindrospermopsis")) %>% 
   filter(sample_type == "TAC")
 write.csv(TAC_data, "./data/molecular/16s_nochimera_rarefied_95_TAC_noanacyl.csv", row.names = FALSE)

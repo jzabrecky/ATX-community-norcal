@@ -225,7 +225,7 @@ centroid_distance <- lapply(NMDS_list, function(x) {
 lapply(names(centroid_distance), function(x) print(paste(x, ": ", centroid_distance[[x]], sep = "")))
 # nt: 1.33979348138588
 # tm: 1.60154329291529
-# tac: 0.482116222329394
+# tac: 0.473476224708244
 # TAC centroid distances are much closer on average, they are less than the distances
 # for algal assemblages for TM and NT and but much more than TAC (which was 0.108)
 
