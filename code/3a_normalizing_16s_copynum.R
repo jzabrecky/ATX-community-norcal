@@ -1,0 +1,1 @@
+# this script will normalize our microbial abundances by their 16s copy number

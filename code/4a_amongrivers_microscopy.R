@@ -1,6 +1,6 @@
-#### Comparing microscopy data among rivers
+#### Comparing morphologically-identified assemblages among rivers
 ### Jordan Zabrecky
-## last edited: 02.19.2026
+## last edited: 02.27.2026
 
 # This code compares microscopy data from NT, TM, and TAC samples
 # across rivers to answer Q1. First data is transformed (sqrt).
@@ -254,6 +254,30 @@ count(data$tac$microcoleus > 0 & data$tac$site == "RUS")
 # true for 22/28
 # 10 of those are russian river
 count(data$tac$site == "RUS") # of 15 samples
+
+## Finally, let's group a little farther for NT samples
+# five groups: diatom, spirogyra, cladophora, diazotrophic cyanos, non-diazo filamentous cyanos,
+# other green algae, coccoidal cyanobacteria
+# join diatoms, spirogyra, cladophora, diazotrophic cyanobacteria, filamentous cyanobacteria (non-diaztotrophic),
+# other green algae... so five griyo
+even_broader_NT <- data_longer$nt %>% 
+  mutate(even_broader = case_when(broader == "Cladophora" ~ "Cladophora",
+                                  broader == "Spirogyra" ~ "Spirogyra",
+                                  broader == "Epithemia" ~ "Diatoms",
+                                  broader == "Rhopalodia" ~ "Diatoms",
+                                  broader == "Diatoms Other than Epithemia or Rhopalodia" ~ "Diatoms",
+                                  broader == "Nostoc" ~ "Diazotrophic Cyanobacteria",
+                                  broader == "Anabaena or Cylindrospermum" ~ "Diazotrophic Cyanobacteria",
+                                  broader == "Other N-fixing Cyanobacteria" ~ "Diazotrophic Cyanobacteria",
+                                  broader == "Unicellular Cyanobacteria" ~ "Coccoidal Cyanobacteria",
+                                  broader == "Microcoleus" ~ "Non-diaztrophic Cyanobacteria",
+                                  broader == "Other Green Algae" ~ "Other Green Algae")) %>% 
+  dplyr::group_by(site, even_broader) %>% 
+  dplyr::summarize(mean = mean(percent))
+view(even_broader_NT)
+
+
+### MAY MOVE BELOW TO Q3
 
 ## Let's look at only other anatoxin associated taxa in all samples
 # using list from Christensen & Khan et al. (2019): Anabaena, Aphanizomenon,

@@ -9,6 +9,8 @@ tac <- read.csv("./data/morphological/tac_algalonly_noanacylgreenalgae.csv")
 unaltered_data <- list(nt, tm, tac)
 names(unaltered_data) <- c("nt", "tm", "tac")
 
+source("./code/supplemental_code/S4b_community_analyses_func.R")
+
 # finally, pivot longer for those bar plots and select only 2022 data
 data_longer <- lapply(unaltered_data, 
                       function(x) x %>% pivot_longer(cols = c(5:ncol(x)), values_to = "percent",
@@ -50,6 +52,7 @@ calc_change <- function(data) {
     data[,ncol(data) + 1] = data[,i+3] - data[,i+2] 
     colnames(data)[ncol(data)] = rowname
   }
+  return(data)
 }
 
 change_data <- lapply(wider_mean, calc_change)

@@ -4,8 +4,7 @@
 .RData
 .RDataTmp
 .Ruserdata
-# ignore large data files
-data/molecular/raw_files
+# ignore large data files for molecular data
 data/molecular/
 # ignore figure folders
 figures/tiff_files/
