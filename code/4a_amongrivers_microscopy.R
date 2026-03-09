@@ -263,19 +263,23 @@ count(data$tac$site == "RUS") # of 15 samples
 even_broader_NT <- data_longer$nt %>% 
   mutate(even_broader = case_when(broader == "Cladophora" ~ "Cladophora",
                                   broader == "Spirogyra" ~ "Spirogyra",
-                                  broader == "Epithemia" ~ "Diatoms",
-                                  broader == "Rhopalodia" ~ "Diatoms",
+                                  broader == "Epithemia or Rhopalodia" ~ "Diatoms",
                                   broader == "Diatoms Other than Epithemia or Rhopalodia" ~ "Diatoms",
                                   broader == "Nostoc" ~ "Diazotrophic Cyanobacteria",
                                   broader == "Anabaena or Cylindrospermum" ~ "Diazotrophic Cyanobacteria",
                                   broader == "Other N-fixing Cyanobacteria" ~ "Diazotrophic Cyanobacteria",
                                   broader == "Unicellular Cyanobacteria" ~ "Coccoidal Cyanobacteria",
                                   broader == "Microcoleus" ~ "Non-diaztrophic Cyanobacteria",
-                                  broader == "Other Green Algae" ~ "Other Green Algae")) %>% 
+                                  broader == "Other Green Algae" ~ "Other Green Algae",
+                                 TRUE ~ broader)) %>% 
+  # merge groups for total in each broader group (i.e., reduce rows)
+  dplyr::group_by(site, site_reach, field_date, even_broader) %>% 
+  dplyr::summarize(total = sum(percent)) %>% 
+  dplyr::ungroup() %>% 
+  # regroup to calculate average per site across all samples
   dplyr::group_by(site, even_broader) %>% 
-  dplyr::summarize(mean = mean(percent))
+  dplyr::summarize(mean = mean(total))
 view(even_broader_NT)
-
 
 ### MAY MOVE BELOW TO Q3
 

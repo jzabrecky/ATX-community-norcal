@@ -21,7 +21,7 @@ target_broader <- function(data) {
                                  taxa == "tolypothrix" ~ "Other N-fixing Cyanobacteria",
                                taxa == "nostoc" ~ "Nostoc",
                                taxa == "chroococcus" | taxa == "other_coccoids" | taxa == "aphanothece"
-                               ~ "Unicellullar Cyanobacteria",
+                               ~ "Unicellular Cyanobacteria",
                                taxa == "anabaena_and_cylindrospermum" ~ "Anabaena or Cylindrospermum",
                                taxa == "e_diatoms" ~ "Epithemia",
                                taxa == "geitlerinema" ~ "Geitlerinema",
@@ -48,7 +48,7 @@ nontarget_broader <- function(data) {
                                ~ "Other N-fixing Cyanobacteria",
                                taxa == "nostoc" ~ "Nostoc",
                                taxa == "chroococcus" | taxa == "other_coccoids" | taxa == "aphanothece"
-                               ~ "Unicellullar Cyanobacteria",
+                               ~ "Unicellular Cyanobacteria",
                                taxa == "anabaena_and_cylindrospermum" ~ "Anabaena or Cylindrospermum",
                                taxa == "oscillatoria" | taxa == "phormidium_unknown" |
                                  taxa == "leptolyngbya" | taxa == "homoeothrix" | taxa == "geitlerinema"
