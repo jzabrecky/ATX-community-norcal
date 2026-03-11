@@ -1,18 +1,22 @@
 #### Further processing of QIIME2 outputs
 ### Jordan Zabrecky
-## last edited: 10.10.2025
+## last edited: 03.11.2026
 
 # This code reads in the csv of assembled QIIME2 outputs and metadata
 # and further processes it by removing reads that are "Mitochondria"
-# or "Chloroplasts", removes low confidence (<0.85) reads, removes "fake"
-# field target samples, and analyzes/processes blanks and triplicates,
-# and saves to a final csv (one with raw reads [triplicates not averaged] 
-# and one with relative abundance calculated for each sample [triplicates averaged])
+# or "Chloroplasts" [2], removes low confidence (<0.85) reads [3], removes "fake"
+# field target samples [5], and analyzes/processes blanks and triplicates [6],
+# and saves to a final csv (one with raw reads [triplicates not averaged],
+# and one with relative abundance calculated for each sample [triplicates averaged]) [7]
+
+# Notably, a new .biom file is saved after processing steps 2-3 to be used with 
+# PICRUSt2-SC so our predicted functional groups only match our final group
+# of taxa assignments [4]
 
 #### (1) Loading libraries and data ####
 
 # loading libraries
-lapply(c("tidyverse", "plyr"), require, character.only = T)
+lapply(c("tidyverse", "plyr", "biomformat"), require, character.only = T)
 
 # load in data
 data <- ldply(list.files(path = "./data/molecular/intermediate_csvs", 
@@ -77,7 +81,7 @@ data_ver2_filtered <- data %>%
   filter(domain != "Eukaryota") # exclude anything matching to Eurkaryota
 # seems like family level removes all cases of mitochondria and chloroplast from the dataset!
 
-##### (3) Removing low confidence reads ####
+#### (3) Removing low confidence reads ####
 
 ## dataframe size:
 # all: 466395
@@ -117,6 +121,10 @@ for(i in 1:length(indeces)) {
 }
 # really no easily visible change in relative abundance!
 
+# remove test files
+rm(data_confint_test, data_confint_test_75, data_confint_test_80,
+   data_confint_test_85, data_confint_test_90)
+
 # will just go with 85% because there is a lot of anabaena at 85% 
 # & that gets rid of our misc. "uncultured bacterium" reads :)
 data_ver3_conf <- data_ver2_filtered %>% 
@@ -134,7 +142,61 @@ data_ver3_conf %>% filter(sample_type != "blank" & fake_target == "n") %>%
   ungroup()
 # lost 1 for non-rarefied but won't be using that anyways, let's continue!
 
-#### (4) Removing "fake" target samples ####
+#### (4) Saving .biom With Chloroplast & Mitochondria & Low Quality Reads Removed ####
+
+# NOTE: only doing this with 95% rarefied data as that is what we decided on to use
+biom_data <- data %>% 
+  filter(file == "16s_nochimera_rarefied_95_unfiltered.csv")
+
+# confirm that plate IDs have plate number beforehand
+unique(biom_data$plate_ID) # yup!
+
+# processing to make the dataframe capatible with biomformat
+biom_data <- biom_data %>% 
+  # only select rows we care about
+  select(plate_ID, feature_ID, abundance) %>% 
+  # convert into matrix to use with where ASVs are rows and samples are columns
+  pivot_wider(names_from = plate_ID, values_from = abundance, values_fill = 0) 
+
+# make into matrix
+biom_data_matrix <- biom_data %>%
+  # get rid of feature_ID column
+  dplyr::select(!c(feature_ID)) %>% 
+  # convert values all to numeric
+  mutate(across(.fns = as.numeric)) %>% 
+  # turn into matrix
+  as.matrix()
+  
+# set row names to ASV
+rownames(biom_data_matrix) <- biom_data$feature_ID
+
+## having issues with the make_biom() function in biom format
+## so instead, let's just work out of the original 95 rarefied .biom file and change it with processed data
+
+# load original .biom file
+original_biomfile <- read_biom("./data/molecular/raw_files/rarefied/feature-table_rarefied_95.biom")
+new_biomfile <- original_biomfile # make copy to edit
+
+# create new $rows attribute using our processed data
+new_biomfile$rows <- lapply(rownames(biom_data_matrix), function(x) return(list(id = x, metadata = list())))
+
+# create new $columns attribute using our processed data
+new_biomfile$columns <- lapply(colnames(biom_data_matrix), function(x) return(list(id = x, metadata = list())))
+
+# create new $shape attribute using our processed data
+new_biomfile$shape <- c(length(new_biomfile$rows), length(new_biomfile$columns))
+
+# create new $data attribute using our processed data
+# (where each item is a list of numeric abundances with rownames [aka named numeric] for sample ID for each ASV)
+new_biomfile$data <- lapply(rownames(biom_data_matrix), function(x) return(biom_data_matrix[x,]))
+
+# save as .biom file
+write_biom(new_biomfile, "./data/molecular/raw_files/rarefied_and_processed/feature-table_rarefied_processed_95.biom")
+
+# remove files
+rm(original_biomfile, new_biomfile, biom_data_matrix, biom_data)
+
+#### (5) Removing "fake" target samples ####
 
 ## These were samples that were sometimes taken in absence of macroscopially identifiable
 ## Microcoleus or Anabaena/Cylindrospermum
@@ -154,6 +216,9 @@ maybe <- data_ver3_conf %>%
 view(maybe)
 # single read of microcoleus/tychonema!
 
+# remove above dataframes
+rm(maybe, fakes)
+
 # however, these "fake targets" are probably too confusing for methods and non-target samples will
 # show presence of "macroscopically absent" taxa we care about, so focus only on "true" samples
 data_ver4_true <- data_ver3_conf %>% 
@@ -165,7 +230,7 @@ data_ver4_true <- data_ver3_conf %>%
 data_ver4_true <- data_ver4_true %>% 
   filter(vial_ID != 230)
 
-#### (5) Processing blanks ####
+#### (6) Processing blanks ####
 
 # look at blanks
 blanks <- data_ver4_true %>% 
@@ -175,11 +240,14 @@ blanks <- data_ver4_true %>%
 view(blanks)
 # not a ton of microcoleus or anabaena which is good
 
+# remove dataframe
+rm(blanks)
+
 # remove blanks
 data_ver5_noblanks <- data_ver4_true %>% 
   filter(sample_type != "blank")
 
-#### (5) Relativizing Abundances #####
+#### (7) Relativizing Abundances #####
 
 # first, let's save the raw reads so we can compare ASV's across samples before merging
 # triplicates (which requires relativizing)
@@ -207,8 +275,13 @@ relativized_check <- data_ver6_relativized %>%
   dplyr::group_by(vial_ID, file) %>% 
   dplyr::summarize(total = sum(relative_abundance)) %>% 
   ungroup()
+relativized_check$total[which(relativized_check$total != 100)] 
+# all that don't are very close to 100/reading in as 100, probably a float issue
 
-#### (7) Processing Triplicates ####
+# remove dataframe
+rm(relativized_check)
+
+#### (8) Processing Triplicates ####
 
 # filter out for triplicates and not triplicates
 triplicates <- data_ver6_relativized %>% 
@@ -265,6 +338,8 @@ triplicate_relativize_check <- triplicates_adjusted_final %>%
   dplyr::group_by(full_sample_name, file) %>% 
   dplyr::summarize(total = sum(relative_abundance)) %>%  # all summing to 100!
   ungroup()
+triplicate_relativize_check$total[which(triplicate_relativize_check$total != 100)]
+# all that don't are very close to 100/reading in as 100, probably a float issue
 
 # plot merged triplicates
 triplicates_adjusted_list <- split(triplicates_adjusted_final, triplicates_adjusted_final$full_sample_name) 
@@ -303,7 +378,7 @@ data_ver7_final <- rbind(data_ver7_final, triplicates_final) %>%
   mutate(file = str_remove(file, "_unfiltered.csv"))
 
 # instead of saving several decimals, let's just save up to the minimum required for non-zero values
-min((data_ver7_final %>% filter(relative_abundance != 0))[,"relative_abundance"]) # 0.0004859393
+min((data_ver7_final %>% filter(relative_abundance != 0))[,"relative_abundance"]) # 0.000362
 
 # save to the 5th decimal place
 data_ver7_final <- data_ver7_final %>% 

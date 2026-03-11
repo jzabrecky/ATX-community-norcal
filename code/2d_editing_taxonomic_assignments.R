@@ -1,6 +1,6 @@
 #### Editing taxonomic assignments
 ### Jordan Zabrecky
-## last edited: 02.20.2026
+## last edited: 03.10.2026
 
 # This code takes the processed QIIME outputs (presently, just the 95% rarefied)
 # and adjusts taxonomic assignments to make sure they are all clean and correct
@@ -460,20 +460,20 @@ data[which(data$field_date == "9/8/2022" & data$site_reach == "SFE-M-1S"& data$s
 #### (11) Saving ####
 
 # save csv
-write.csv(data, "./data/molecular/16s_nochimera_rarefied_95_FINAL.csv", row.names = FALSE)
+write.csv(data, "./data/molecular/16s_nochimera_rarefied_95_endcode2.csv", row.names = FALSE)
 
 ## save versions of TM and TAC with Microcoleus and Anabaena/Cylindrospermum/Trichormus removed respectively
 
 # for microcoleus
-TM_data <- data %>% 
-  filter(genus != "Microcoleus") %>% 
-  filter(sample_type == "TM")
-write.csv(TM_data, "./data/molecular/16s_nochimera_rarefied_95_TM_nomicro.csv", row.names = FALSE)
+#TM_data <- data %>% 
+#  filter(genus != "Microcoleus") %>% 
+#  filter(sample_type == "TM")
+#write.csv(TM_data, "./data/molecular/16s_nochimera_rarefied_95_TM_nomicro.csv", row.names = FALSE)
 
 # for anabaena/cylindrospermum
-TAC_data <- data %>% 
+#TAC_data <- data %>% 
   # note: cylindrospermopsis is also reading a highly close match to anabaena in BLAST so will
   # remove that as well
-  filter(! genus %in% c("Anabaena","Cylindrospermum","Trichormus",  "Cylindrospermopsis")) %>% 
-  filter(sample_type == "TAC")
-write.csv(TAC_data, "./data/molecular/16s_nochimera_rarefied_95_TAC_noanacyl.csv", row.names = FALSE)
+#  filter(! genus %in% c("Anabaena","Cylindrospermum","Trichormus",  "Cylindrospermopsis")) %>% 
+#  filter(sample_type == "TAC")
+#write.csv(TAC_data, "./data/molecular/16s_nochimera_rarefied_95_TAC_noanacyl.csv", row.names = FALSE)

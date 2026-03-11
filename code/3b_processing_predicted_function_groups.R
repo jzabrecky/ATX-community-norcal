@@ -1,11 +1,17 @@
 #### draft script for processing PICRUSt2-SC data
 
+# things to think of: we removed low quality reads and mitochondria, chloroplasts from others
+# does this mean we need stratified samples?
+
 # ideal overview: read in data, match to 95% rarefied data, 
 # figure out broader functional grouping and add in
 
 # see how abundance matches on each dataframe?
 # consider saving outputs from script 2d elsewhere
 # and having a script 3c where predicted functional groups are verified
+
+
+### OLD below
 
 library(ggpicrust2)
 library(tidyverse)
