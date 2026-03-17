@@ -37,76 +37,96 @@ plot_cyano <- function(data, abundance_var) {
 
 ## (a) getting metadata
 
-# get list of plates in order (will read in 1, 2, then 3)
-plate_data <- lapply(list.files("./data/molecular/metadata/",
-                                  pattern = "plate"), function(x) { 
-                                      y = read.table(paste("./data/molecular/metadata/", x, sep = ""))
-                                      colnames(y) <- c("plate_ID", "vial_ID")
-                                      return(y)
-                                  })
+# get list of file names
+plate_files <- list.files(path = "./data/molecular/metadata/", pattern = "plate")
+
+# create empty list (different plates have same IDs so want to keep them separate!)
+plate_data <- list()
+
+# fill in list with dataframes
+for(i in 1:length(plate_files)) {
+  plate_data[[i]] <- read.table(paste("data/molecular/metadata/", plate_files[i], sep = ""))
+  colnames(plate_data[[i]]) <- c("plate_ID", "vial_ID")
+}
+
+# preface plate ID's with p2 or p3 if 2nd or 3rd plate respectively
+plate_data[[2]]$plate_ID <- paste("p2", plate_data[[2]]$plate_ID, sep = "")
+plate_data[[3]]$plate_ID <- paste("p3", plate_data[[3]]$plate_ID, sep = "")
+
+# put into one dataframe
+plate_data_final <- plate_data[[1]]
+for(i in 2:length(plate_data)) {
+  plate_data_final <- rbind(plate_data_final, plate_data[[i]])
+}
+
 
 # read in sample metadata & add into plate data
 metadata <- read.csv("./data/molecular/metadata/16s_sample_metadata.csv")
 
 ## (b) reading in PICRUSt2-SC NSTI values (whereby lower values closer to 0 indicate better match)
-picrust_nsti <- lapply(list.files("./data/molecular/picrust2_outputs/nochimera_nonrarefied",
-                                  pattern = "nsti"), function(x) 
-                                  read_tsv(paste("./data/molecular/picrust2_outputs/nochimera_nonrarefied/", x, sep = "")) %>% 
-                                             dplyr::rename(plate_ID = sample))
+picrust_nsti <- read_tsv("./data/molecular/picrust2_outputs/nochimera_rarefied95/weighted_nsti2.tsv") %>% 
+  dplyr::rename(plate_ID = sample)
 
 ## (c) reading in PICRUSt2-SC estimated 16s rRNA copy number values
-picrust_predcopynum <- lapply(list.files("./data/molecular/picrust2_outputs/nochimera_nonrarefied",
-                                        pattern = "seqtab"), function(x) 
-                                          read_tsv(paste("./data/molecular/picrust2_outputs/nochimera_nonrarefied/", x, sep = "")))
+picrust_predabun <- read_tsv("./data/molecular/picrust2_outputs/nochimera_rarefied95/seqtab_norm2.tsv") %>% 
+  pivot_longer(cols = c(2:ncol(.)),  names_to = "plate_ID",
+               values_to = "picrust2_abundance") %>% 
+  # remove filler zero values from wide format
+  filter(picrust2_abundance != 0)
 
 ## (d) reading in QIIME2 outputs from previous processing steps (code step 2)
 qiime2 <- read.csv("./data/molecular/16s_nochimera_rarefied_95_endcode2.csv")
 
 #### (2) Join Data Together ####
 
-# merge in plate data with nsti values
-merged_data <- list()
-for(i in 1:length(plate_data)) {
-  merged_data[[i]] <- left_join(plate_data[[i]], picrust_nsti[[i]], by = "plate_ID")
-}
+# merge in metadata with nsti values
+data <- left_join(picrust_nsti, metadata, by = "plate_ID")
 
 # join in abundances normalized by 16s copy number
-for(i in 1:length(plate_data)) {
-  # pivot picrust2 normalized abundances longer
-  temp = picrust_predcopynum[[i]] %>% pivot_longer(cols = (2:ncol(.)), names_to = "plate_ID", values_to = "picrust2_abundance") %>% 
-    filter(picrust2_abundance != 0)
-  merged_data[[i]] <- left_join(merged_data[[i]], temp, by = "plate_ID")
-}
-
-# convert into one dataframe
-merged_data = rbind(merged_data[[1]], merged_data[[2]], merged_data[[3]])
-
-# join in metadata
-merged_data <- left_join(metadata, merged_data, by = c("vial_ID")) %>% 
-  # rename feature_IDs (which is under "normalized" after reading in the ASV)
+data <- left_join(data, picrust_predabun, by = "plate_ID") %>% 
+  # when we read in table feature ID got put under normalized!
   dplyr::rename(feature_ID = normalized)
 
-#### TO-DO: checks for missing vials, etc. when we have more complete version of data
+# missing vial check
+setdiff(unique(metadata$vial_ID), unique(data$vial_ID)) # 4, 18, 34, 40, 43, 58, 99, 102, 104, 115, 135, 137, 142, 208, 215
+
+# this is also assessed in "2b_reading_in_QIIME_outputs_rarefied.R", copy & pasted results below:
+
+# we know from looking at nonrarefied data that:
+# 104, 108, and 208 were lost in translation
+# 18, 34, and 135 had poor sequencing quality
+
+## lost from 95% sequencing depth rarefaction:
+# 4: SAL-3 blank 6-27-2022 (inconsequential!)
+# 40: SAL-2 TM 7-26-2022
+# 43: SFE-M-3 TAC 7-14-2022
+# 58: SFE-M-3 TAC 7-28-2022 (triplicate- inconsequential!)
+# 99: RUS-1S TM 8-17-2022 (fake target- inconsequential!)
+# 102: RUS-1S blank 8-17-2022 (blank- inconsequential!)
+# 115: RUS-2 TAC 9-1-2022
+# 137: SFE-M-1S blank 9-6-2022 (blank- inconsequential!)
+# 142: RUS-1S TM 9-1-2022 (fake target- inconsequential!)
+# 215: RUS-1S TM 9-15-2022 (fake target- inconsequential!)
 
 #### (3) Relativizing Normalized Abundances ####
 
 # first save normalized abundances that are not relativized and include triplicates
-write.csv(merged_data, "./data/molecular/intermediate_csvs/16s_picrustnormalizedabundances_rarefied95_filtered.csv")
+write.csv(data, "./data/molecular/intermediate_csvs/16s_picrustnormalizedabundances_rarefied95_filtered.csv")
 
 # calculate total abundances per vial
-total_abundance_per_vial <- merged_data %>% 
+total_abundance_per_vial <- data %>% 
   dplyr::group_by(vial_ID) %>% 
   dplyr::summarize(total_abundance = sum(picrust2_abundance)) %>% 
   ungroup()
 
 # left join in this data to full dataframe and calculate relative abundance
-merged_data <- left_join(merged_data, total_abundance_per_vial, by = c("vial_ID")) %>% 
+data <- left_join(data, total_abundance_per_vial, by = c("vial_ID")) %>% 
   mutate(picrust2_relative_abundance = picrust2_abundance / total_abundance * 100) %>% # doing % to avoid really small decimals
   relocate(total_abundance, .before = feature_ID) %>% 
   relocate(picrust2_relative_abundance, .before = feature_ID)
 
 # check to make sure all add up to 100%
-relativized_check <- merged_data %>% 
+relativized_check <- data %>% 
   dplyr::group_by(vial_ID) %>% 
   dplyr::summarize(total = sum(picrust2_relative_abundance)) %>% 
   ungroup()
@@ -119,7 +139,7 @@ rm(relativized_check)
 #### (4) Processing Triplicates ####
 
 # filter out for triplicates and not triplicates
-triplicates <- merged_data %>% 
+triplicates <- data %>% 
   filter(triplicate == "y") %>% 
   mutate(full_sample_name = paste(site_reach, field_date, sample_type))
 
@@ -245,3 +265,5 @@ TAC_data <- final_data %>%
   filter(! genus %in% c("Anabaena","Cylindrospermum","Trichormus",  "Cylindrospermopsis")) %>% 
   filter(sample_type == "TAC")
 write.csv(TAC_data, "./data/molecular/16s_nochimera_rarefied_95_copynum_normalized_TAC_noanacyl.csv", row.names = FALSE)
+
+### MAKE SURE THAT BLANKS AND FAKE TARGETS HAVE BEEN REMOVED
