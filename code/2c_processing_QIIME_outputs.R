@@ -1,6 +1,6 @@
 #### Further processing of QIIME2 outputs
 ### Jordan Zabrecky
-## last edited: 03.11.2026
+## last edited: 03.17.2026
 
 # This code reads in the csv of assembled QIIME2 outputs and metadata
 # and further processes it by removing reads that are "Mitochondria"
@@ -145,7 +145,7 @@ data_ver3_conf %>% filter(sample_type != "blank" & fake_target == "n") %>%
 #### (4) Saving .biom With Chloroplast & Mitochondria & Low Quality Reads Removed ####
 
 # NOTE: only doing this with 95% rarefied data as that is what we decided on to use
-biom_data <- data %>% 
+biom_data <- data_ver3_conf %>% 
   filter(file == "16s_nochimera_rarefied_95_unfiltered.csv")
 
 # confirm that plate IDs have plate number beforehand
@@ -170,31 +170,11 @@ biom_data_matrix <- biom_data %>%
 # set row names to ASV
 rownames(biom_data_matrix) <- biom_data$feature_ID
 
-## having issues with the make_biom() function in biom format
-## so instead, let's just work out of the original 95 rarefied .biom file and change it with processed data
-
-# load original .biom file
-original_biomfile <- read_biom("./data/molecular/raw_files/rarefied/feature-table_rarefied_95.biom")
-new_biomfile <- original_biomfile # make copy to edit
-
-# create new $rows attribute using our processed data
-new_biomfile$rows <- lapply(rownames(biom_data_matrix), function(x) return(list(id = x, metadata = list())))
-
-# create new $columns attribute using our processed data
-new_biomfile$columns <- lapply(colnames(biom_data_matrix), function(x) return(list(id = x, metadata = list())))
-
-# create new $shape attribute using our processed data
-new_biomfile$shape <- c(length(new_biomfile$rows), length(new_biomfile$columns))
-
-# create new $data attribute using our processed data
-# (where each item is a list of numeric abundances with rownames [aka named numeric] for sample ID for each ASV)
-new_biomfile$data <- lapply(rownames(biom_data_matrix), function(x) return(biom_data_matrix[x,]))
-
-# save as .biom file
-write_biom(new_biomfile, "./data/molecular/raw_files/rarefied_and_processed/feature-table_rarefied_processed_95.biom")
+# make biom file with above matrix and save
+write_biom(make_biom(biom_data_matrix), "./data/molecular/raw_files/rarefied_and_filtered/feature-table_rarefied_filtered_95.biom")
 
 # remove files
-rm(original_biomfile, new_biomfile, biom_data_matrix, biom_data)
+rm(biom_data_matrix, biom_data)
 
 #### (5) Removing "fake" target samples ####
 

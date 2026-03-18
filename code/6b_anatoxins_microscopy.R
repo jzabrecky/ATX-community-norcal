@@ -148,8 +148,8 @@ lapply(sample_types, function(x) {
 })
 # weirder results here:
 # NT: detected- cosmarium
-# TM: detected- microcoleus
-# TAC: none
+# TAC: detected- microcoleus
+# TM: none
 
 
 ## (c) NMDS
@@ -184,6 +184,8 @@ lapply(sample_types, function(x) {
 
 # split data based on river!
 data_river <- lapply(data_tog, function(x) split(x, x$site))
+
+## (a) PERMANOVA
 
 ## (i) log-anatoxins
 set.seed(1)
@@ -222,7 +224,7 @@ lapply(sample_types, function(x) {
 # tm **, **
 # tac: ***, ***
 
-## (b) atx category
+## (ii) atx category
 set.seed(1)
 lapply(sample_types, function(x) {
   
@@ -261,7 +263,7 @@ lapply(sample_types, function(x) {
 # tm **, *
 # tac: **, not
 
-## (c) atx detected
+## (iii) atx detected
 set.seed(1)
 lapply(sample_types, function(x) {
   
@@ -301,7 +303,113 @@ lapply(sample_types, function(x) {
 
 ## (b) ISA
 
+## (i) anatoxin groupings
+set.seed(1)
+lapply(sample_types, function(x) {
+  lapply(names(data_river[[x]]), function(y) {
+    if(y == "SAL" & x == "tac") {
+      print("no test")
+    } else {
+      # set column name for anatoxin based on sample type
+      atx_col = paste(str_to_upper(x), "_atx_category", sep = "")
+      
+      # remove columns where atx_col is na
+      if(x == "nt" | (x == "tm" & y == "SFE-M")) { 
+        # tm also included here to remove sample from 8-23-2022 as we did not have enough to analyze
+        temp = data_river[[x]][[y]][-which(is.na(data_river[[x]][[y]][atx_col])),]
+      } else {
+        temp = data_river[[x]][[y]]
+      }
+      
+      # run ISA
+      print(paste(x, y, "ISA"))
+      summary(multipatt(temp[,start_col:ncol(data[[x]])], as.vector(temp[atx_col])[[1]]), 
+              func = "r.g", control = how(nperm = 999))
+    }
+  })
+})
+# RUS:
+# nt (low) phormidium & oscillatoria
+# tac (low) phormidium
+# SAL:
+# nt nothing
+# tm not, not
+# tac no test
+# SFE:
+# nt (high & low) rophalodia, anabaena_and_cylindrospermum, leptolyngbya
+# tm (high & none) nostoc, (high) leptolyngbya
+# tac: (high & low) microcoleus, (none) nostoc
+
+## (ii) anatoxin binary
+set.seed(1)
+lapply(sample_types, function(x) {
+  lapply(names(data_river[[x]]), function(y) {
+    if(y == "SAL" & x == "tac") {
+      print("no test")
+    } else {
+      # set column name for anatoxin based on sample type
+      atx_col = paste(str_to_upper(x), "_atx_detected", sep = "")
+      
+      # remove columns where atx_col is na
+      if(x == "nt" | (x == "tm" & y == "SFE-M")) { 
+        # tm also included here to remove sample from 8-23-2022 as we did not have enough to analyze
+        temp = data_river[[x]][[y]][-which(is.na(data_river[[x]][[y]][atx_col])),]
+      } else {
+        temp = data_river[[x]][[y]]
+      }
+      
+      # run ISA
+      print(paste(x, y, "ISA"))
+      summary(multipatt(temp[,start_col:ncol(data[[x]])], as.vector(temp[atx_col])[[1]]), 
+              func = "r.g", control = how(nperm = 999))
+    }
+  })
+})
+# RUS:
+# nt (detected) phormidium & oscillatoria
+# tac (detected) phormidium
+# SAL:
+# nt nothing
+# tm not, not
+# tac no test
+# SFE:
+# nt (detected) rophalodia
+# tm (none) nostoc
+# tac: (detected) microcoleus, (none) nostoc
+
+
 ## (c) NMDS
+
+# get NMDS data
+NMDS_data_river <- lapply(sample_types, function(x) {
+    temp_list = lapply(names(data_river[[x]]), function(y) {
+                      if((y == "SFE-M") | (y == "RUS" & x != "tm")) {
+                        return(getNMDSdata(data_river[[x]][[y]], start_col, 
+                                    end_col = ncol(data[[x]])))
+                      } else {
+                        return(NA)
+                      }
+  })
+  names(temp_list) = names(data_river[[x]])
+  return(temp_list)
+})
+names(NMDS_data_river) = sample_types
+
+# (i) with atx category
+lapply(sample_types, function(x) {
+  lapply(names(data_river[[x]]), function(y) {
+    
+    if(class(NMDS_data_river[[x]][[y]]) == "list") {
+  
+      # set column name for anatoxin based on sample type
+      atx_col = paste(str_to_upper(x), "_atx_category", sep = "")
+      
+      makeNMDSplot(NMDS_data_river[[x]][[y]], FALSE, FALSE, color = atx_col, shape = "site")
+    }
+  })
+})
+# visually distinct for TM (note only one high sample for TM with current designation)
+# NT obviously a mess with all rivers in one graph
 
 #### (4) How continuously present are other anatoxin producers? ####
 

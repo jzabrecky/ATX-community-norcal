@@ -25,9 +25,11 @@ summary(atx$TAC_ATX_all_ug_orgmat_g)
 
 # maybe should just use a cut-off of greater than >10 ug?
 ggplot(data = atx, aes(y = TM_ATX_all_ug_orgmat_g)) +
-  geom_boxplot()
+  geom_boxplot() +
+  scale_y_continuous(transform = "pseudo_log")
 ggplot(data = atx, aes(y = TAC_ATX_all_ug_orgmat_g)) +
-  geom_boxplot()
+  geom_boxplot() +
+  scale_y_continuous(transform = "pseudo_log")
 
 ## (b) log-transform values
 
