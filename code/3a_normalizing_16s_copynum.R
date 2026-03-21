@@ -1,6 +1,6 @@
 #### Normalizing relative abundance with predicted 16s gene copy numbers
 ### Jordan Zabrecky
-## last edited: 03.11.2026
+## last edited: 03.20.2026
 
 # This script pulls in relative abundance based on the predicted 16s gene 
 # copy numbers for each ASV obtained via PICRUSt2-SC and compares it to 
@@ -9,27 +9,24 @@
 
 # Note: This will only be done for rarefied (95% threshold) & processed data
 
-# TO DO: rerun QIIME2 scripts and save 95 rarefied instead and change name
-# remove anacyl and microcoleus at end, will need to add "p" 
-
 #### (1) Loading libraries & data ####
 
 # loading libraries
-lapply(c("tidyverse"), require, character.only = T)
+lapply(c("tidyverse", "cowplot"), require, character.only = T)
 
 # functions to quickly plot data
-plot_phylum <- function(data, abundance_var) {
+plot_phylum <- function(data, abundance_var, x_var) {
   plot <- ggplot(data = data) +
-    geom_bar(aes(x = vial_ID, y = .data[[abundance_var]], fill = phylum), 
+    geom_bar(aes(x = .data[[x_var]], y = .data[[abundance_var]], fill = phylum), 
              stat = "identity", position = "fill")
   return(plot)
 }
-plot_cyano <- function(data, abundance_var) {
+plot_cyano <- function(data, abundance_var, x_var) {
   # filter out for phylum cyanobacteria
   cyano_only = data %>%
     filter(phylum == "Cyanobacteria")
   plot <- ggplot(data = cyano_only) +
-    geom_bar(aes(x = vial_ID, y = .data[[abundance_var]], fill = genus), 
+    geom_bar(aes(x = .data[[x_var]], y = .data[[abundance_var]], fill = genus), 
              stat = "identity", position = "fill")
   return(plot)
   
@@ -61,14 +58,15 @@ for(i in 2:length(plate_data)) {
 
 
 # read in sample metadata & add into plate data
-metadata <- read.csv("./data/molecular/metadata/16s_sample_metadata.csv")
+metadata <- left_join(read.csv("./data/molecular/metadata/16s_sample_metadata.csv"), plate_data_final,
+                      by = "vial_ID")
 
 ## (b) reading in PICRUSt2-SC NSTI values (whereby lower values closer to 0 indicate better match)
-picrust_nsti <- read_tsv("./data/molecular/picrust2_outputs/nochimera_rarefied95/weighted_nsti2.tsv") %>% 
+picrust_nsti <- read_tsv("./data/molecular/picrust2_outputs/weighted_nsti.tsv") %>% 
   dplyr::rename(plate_ID = sample)
 
 ## (c) reading in PICRUSt2-SC estimated 16s rRNA copy number values
-picrust_predabun <- read_tsv("./data/molecular/picrust2_outputs/nochimera_rarefied95/seqtab_norm2.tsv") %>% 
+picrust_predabun <- read_tsv("./data/molecular/picrust2_outputs/seqtab_norm.tsv") %>% 
   pivot_longer(cols = c(2:ncol(.)),  names_to = "plate_ID",
                values_to = "picrust2_abundance") %>% 
   # remove filler zero values from wide format
@@ -88,7 +86,8 @@ data <- left_join(data, picrust_predabun, by = "plate_ID") %>%
   dplyr::rename(feature_ID = normalized)
 
 # missing vial check
-setdiff(unique(metadata$vial_ID), unique(data$vial_ID)) # 4, 18, 34, 40, 43, 58, 99, 102, 104, 115, 135, 137, 142, 208, 215
+setdiff(unique(metadata$vial_ID), unique(data$vial_ID)) 
+# 4, 18, 34, 40, 43, 58, 99, 102, 104, 115, 135, 137, 142, 208, 215
 
 # this is also assessed in "2b_reading_in_QIIME_outputs_rarefied.R", copy & pasted results below:
 
@@ -107,6 +106,20 @@ setdiff(unique(metadata$vial_ID), unique(data$vial_ID)) # 4, 18, 34, 40, 43, 58,
 # 137: SFE-M-1S blank 9-6-2022 (blank- inconsequential!)
 # 142: RUS-1S TM 9-1-2022 (fake target- inconsequential!)
 # 215: RUS-1S TM 9-15-2022 (fake target- inconsequential!)
+
+# lastly, deal with a couple samples as also dealt with in qiime2 processing:
+
+# (i)  very unsure about TAC at SAL-2 on 9/22/22 (only took a little for 16s)
+# in the field, so will probably just remove (not as clearly Anabaena as the sample at SAL-3)
+# despite some reads being anabaena! (is vial 230)
+data <- data %>% 
+  filter(vial_ID != 230)
+
+# (ii) fix field date label issue
+# remove TM sample taken on 9/6 at SFE-M-1S (taken inconsistently from other samples; turkey-baster, lots of water)
+# & replace with sample taken on 9/8 (taken correctly; mostly mat )
+data <- data[-which(data$field_date == "9/6/2022" & data$site_reach == "SFE-M-1S" & data$sample_type == "TM"),]
+data[which(data$field_date == "9/8/2022" & data$site_reach == "SFE-M-1S"& data$sample_type == "TM"),]$field_date <- "9/6/2022"
 
 #### (3) Relativizing Normalized Abundances ####
 
@@ -156,18 +169,13 @@ for(i in 1:length(triplicates_list)) {
                       test_data$sample_type[i],
                       test_data$field_date[i], sep = " ")
   
-  print(plot_phylum(test_data, "picrust2_relative_abundance") + 
+  print(plot_phylum(test_data %>% mutate(vial_ID = as.character(vial_ID)), "picrust2_relative_abundance", "vial_ID") + 
           labs(title = title_label))
-  print(plot_cyano(test_data, "picrust2_relative_abundance") + 
+  print(plot_cyano(test_data %>% mutate(vial_ID = as.character(vial_ID)), "picrust2_relative_abundance", "vial_ID") + 
           labs(title = title_label))
 }
 
-#### TO-DO: resolve this ####
-# seeming to be missing a lot of ASV labels?
-# could be difference in rarefied versus non rarefied ATM?
-# or processing because the one test just showed up as assigned to bacteria domain
-
-## code from QIIME2 processing 
+## same findings from QIIME2 processing here- 
 # generally samples look good
 # samples that appear to have one-odd-one-out:
 # RUS-3 8/17/22 NT, SAL-3 9/22/22 NT, SFE-M-1S 7/28/22 TM, SFE-M-3 9/6/22 NT
@@ -175,7 +183,6 @@ for(i in 1:length(triplicates_list)) {
 IDs_to_remove <- c(110, 225, 50, 123)
 triplicates_adjusted <- triplicates %>% 
   filter(!vial_ID %in% IDs_to_remove)
-## end code from QIIME2 processing
 
 # average across triplicates for a single weighted NSTI
 triplicates_nsti <- triplicates_adjusted %>% 
@@ -214,12 +221,12 @@ triplicate_relativize_check$total[which(triplicate_relativize_check$total != 100
 # all that don't are very close to 100/reading in as 100, probably a float issue
 
 # remove excess files
-rm(triplicate_relativize_check, total_relative_abundances, temp, triplicates_adjusted)
+rm(triplicate_relativize_check, total_relative_abundances, triplicates_adjusted)
 
 #### (5) Putting Data Together ####
 
 # remove triplicates from original data
-final_data <- merged_data %>% 
+final_data <- data %>% 
   filter(triplicate == "n") %>% 
   # filter out fake_targets and blanks %>% 
   filter(sample_type!= "blank" & fake_target == "n") %>% 
@@ -229,9 +236,11 @@ final_data <- merged_data %>%
 final_data <- rbind(final_data, triplicates_adjusted_final)
 
 # add in processed QIIME2 data
-final_data <- left_join(final_data, qiime2, by = c("site_reach", "site", "sample_type", "field_date", "feature_ID"))
+final_data <- left_join(final_data, qiime2, by = c("site_reach", "site", "sample_type", "field_date", "feature_ID")) %>% 
+  dplyr::rename(qiime2_relative_abundance = relative_abundance)
 
-#### TO-DO: check for NAs after we have final processed version! ####
+# confirm there are no samples missing qiime2 data
+any(is.na(final_data$qiime2_relative_abundance)) # none!
 
 #### (6) Comparing QIIME2 Outputs versus PICRUSt2-SC Normalized ####
 
@@ -243,14 +252,38 @@ ggplot(data = final_data %>% select(site_reach, site, field_date, sample_type, w
 
 ## (b) take random samples to compare
 
+# grab random 12 samples with metadata (that are not fake targets)
+set.seed(6)
+test_samples <- (metadata %>% filter(fake_target == "n" & sample_type != "blank"))[sample(1:73, 12),] %>%  
+  mutate(site_reach_date_type = paste(site_reach, field_date, sample_type))
+
 ## (c) plot those samples with QIIME2 outputs on the left and PICRUSt2-SC normalized on the right
+for(i in 1:nrow(test_samples)) {
+  
+  # get data for a single sample
+  data = final_data %>% 
+    mutate(site_reach_date_type = paste(site_reach, field_date, sample_type)) %>% 
+    filter(site_reach_date_type == test_samples$site_reach_date_type[i]) %>% 
+    pivot_longer(cols = c("picrust2_relative_abundance", "qiime2_relative_abundance"),
+                 values_to = "relative_abundance", names_to = "processing")
+  
+  # print plots for phylums
+  print(plot_phylum(data, "relative_abundance", "site_reach_date_type") +
+          facet_wrap(~processing))
+  
+  # print plots for cyanos
+  print(plot_cyano(data, "relative_abundance", "site_reach_date_type") +
+          facet_wrap(~processing))
+}
+# not any crazy differences!
 
 #### (7) Save csv ####
 
 # save full csv
 write.csv(final_data, "./data/molecular/16s_nochimera_rarefied_95_copynum_normalized_FINAL.csv")
 
-# save versions of TM and TAC with Microcoleus and Anabaena/Cylindrospermum/Trichormus removed respectively
+# save versions of TM and TAC with Microcoleus 
+# and Anabaena/Cylindrospermum/Trichormus removed respectively
 
 # for microcoleus
 TM_data <- final_data %>% 
@@ -265,5 +298,3 @@ TAC_data <- final_data %>%
   filter(! genus %in% c("Anabaena","Cylindrospermum","Trichormus",  "Cylindrospermopsis")) %>% 
   filter(sample_type == "TAC")
 write.csv(TAC_data, "./data/molecular/16s_nochimera_rarefied_95_copynum_normalized_TAC_noanacyl.csv", row.names = FALSE)
-
-### MAKE SURE THAT BLANKS AND FAKE TARGETS HAVE BEEN REMOVED

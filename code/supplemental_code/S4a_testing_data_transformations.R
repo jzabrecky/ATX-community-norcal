@@ -239,5 +239,4 @@ for(i in 1:length(microbial_untransformed)) {
   print(plot_grid(plots[[1]], plots[[2]], plots[[3]], ncol = 1))
 }
 
-# run function to get
-#### (6) RDA for Q3? ####
+# How does this influence indicator species analyses?
