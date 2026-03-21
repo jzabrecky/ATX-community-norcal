@@ -111,7 +111,8 @@ makeNMDSplot <- function(data, loading, significant, color, shape) {
     stat_ellipse(aes(color = .data[[color]]), type = "t", linetype = 2, linewidth = 0.5) +
     labs(subtitle = paste("Stress:", round(stress, 3)),
          x = "NMDS Axis 1",
-         y = "NMDS Axis 2")
+         y = "NMDS Axis 2") +
+    theme(plot.subtitle = element_text(hjust=1, vjust=0.5))
   
   # add in site color if color argument is "site"
   if(color == "site") {

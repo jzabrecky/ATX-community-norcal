@@ -1,17 +1,27 @@
 #### Main figure to show differences in morphologically-identified assemblages among rivers
 ### Jordan Zabrecky
-## last edited: 03.06.2026
+## last edited: 03.20.2026
 
 # This script creates a main figure to show differences in morphologically-identified
-# assemblages for all sample types including an (NMDS) and relative abundance barplo
+# assemblages for all sample types including an (NMDS) and relative abundance barplots
 
-# POSSIBLE TO-DO: grouping taxa better for NT and TM/TAC, 
-# putting PERMANOVA & PERMDISP results
+# One figure is made for NT samples showing (a) relative abundance plots and (b) NMDS
+# Another figure is made for TM and TAC samples showing (a) relative abundance plots WITH
+# target taxa included, (b) relative abundance WITHOUT target taxa included (and green
+# algae in the case of Anabaena), and (c) NMDS plots
 
 #### (1) Loading libraries & data ####
 
 # load from analysis script
 source("./code/4a_amongrivers_microscopy.R")
+
+# need to also load data with target taxa included
+tm_w_m <- read.csv("./data/morphological/tm_algalonly.csv") %>% 
+  pivot_longer(5:ncol(.), names_to = "taxa", values_to = "percent") %>% 
+  filter(percent != 0 & year(field_date) == 2022)
+tac_w_ac_g <- read.csv("./data/morphological/tac_algalonly.csv") %>% 
+  pivot_longer(5:ncol(.), names_to = "taxa", values_to = "percent") %>% 
+  filter(percent != 0 & year(field_date) == 2022)
 
 # load additional libraries
 lapply(c("cowplot", "ggtext"), require, character.only = T)
@@ -90,16 +100,16 @@ fig_b <- list()
 
 # set attributes based on sample type
 colors <- list(c(1:12), c(1:2, 4:6, 11:12), c(1:2, 4:6, 8, 10, 12)) # list for number of fill colors to end before "other" category
-labels <- list(c("Diatoms (other than<br>*Epithemia* or *Rhopalodia*)", "*Epithemia*",
+labels <- list(c("Diatoms (other than *Epithemia* or *Rhopalodia*)", "*Epithemia*",
                "*Rhopalodia*", "Other N-Fixing Cyanobacteria", "Other Filamentous Cyanobacteria",
                "Unicellular Cyanobacteria", "*Cladophora*", "*Spirogyra*", "Other Green Algae",
-               "*Anabaena* and<br>*Cylindrospermum*", "*Microcoleus*", "*Geitlerinema*", "Other"),
+               "*Anabaena* and *Cylindrospermum*", "*Microcoleus*", "*Geitlerinema*", "Other"),
                c("Diatoms (other than *Epithemia*)", "*Epithemia*", "Other N-Fixing Cyanobacteria",
                  "Other Filamentous Cyanobacteria", "Unicellular Cyanobacteria", "*Microcoleus*", 
                  "*Geitlerinema*", "Other"),
                c("Diatoms (other than *Epithemia*)", "*Epithemia*", "Other N-Fixing Cyanobacteria",
                  "Other Filamentous Cyanobacteria", "Unicellular Cyanobacteria", "Green Algae",
-                 "*Anabaena* and<br>*Cylindrospermum*", "*Geitlerinema*"))
+                 "*Anabaena* and*Cylindrospermum*", "*Geitlerinema*"))
 site_labels <- list(c("Russian<br>River", "Salmon<br>River", "South Fork<br>Eel River"),
                     c("Russian<br>River", "Salmon<br>River", "South Fork<br>Eel River"),
                     c("Salmon<br>River", "South Fork<br>Eel River"))
@@ -115,35 +125,104 @@ for(i in sample_types) {
                        labels = labels[[i]]) +
    labs(x = NULL, y = "Relative Abundance") +
    scale_x_discrete(labels = site_labels[[i]]) +
-   theme(axis.text.x = element_markdown(size = 7, angle = 60, vjust = 1, hjust=1))
+   theme(axis.text.x = element_markdown(size = 7))
 }
 lapply(fig_b, print)
 
+## (c) lastly need target taxa with that taxa incorporated
+
+# add factoring to target w/ target taxa dataframes
+target_w_target_taxa <- lapply(list(tm_w_m, tac_w_ac_g), function(x) {
+  
+  # run broader groups function from previous script to this data
+  y = target_broader(x)
+  
+  # add groupings to match barplots
+  y = y %>% 
+    # move Nostoc to other N-fixing cyanobacteria
+    mutate(figure_groups = case_when(broader == "Nostoc" ~ "Other N-fixing Cyanobacteria",
+                                     taxa == "geitlerinema" ~ "Geitlerinema",
+                                     broader == "Unknown" ~ "Other",
+                                     broader == "Misc. Other" ~ "Other",
+                                     taxa == "rhopalodia" ~ "Rhopalodia",
+                                     taxa == "epithemia" ~ "Epithemia",
+                                     TRUE ~ broader),
+           figure_groups_factored = factor(figure_groups, 
+                                           levels = c("Diatoms Other than Epithemia or Rhopalodia", 
+                                                      "Diatoms Other than Epithemia", "Epithemia",
+                                                      "Rhopalodia", "Other N-fixing Cyanobacteria",
+                                                      "Other Filamentous Cyanobacteria",
+                                                      "Unicellular Cyanobacteria", "Cladophora", 
+                                                      "Spirogyra", "Other Green Algae", "Green Algae",
+                                                      "Anabaena or Cylindrospermum", "Microcoleus",
+                                                      "Geitlerinema", "Unknown", "Other"))) 
+  # return new dataframe
+  return(y)
+})
+names(target_w_target_taxa) <- c("tm", "tac")
+
+# make empty list
+fig_c <- list()
+
+# tm
+fig_c[["tm"]] <- barplot(data = target_w_target_taxa$tm,  x = "site", y  = "percent", fill = "figure_groups_factored") +
+  scale_fill_discrete("Taxa Group", palette = c(palette[c(1:2, 4:6, 8, 10:12)], end_color), 
+                      labels = c("Diatoms (other than *Epithemia*)", "*Epithemia*", "Other N-Fixing Cyanobacteria",
+                                 "Other Filamentous Cyanobacteria", "Unicellular Cyanobacteria", "Green Algae",
+                                 "*Microcoleus*", "*Anabaena* and*Cylindrospermum*", "*Geitlerinema*")) +
+  labs(x = NULL, y = "Relative Abundance") +
+  scale_x_discrete(labels = c("Salmon<br>River", "South Fork<br>Eel River")) +
+  theme(axis.text.x = element_markdown(size = 7))
+
+# tac
+fig_c[["tac"]] <- barplot(data = target_w_target_taxa$tac,  x = "site", y  = "percent", fill = "figure_groups_factored") +
+  scale_fill_discrete("Taxa Group", palette = c(palette[c(1:2, 4:6, 8, 10:12)], end_color), 
+                      labels = c("Diatoms (other than *Epithemia*)", "*Epithemia*", "Other N-Fixing Cyanobacteria",
+                                 "Other Filamentous Cyanobacteria", "Unicellular Cyanobacteria", "Green Algae",
+                                 "*Microcoleus*", "*Anabaena* and*Cylindrospermum*", "*Geitlerinema*", "Other")) +
+  labs(x = NULL, y = "Relative Abundance") +
+  scale_x_discrete(labels = c("Russian<br>River", "Salmon<br>River", "South Fork<br>Eel River")) +
+  theme(axis.text.x = element_markdown(size = 7))
+
+# show plots
+lapply(fig_c, print)
+
 #### (3) Putting Figures Together ####
 
-## (a) figure
+## (a) NT figure
 
-# will create top row and bottom row first separately, then put together for final figure
-figure <- plot_grid(fig_a$nt + labs(x = NULL, y = NULL), 
-                    fig_a$tm + labs(x = NULL, y = NULL),
-                    fig_a$tac + labs(x = NULL, y = NULL),
-                    fig_b$nt + theme(legend.position = "none") + labs(y = NULL), 
-                    fig_b$tm + theme(legend.position = "none") + labs(y = NULL), 
-                    fig_b$tac + theme(legend.position = "none") + labs(y = NULL), 
-                    align = "hv")
-figure
+# put figure together
+nt_figure <- plot_grid(fig_b$nt + theme(legend.position = "none") + labs(y = "Relative Abundance"),
+                       fig_a$nt + labs(x = "NMDS1", y = "NMDS2"), align = "hv", ncol = 1)
+nt_figure
 
 # save
-ggsave("./figures/tiff_files/Q1_microscopy_figure.tiff", dpi = 600, 
-       width=17.75, height=13, unit="cm")
+ggsave("./figures/tiff_files/Q1_nt_microscopy_figure.tiff", dpi = 600, 
+       width=8.5, height=12, unit="cm")
 
-## (b) legend (will add in manually in inkscape)
+## (b) T figure
+
+# target taxa
+t_figure <- plot_grid(fig_c$tm + theme(legend.position = "none") + labs(y = NULL),
+                      fig_c$tac + theme(legend.position = "none") + labs(y = NULL),
+                      fig_b$tm + theme(legend.position = "none") + labs(y = NULL),
+                      fig_b$tac+ theme(legend.position = "none") + labs(x = NULL, y = NULL),
+                      fig_a$tm + labs(y = NULL, x = NULL), 
+                      fig_a$tac + labs(y = NULL, x = NULL),
+                      align = "hv", ncol = 2)
+t_figure
+
+# save
+ggsave("./figures/tiff_files/Q1_t_microscopy_figure.tiff", dpi = 600, 
+       width=17.6, height=18, unit="cm")
+
+## (c) legends (will add in manually in inkscape)
 
 # create dummy figure for legend with all groups for targeted 
 # (as TAC is missing AC and TM is missing M)
-targetlegend_data <- data.frame(taxa = c("Diatoms<br>(other than *Epithemia* )", "*Epithemia*", "Other N-Fixing Cyanobacteria",
+targetlegend_data <- data.frame(taxa = c("Diatoms(other than *Epithemia* )", "*Epithemia*", "Other N-Fixing Cyanobacteria",
                                          "Other Filamentous Cyanobacteria", "Unicellular  Cyanobacteria", "Green Algae",
-                                         "*Anabaena* and<br>*Cylindrospermum*", "*Microcoleus*", "*Geitlerinema*", "Other"),
+                                         "*Anabaena* and*Cylindrospermum*", "*Microcoleus*", "*Geitlerinema*", "Other"),
                        abundance = rep(100 / 10, 10),
                        site = rep('river', 10))
 targetlegend_plot <- barplot(data = targetlegend_data, 
@@ -163,13 +242,13 @@ figure_legend <- plot_grid(fig_a$nt + scale_shape_discrete(labels = c("Russian  
                                                   palette = c("#bdb000", "#62a7f8", "#416f16")) +
                              theme(legend.position = "bottom", legend.title = element_blank()),
                            fig_b$nt + theme(legend.position = "bottom", legend.title = element_blank()) +
-                             theme(legend.key.size = unit(0.5, 'cm'),
-                                   legend.key.height = unit(0.5, 'cm'),
-                                   legend.key.width = unit(0.5, 'cm')),
+                             theme(legend.key.size = unit(0.3, 'cm'),
+                                   legend.key.height = unit(0.3, 'cm'),
+                                   legend.key.width = unit(0.3, 'cm')),
                            targetlegend_plot + theme(legend.position = "bottom") +
-                             theme(legend.key.size = unit(0.5, 'cm'),
-                                   legend.key.height = unit(0.5, 'cm'),
-                                   legend.key.width = unit(0.5, 'cm')),
+                             theme(legend.key.size = unit(0.3, 'cm'),
+                                   legend.key.height = unit(0.3, 'cm'),
+                                   legend.key.width = unit(0.3, 'cm')),
                            ncol = 1)
 figure_legend
 
