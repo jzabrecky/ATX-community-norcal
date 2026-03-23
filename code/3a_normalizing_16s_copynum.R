@@ -280,7 +280,8 @@ for(i in 1:nrow(test_samples)) {
 #### (7) Save csv ####
 
 # save full csv
-write.csv(final_data, "./data/molecular/16s_nochimera_rarefied_95_copynum_normalized_FINAL.csv")
+write.csv(final_data, "./data/molecular/16s_nochimera_rarefied_95_copynum_normalized_FINAL.csv",
+          row.names = FALSE)
 
 # save versions of TM and TAC with Microcoleus 
 # and Anabaena/Cylindrospermum/Trichormus removed respectively

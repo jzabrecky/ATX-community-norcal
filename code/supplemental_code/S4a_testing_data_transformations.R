@@ -1,6 +1,6 @@
 #### Playing with different data transformations used in community ecology
 ### Jordan Zabrecky
-## last edited: 12.17.2025
+## last edited: 03.20.2026
 
 # Do different data transformations changes our results?
 # This script explores: (1) using un-transformed relative abundances
@@ -32,7 +32,7 @@ data_wide <- lapply(files, function(x) read.csv(paste("./data/morphological/", x
 names(data_wide) <- files
 
 # microbial data
-files_16s <- list.files(path = "./data/molecular/", pattern = "nochimera")
+files_16s <- list.files(path = "./data/molecular/", pattern = "normalized")
 data_long_16s <- lapply(files_16s, function(x) read.csv(paste("./data/molecular/", x, sep = "")) %>% 
                       mutate(field_date = mdy(field_date),
                              month = month(field_date)) %>% # add month tag
@@ -44,22 +44,22 @@ full <- data_long_16s[[1]]
 data_long_16s[[1]] <- full %>% filter(sample_type == "NT")
 data_long_16s[[4]] <- full %>% filter(sample_type == "TM")
 data_long_16s[[5]] <- full %>% filter(sample_type == "TAC")
-names(data_long_16s)[c(1, 4, 5)] <- c("16s_nochimera_rarefied_95_NT",
-                                      "16s_nochimera_rarefied_95_TM",
-                                      "16s_nochimera_rarefied_95_TAC")
+names(data_long_16s)[c(1, 4, 5)] <- c("16s_nochimera_rarefied_95_copynum_normalized_NT",
+                                      "16s_nochimera_rarefied_95_copynum_normalized_TM_w_M",
+                                      "16s_nochimera_rarefied_95_copynum_normalized_TAC_w_AC")
 
 # pivot microbial data to be wide
 microbial_untransformed <- lapply(data_long_16s, function(x) {
   # subset columns we care about and pivot wider
   y = x %>% 
-    select(site_reach, site, field_date, sample_type, triplicate, feature_ID, relative_abundance) %>% 
-    pivot_wider(names_from = feature_ID, values_from = relative_abundance)
+    select(site_reach, site, field_date, sample_type, triplicate, feature_ID, picrust2_relative_abundance) %>% 
+    pivot_wider(names_from = feature_ID, values_from = picrust2_relative_abundance)
   # replace NA (indicating that ASV was not present in sample) with 0
   y[,6:ncol(y)][is.na(y[,6:ncol(y)])] = 0
   return(y)})
 
 # get functions from supplemental code script
-source("./code/supplemental_code/S4a_community_analyses_func.R")
+source("./code/supplemental_code/S4b_community_analyses_func.R")
 
 #### (2) Data Transformations ####
 
@@ -171,9 +171,9 @@ for(i in 1:length(algal_untransformed)) {
   temp = data.frame(data = c(names(algal_untransformed)[i], names(algal_hellinger)[i],
                              names(algal_raretaxaremoved)[i]),
                     transformation = c("none", "hellinger", "hellinger_w_raretaxaremoved"),
-                    significant = c(runPERMANOVA(algal_untransformed[[i]], start_col, algal_untransformed[[i]]$site)$`Pr(>F)`[1], 
-                                    runPERMANOVA(algal_hellinger[[i]], start_col, algal_hellinger[[i]]$site)$`Pr(>F)`[1],
-                                    runPERMANOVA(algal_raretaxaremoved[[i]], start_col, algal_raretaxaremoved[[i]]$site)$`Pr(>F)`[1]))
+                    significant = c(runPERMANOVA(algal_untransformed[[i]], start_col = start_col, group = algal_untransformed[[i]]$site)$`Pr(>F)`[1], 
+                                    runPERMANOVA(algal_hellinger[[i]], start_col = start_col, group = algal_hellinger[[i]]$site)$`Pr(>F)`[1],
+                                    runPERMANOVA(algal_raretaxaremoved[[i]], start_col = start_col, group = algal_raretaxaremoved[[i]]$site)$`Pr(>F)`[1]))
   
   # add to existing dataframe
   Q1_algal_permanovas <- rbind(Q1_algal_permanovas, temp)
@@ -187,9 +187,9 @@ for(i in 1:length(microbial_untransformed)) {
   temp = data.frame(data = c(names(microbial_untransformed)[i], names(microbial_hellinger)[i],
                              names(microbial_raresavsremoved)[i]),
                     transformation = c("none", "hellinger", "hellinger_w_raretaxaremoved"),
-                    significant = c(runPERMANOVA(microbial_untransformed[[i]], start_col, microbial_untransformed[[i]]$site)$`Pr(>F)`[1], 
-                                    runPERMANOVA(microbial_hellinger[[i]], start_col, microbial_hellinger[[i]]$site)$`Pr(>F)`[1],
-                                    runPERMANOVA(microbial_raresavsremoved[[i]], start_col, microbial_raresavsremoved[[i]]$site)$`Pr(>F)`[1]))
+                    significant = c(runPERMANOVA(microbial_untransformed[[i]], start_col = start_col, group = microbial_untransformed[[i]]$site)$`Pr(>F)`[1], 
+                                    runPERMANOVA(microbial_hellinger[[i]], start_col = start_col, group = microbial_hellinger[[i]]$site)$`Pr(>F)`[1],
+                                    runPERMANOVA(microbial_raresavsremoved[[i]], start_col = start_col, group = microbial_raresavsremoved[[i]]$site)$`Pr(>F)`[1]))
   
   # add to existing dataframe
   Q1_microbial_permanovas <- rbind(Q1_microbial_permanovas, temp)
@@ -223,11 +223,11 @@ for(i in 1:length(algal_untransformed)) {
 }
 # RESULTS: generally the same across transformations
 
-# HAVING ISSUES with this- Will try again on remote desktop at a later date
+# run function to get data to make NMDS plots
 microbial_NMDS_list <- list()
-microbial_NMDS_list$`untransformed` <- lapply(microbial_untransformed, function(x) getNMDSdata(x, start_col, TRUE))
-microbial_NMDS_list$`hellinger` <- lapply(microbial_hellinger, function(x) getNMDSdata(x, start_col, TRUE))
-microbial_NMDS_list$`hellinger_raretaxaremoved` <- lapply(microbial_raresavsremoved, function(x) getNMDSdata(x, start_col, TRUE))
+microbial_NMDS_list$`untransformed` <- lapply(microbial_untransformed, function(x) getNMDSdata(x, start_col, ASV = TRUE))
+microbial_NMDS_list$`hellinger` <- lapply(microbial_hellinger, function(x) getNMDSdata(x, start_col, ASV = TRUE))
+microbial_NMDS_list$`hellinger_raretaxaremoved` <- lapply(microbial_raresavsremoved, function(x) getNMDSdata(x, start_col, ASV = TRUE))
 
 # viewing plots against each other
 for(i in 1:length(microbial_untransformed)) {
@@ -238,5 +238,8 @@ for(i in 1:length(microbial_untransformed)) {
   }
   print(plot_grid(plots[[1]], plots[[2]], plots[[3]], ncol = 1))
 }
-
-# How does this influence indicator species analyses?
+# some differences between non-transformed and transformed, but both transformed
+# looking similar and have lower stress than non-transformed
+# rare taxa removed has SLIGHTLY lower stree (0.01-0.02), but probably just should
+# use Hellinger because it's less arbitrary than a rare taxa cut-off
+# also NOTE: one outlier for NT Russian

@@ -1,9 +1,11 @@
 #### Processing predicted functional groups for samples
 ### Jordan Zabrecky
-## last edited: 03.20.2026
+## last edited: 03.23.2026
 
-# This script processes the predicted functional groups from PICRUSt2-SC
-# standard pipeline, focusing on KEGG orthologs. This script saves all KO's
+# This script processes the predicted functional groups (as KEGG orthologs 
+# predicted genes) from PICRUSt2-SC standard pipeline. 
+# This script saves all KO's which are further processed for ones we care about in
+# the next script
 # Note: This will only be done for rarefied (95% threshold) & filtered .biom data
 
 #### (1) Loading libraries & data ####
@@ -73,32 +75,6 @@ data <- data %>%
 data <- data[-which(data$field_date == "9/6/2022" & data$site_reach == "SFE-M-1S" & data$sample_type == "TM"),]
 data[which(data$field_date == "9/8/2022" & data$site_reach == "SFE-M-1S"& data$sample_type == "TM"),]$field_date <- "9/6/2022"
 
-#### (3) Relativizing Gene Abundances ####
-
-# first save normalized abundances that are not relativized and include triplicates
-write.csv(data, "./data/molecular/intermediate_csvs/16s_rawpredictedgenecounts_rarefied95_filtered.csv")
-
-# calculate total abundances per vial
-total_abundance_per_vial <- data %>% 
-  dplyr::group_by(vial_ID) %>% 
-  dplyr::summarize(total_abundance = sum(abundance)) %>% 
-  ungroup()
-
-# left join in this data to full dataframe and calculate relative abundance
-data <- left_join(data, total_abundance_per_vial, by = c("vial_ID")) %>% 
-  mutate(gene_relative_abundance = abundance / total_abundance * 100) 
-
-# check to make sure all add up to 100%
-relativized_check <- data %>% 
-  dplyr::group_by(vial_ID) %>% 
-  dplyr::summarize(total = sum(gene_relative_abundance)) %>% 
-  ungroup()
-relativized_check$total[which(relativized_check$total != 100)] 
-# all that don't are very close to 100/reading in as 100, probably a float issue
-
-# remove dataframe
-rm(relativized_check)
-
 #### (4) Processing Triplicates ####
 
 # filter out for triplicates and not triplicates
@@ -113,34 +89,14 @@ triplicates_adjusted <- triplicates %>%
 
 # average across triplicates
 triplicates_adjusted <- triplicates_adjusted %>% 
-  dplyr::group_by(site_reach, site, field_date, sample_type, triplicate, full_sample_name, ko_id, gene_relative_abundance) %>% 
-  # need to do mean of relative abundance as each vial has different number of reads!
-  dplyr::summarize(relative_abundance_means = mean(gene_relative_abundance)) %>%  # may not sum to 100!
-  ungroup()
-
-# to ensure they still sum to 100, take the total of relative abundances
-total_relative_abundances <- triplicates_adjusted %>% 
-  dplyr::group_by(full_sample_name) %>% 
-  dplyr::summarize(relative_abundance_totals = sum(relative_abundance_means)) %>% 
-  ungroup()
-
-# then re-relativize triplicates
-triplicates_adjusted_final <- left_join(triplicates_adjusted, total_relative_abundances, 
-                                        by = c("full_sample_name")) %>% 
-  mutate(gene_relative_abundance = relative_abundance_means / relative_abundance_totals * 100) %>% 
-  select(site_reach, site, field_date, sample_type, ko_id, gene_relative_abundance)
-
-# check that they all sum to 100
-triplicate_relativize_check <- triplicates_adjusted_final %>% 
-  mutate(full_sample_name = paste(site_reach, field_date, sample_type)) %>% 
-  dplyr::group_by(full_sample_name) %>% 
-  dplyr::summarize(total = sum(gene_relative_abundance)) %>%  # all summing to 100!
-  ungroup()
-triplicate_relativize_check$total[which(triplicate_relativize_check$total != 100)]
-# all add up to 100
+  dplyr::group_by(site_reach, site, field_date, sample_type, triplicate, full_sample_name, ko_id, abundance) %>% 
+  # do mean of predicted genes
+  dplyr::summarize(mean_abundance = mean(abundance)) %>%  
+  ungroup() %>% 
+  select(site_reach, site, field_date, sample_type, ko_id, mean_abundance)
 
 # remove excess files
-rm(triplicate_relativize_check, total_relative_abundances, triplicates_adjusted)
+rm(triplicates)
 
 #### (5) Putting Data Together ####
 
@@ -149,12 +105,14 @@ final_data <- data %>%
   filter(triplicate == "n") %>% 
   # filter out fake_targets and blanks %>% 
   filter(sample_type!= "blank" & fake_target == "n") %>% 
-  select(site_reach, site, field_date, sample_type, ko_id, gene_relative_abundance)
+  select(site_reach, site, field_date, sample_type, ko_id, abundance)
 
 # merge in averaged & re-relativized
-final_data <- rbind(final_data, triplicates_adjusted_final)
+final_data <- rbind(final_data %>% dplyr::rename(predicted_gene_abundance = abundance),
+                    triplicates_adjusted %>% dplyr::rename(predicted_gene_abundance = mean_abundance))
 
 # save data
+write.csv(final_data, "./data/molecular/PICRUSt2_predicted_KO_all.csv", row.names = FALSE)
 
 #### (6) Quickly Look at Prominent Pathways ####
 
@@ -171,9 +129,9 @@ kegg_pathways <- ko2kegg_abundance("./data/molecular/picrust2_outputs/pred_metag
   pivot_longer(cols = c(2:ncol(.)) ,  names_to = "plate_ID",
                values_to = "abundance") %>% filter(abundance != 0) %>% 
   # join in metadata
-  left_join(metadata, by = "plate_ID") #%>% 
-  # join in reference data
-  left_join(ko_to_kegg_reference, by = "pathway_id")
+  left_join(metadata, by = "plate_ID") %>% 
+  # join in pathway information
+  left_join(ko_to_kegg_reference %>% select(pathway_id, level1, level2, level3) %>% distinct(), by = "pathway_id") 
 
 # Q1: What is most abundant at level 1?
 levelone <- kegg_pathways %>% 
@@ -193,7 +151,7 @@ leveltwo <- kegg_pathways %>%
 # carbohydrate metabolism, energy metabolism, lipid metabolism, nucleotide metabolism,
 # amino acid metabolism for all
 
-#
+# Q3: what is most abundant at level 3?
 levelthree <- kegg_pathways %>% 
   dplyr::group_by(sample_type, site, level3) %>% 
   dplyr::summarize(total = sum(abundance)) %>% 
