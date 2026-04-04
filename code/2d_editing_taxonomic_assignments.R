@@ -1,6 +1,6 @@
 #### Editing taxonomic assignments
 ### Jordan Zabrecky
-## last edited: 03.10.2026
+## last edited: 04.04.2026
 
 # This code takes the processed QIIME outputs (presently, just the 95% rarefied)
 # and adjusts taxonomic assignments to make sure they are all clean and correct
@@ -295,6 +295,10 @@ data[which(data$genus == "Aliterella"), "order"] <- "Chroococcidiopsidales"
 
 # Anabaena & Aphanizomenon order is wrong ("Cyanobacteriales")
 data[which(data$genus == "Anabaena" | data$genus == "Aphanizomenon"), "order"] <- "Nostocales"
+
+# also we have a lot of Anabaena species matches (most of our anabaena is this) but clearly
+# that is not a species, so let's put it into genus
+data[which(data$species == "Anabaena_sp."), "genus"] <- "Anabaena"
 
 # Aphanizomenon also in wrong family
 data[which(data$genus == "Aphanizomenon"), "family"] <- "Aphanizomenonaceae"

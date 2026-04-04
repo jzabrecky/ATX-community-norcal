@@ -32,7 +32,7 @@ cobalamin <- c("K13541", "K02189")
 pyridoxal <- c("K00275")
 
 # put all in a list
-important_orthologs <- c(nfixers, nitrification, thiamine, cobalimin, pyridoxal)
+important_orthologs <- c(nfixers, nitrification, thiamine, cobalamin, pyridoxal)
 
 # filter out from reference provided by "ggpicrust2"
 ref <- ko_to_kegg_reference %>% 
@@ -52,19 +52,22 @@ data <- raw_data %>%
 
 #### (3) Add in More Detail & Save ####
 
-# add in more detailed groups
+# add in more detailed groups & sum genes in each group
 data <- data %>% 
-  mutate(my_grouping = case_when(ko_id %in% cobalimin ~ "cobalamin (B12)",
+  mutate(my_grouping = case_when(ko_id %in% cobalamin ~ "cobalamin (B12)",
                                  ko_id %in% nfixers ~ "nitrogen fixation",
                                  ko_id %in% nitrification ~ "nitrification", 
                                  ko_id %in% pyridoxal ~ "pyridoxal",
-                                 ko_id %in% thiamine ~ "thiamine"))
+                                 ko_id %in% thiamine ~ "thiamine")) %>% 
+  dplyr::group_by(site, site_reach, field_date, sample_type, my_grouping) %>% 
+  dplyr::summarize(predicted_gene_abundance = sum(predicted_gene_abundance))
 
 # fix Russian date (sampling was supposed to be on 7/6 but issues got it pushed to 7/7)
 data$field_date[which(data$field_date == "7/7/2022")] <- "7/6/2022"
 
+
 # save
-write.csv(data, "./data/molecular/PICRUSt2_predicted_KO_select.csv")
+write.csv(data, "./data/molecular/PICRUSt2_predicted_KO_select.csv", row.names = FALSE)
 
 #### (4) Preliminary Investigation
 
@@ -77,7 +80,7 @@ summary <- data %>%
 # prelim comparisons by site across sample type
 ggplot(summary, aes(y = mean_predicted_gene_abundance, x = my_grouping, fill = site)) +
   geom_bar(stat = "identity", position = "dodge") +
-  facet_wrap(~sample_type) + 
+  facet_wrap(~sample_type, scale = "free") + 
   scale_x_discrete(guide = guide_axis(angle = 60))
  
 # temporal summary
@@ -91,3 +94,12 @@ ggplot(temporal_summary, aes(y = mean_predicted_gene_abundance, x = field_date, 
   geom_bar(stat = "identity") +
   facet_grid(my_grouping~sample_type, scale = "free_y") + 
   scale_x_discrete(guide = guide_axis(angle = 60))
+
+# plot all samples
+ggplot(data %>% mutate(sample_name = paste(site_reach, field_date)), aes(x = sample_name, 
+                                                                         y = predicted_gene_abundance,
+                                                                         fill = site)) +
+  geom_bar(stat = "identity") +
+  facet_grid(my_grouping~sample_type, scale = "free_y") + 
+  scale_x_discrete(guide = guide_axis(angle = 75))
+

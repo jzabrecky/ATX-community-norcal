@@ -5,7 +5,8 @@
 # This script pulls in relative abundance based on the predicted 16s gene 
 # copy numbers for each ASV obtained via PICRUSt2-SC and compares it to 
 # the relative abundance without doing so (QIIME2 outputs obtained and
-# processed in step 2 of code)
+# processed in step 2 of code). Lastly, a version is saved for target samples
+# without the target taxa as well.
 
 # Note: This will only be done for rarefied (95% threshold) & processed data
 
@@ -62,11 +63,11 @@ metadata <- left_join(read.csv("./data/molecular/metadata/16s_sample_metadata.cs
                       by = "vial_ID")
 
 ## (b) reading in PICRUSt2-SC NSTI values (whereby lower values closer to 0 indicate better match)
-picrust_nsti <- read_tsv("./data/molecular/picrust2_outputs/weighted_nsti.tsv") %>% 
+picrust_nsti <- read_tsv("./data/molecular/picrust2_outputs/all/weighted_nsti.tsv") %>% 
   dplyr::rename(plate_ID = sample)
 
 ## (c) reading in PICRUSt2-SC estimated 16s rRNA copy number values
-picrust_predabun <- read_tsv("./data/molecular/picrust2_outputs/seqtab_norm.tsv") %>% 
+picrust_predabun <- read_tsv("./data/molecular/picrust2_outputs/all/seqtab_norm.tsv") %>% 
   pivot_longer(cols = c(2:ncol(.)),  names_to = "plate_ID",
                values_to = "picrust2_abundance") %>% 
   # remove filler zero values from wide format
@@ -295,7 +296,7 @@ write.csv(TM_data, "./data/molecular/16s_nochimera_rarefied_95_copynum_normalize
 # for anabaena/cylindrospermum
 TAC_data <- final_data %>% 
 # note: cylindrospermopsis is also reading a highly close match to anabaena in BLAST so will
-# remove that as well
-  filter(! genus %in% c("Anabaena","Cylindrospermum","Trichormus",  "Cylindrospermopsis")) %>% 
+# remove that as well as other close to 100% matches that are phylogenetically related
+  filter(! genus %in% c("Anabaena","Cylindrospermum","Trichormus","Cylindrospermopsis")) %>% 
   filter(sample_type == "TAC")
 write.csv(TAC_data, "./data/molecular/16s_nochimera_rarefied_95_copynum_normalized_TAC_noanacyl.csv", row.names = FALSE)

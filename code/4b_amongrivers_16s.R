@@ -1,22 +1,24 @@
 #### Comparing molecular 16s data among rivers
 ### Jordan Zabrecky
-## last edited: 02.18.2026
+## last edited: 04.04.2026
 
-# This code compares 16s data from NT, TM, and TAC samples
+# This code compares normalized 16s relative data from NT, TM, and TAC samples
 # across rivers to answer Q1. First data is transformed (sqrt).
-# Data is analyzed using NMDS, PERMANOVA, and ISA. We also averaged across all samples
+# Data is analyzed using NMDS and PERMANOVA. We also averaged across all samples
 # from a river and created bar plots to visually compare average samples at each river
+
+# TBD on keeping ISA results
 
 #### (1) Loading libraries & data ####
 
-## libraries
+# load libraries
 lapply(c("tidyverse", "plyr", "vegan", "cowplot", "indicspecies"), require, character.only = T)
 
 # we will use the NT data, and TM excluding Microcoleus, and TAC excluding Anabaena and Green Algae
-nt <- read.csv("./data/molecular/16s_nochimera_rarefied_95_FINAL.csv") %>% 
+nt <- read.csv("./data/molecular/16s_nochimera_rarefied_95_copynum_normalized_FINAL.csv") %>% 
   filter(sample_type == "NT")
-tm <- read.csv("./data/molecular/16s_nochimera_rarefied_95_TM_nomicro.csv")
-tac <- read.csv("./data/molecular/16s_nochimera_rarefied_95_TAC_noanacyl.csv")
+tm <- read.csv("./data/molecular/16s_nochimera_rarefied_95_copynum_normalized_TM_nomicro.csv")
+tac <- read.csv("./data/molecular/16s_nochimera_rarefied_95_copynum_normalized_TAC_noanacyl.csv")
 
 # add into list
 data_long <- list(nt, tm, tac)
@@ -30,7 +32,8 @@ data_long <- lapply(data_long, function(x) x <- x %>%
 data <- lapply(data_long, function(x) {
   # subset columns we care about and pivot wider
   y = x %>% 
-    select(site_reach, site, field_date, sample_type, triplicate, feature_ID, relative_abundance) %>% 
+    select(site_reach, site, field_date, sample_type, triplicate, feature_ID, picrust2_relative_abundance) %>% 
+    dplyr::rename(relative_abundance = picrust2_relative_abundance) %>% 
     pivot_wider(names_from = feature_ID, values_from = relative_abundance)
   # replace NA (indicating that ASV was not present in sample) with 0
   y[,6:ncol(y)][is.na(y[,6:ncol(y)])] = 0
@@ -56,6 +59,7 @@ for(i in 1:length(data)) {
 # lastly, add in broader categories to data_long so we don't have several with barplots
 # could do this quickly with forcats package, but since we are lumping, may make sense
 # to have more customized categories
+data_long <- lapply(data_long, function(x) x %>% dplyr::rename(relative_abundance = picrust2_relative_abundance))
 phylums <- lapply(data_long, function(x) x %>%
                     # calculate average abundance for each phylum
                     group_by(phylum) %>% 
@@ -150,7 +154,6 @@ for(i in 1:length(barplot_phylum_plots)) {
   print(barplot_cyanoorder_plots[[i]] + labs(title = titles[i]))
   print(barplot_cyanogenus_plots[[i]] + labs(title = titles[i]))
 }
-# could also probably customize more here
 
 #### (4) Alpha Diversity Metrics ####
 
@@ -168,8 +171,16 @@ for(i in 1:length(diversity)) {
 }
 
 # Does diversity differ across rivers?
+set.seed(1)
 lapply(diversity, function(x) kruskal.test(shannon_diversity~site, data = x))
-# not significantly different for any group but close for TM (p = 0.06) and for TAC (p = 0.44)
+# significantly different for TM (p = 0.02), close but not for NT (0.05), and not for TAC (p = 0.45)
+
+# What is the mean of each?
+means_medians <- lapply(diversity, function(x) x %>% 
+                          dplyr::group_by(site) %>% 
+                          dplyr::summarize(mean = mean(shannon_diversity),
+                                           median = median(shannon_diversity)))
+view(means_medians$nt)
 
 # save diversity calculations (RUN ONCE)
 #lapply(names(diversity), function(x) write.csv(diversity[[x]], 
@@ -210,6 +221,7 @@ for(i in 1:length(data)) {
 
 # Since, I am not convinced about TAC being significantly different visually, 
 # let's compare centroid distance differences
+set.seed(1)
 centroid_distance <- lapply(NMDS_list, function(x) { 
                                 # calculate centroids
                                 centroids = x[[1]] %>% 
@@ -223,9 +235,9 @@ centroid_distance <- lapply(NMDS_list, function(x) {
                     
 )
 lapply(names(centroid_distance), function(x) print(paste(x, ": ", centroid_distance[[x]], sep = "")))
-# nt: 1.33979348138588
-# tm: 1.60154329291529
-# tac: 0.473476224708244
+# nt: 1.46816727428784
+# tm: 1.58190801917234
+# tac: 0.519095592038606
 # TAC centroid distances are much closer on average, they are less than the distances
 # for algal assemblages for TM and NT and but much more than TAC (which was 0.108)
 
@@ -240,9 +252,8 @@ runPERMANOVA(test, start_col, group = test$`site`) # still very significant here
 
 #### (7) Q: What explains these differences? Species Indicator Analyses ####
 
-# not doing loadings for ASVs, etc. because there are several categories and groupings
-# furthermore, may report only on signficant functional groupings, as 
-# bacteria is broad (as seen below)
+# will likely not report on this because there is so much and its hard to parse
+# what is important but here it is
 
 ## (a) phylums
 
@@ -321,8 +332,8 @@ summary(multipatt(classes$tm[,5:ncol(classes$tm)], classes$tm$site, func = "r.g"
 # (iii) TAC
 summary(multipatt(classes$tac[,5:ncol(classes$tac)], classes$tac$site, func = "r.g", control = how(nperm = 999)))
 # only for SAL including Vampirivibrionia ***
-
-## (c) cyanobacteria orders
+ 
+## (c) cyanobacteria orders (also will likely not discuss in paper)
 
 cyano_orders <- lapply(data_long, function(x) {
   # subset columns we care about and pivot wider
@@ -362,7 +373,7 @@ summary(multipatt(cyano_orders$tm[,5:ncol(cyano_orders$tm)], cyano_orders$tm$sit
 summary(multipatt(cyano_orders$tac[,5:ncol(cyano_orders$tac)], cyano_orders$tac$site, func = "r.g", control = how(nperm = 999)))
 # only identified for SAL: Gastranaerophilales **, Vampirovibrionales **
 
-## (d) Cyanobacteria Genera
+## (d) Cyanobacteria Genera (Likely will not report due to high resolution of genus!)
 
 cyano_genera <- lapply(data_long, function(x) {
   # subset columns we care about and pivot wider
@@ -407,25 +418,12 @@ summary(multipatt(cyano_genera$tac[,5:ncol(cyano_genera$tac)], cyano_genera$tac$
 
 #### (8) Misc. Questions ####
 
-## What is the average Shannon diversity for each sample type among rivers?
-diversity_summary <- lapply(diversity, function(x) {
-  y = x %>% 
-    group_by(site) %>% 
-    dplyr::summarize(mean_diversity = mean(shannon_diversity),
-                     median_diversity = median(shannon_diversity)) %>% 
-    ungroup()
-})
-
-## Is Geitlerinema present in all TM samples?
-data_long$tm %>% 
-  filter(genus == "Geitlerinema") %>% 
-  select(site, site_reach, field_date) %>% 
-  unique()
-# also searching geitlerinema in dataframe view mode showed low abundance <0.01
-
-## Is Geilerinema present in all TAC samples?
+## What are the most abundant phylums in each river?
+summary
+#### LEFT OFF HERE ####
+  
+## How present are other anatoxin associated taxa?
 # using ATX taxa as identified in Christensen & Khan (2019) and Wood et al. (2020)
-## Let's look at only other anatoxin associated taxa in all samples
 # using list from Christensen & Khan et al. (2019): Anabaena, Aphanizomenon,
 # Aphanothece, Arthospira, Cylindrospermopsis, Cylindrospermum, Gomphosphaeria,
 # Limnothrix, Lyngbya, Microcystis, Nostoc, Oscillatoria, Phormidium/Microcoleus,
@@ -443,7 +441,7 @@ atx_taxa_only <- lapply(data_long, function(x) {
                         "Limnothrix", "Leptolyngbya", "Microcystis", "Nostoc", "Oscillatoria",
                         "Phormidium", "Microcoleus", "Planktothrix", "Synechocystis", 
                         "Geitlerinema", "Pseudanabaena"
-                        )) %>% 
+    )) %>% 
     # searching the TAC and TM dataframes do not yield: aphanothece, arthospira, gomphosphaeria,
     # lyngbya, planktolyngbya, microseira
     mutate(sample_name = paste("(", month(field_date), "-", day(field_date), ") ", site_reach, sep = "")) %>% 
@@ -462,4 +460,6 @@ atx_taxa_only <- lapply(data_long, function(x) {
   return(list(df, plot))
 })
 
-## For questions about ASVs shared or total ASVs, see: "./figures/fig_Q1_ASV_venn_diagrams.R"
+# some discrepancies here between and microscopy data
+# could be limits of 16s with genus level or the poor resolution of database
+# for more, see Dvorak et al. (2025)

@@ -1,6 +1,6 @@
 #### Further processing of QIIME2 outputs
 ### Jordan Zabrecky
-## last edited: 03.17.2026
+## last edited: 04.04.2026
 
 # This code reads in the csv of assembled QIIME2 outputs and metadata
 # and further processes it by removing reads that are "Mitochondria"
@@ -11,7 +11,9 @@
 
 # Notably, a new .biom file is saved after processing steps 2-3 to be used with 
 # PICRUSt2-SC so our predicted functional groups only match our final group
-# of taxa assignments [4]
+# of taxa assignments as well as one for target taxa that excludes reads that 
+# match to the respective target taxa (e.g., microcoleus samples without
+# microcoleus ASVs) [4]
 
 #### (1) Loading libraries and data ####
 
@@ -145,6 +147,8 @@ data_ver3_conf %>% filter(sample_type != "blank" & fake_target == "n") %>%
 #### (4) Saving .biom With Chloroplast & Mitochondria & Low Quality Reads Removed ####
 
 # NOTE: only doing this with 95% rarefied data as that is what we decided on to use
+
+## (a) make .biom file with all filtered reads in each sample
 biom_data <- data_ver3_conf %>% 
   filter(file == "16s_nochimera_rarefied_95_unfiltered.csv")
 
@@ -175,6 +179,65 @@ write_biom(make_biom(biom_data_matrix), "./data/molecular/raw_files/rarefied_and
 
 # remove files
 rm(biom_data_matrix, biom_data)
+
+## (b) make .biom file for TM samples with microcoleus removed
+tm_no_m_biom_data <- data_ver3_conf %>% 
+  filter(file == "16s_nochimera_rarefied_95_unfiltered.csv") %>% 
+  filter(sample_type == "TM") %>% 
+  # remove Microcoleus (and Tychonema as those reads match 100% to Microcoleus
+  filter(!grepl("Microcoleus|Tychonema", genus, ignore.case = FALSE)) %>% 
+  # only select rows we care about
+  select(plate_ID, feature_ID, abundance) %>% 
+  # convert into matrix to use with where ASVs are rows and samples are columns
+  pivot_wider(names_from = plate_ID, values_from = abundance, values_fill = 0)
+
+# make into matrix
+tm_no_m_biom_data_matrix <- tm_no_m_biom_data %>%
+  # get rid of feature_ID column
+  dplyr::select(!c(feature_ID)) %>% 
+  # convert values all to numeric
+  mutate(across(.fns = as.numeric)) %>% 
+  # turn into matrix
+  as.matrix()
+
+# set row names to ASV
+rownames(tm_no_m_biom_data_matrix) <- tm_no_m_biom_data$feature_ID
+
+# make biom file with above matrix and save
+write_biom(make_biom(tm_no_m_biom_data_matrix), "./data/molecular/raw_files/rarefied_and_filtered/feature-table_rarefied_filtered_95_tm_nomicro.biom")
+
+## (c) make .biom file for TAC samples with anabaena removed
+tac_no_ac_biom_data <- data_ver3_conf %>% 
+  filter(file == "16s_nochimera_rarefied_95_unfiltered.csv") %>% 
+  filter(sample_type == "TAC") %>% 
+  # note: cylindrospermopsis is also reading a highly close match to anabaena in BLAST so will
+  # remove that as well and all others that are 100% matches and closely phylogenetically related
+  filter(!grepl("Anabaena|Cylindrospermum|Trichormus|Cylindrospermopsis", genus, ignore.case = FALSE)) %>% 
+  # also a lot of our anabaena matches when searching the entire dataframe are showing up in species
+  # with incorrect genuses (as Anabaena is the genus...)
+  filter(!grepl("Anabaena", species, ignore.case = FALSE)) %>% 
+  # only select rows we care about
+  select(plate_ID, feature_ID, abundance) %>% 
+  # convert into matrix to use with where ASVs are rows and samples are columns
+  pivot_wider(names_from = plate_ID, values_from = abundance, values_fill = 0)
+
+# make into matrix
+tac_no_ac_biom_data_matrix <- tac_no_ac_biom_data %>%
+  # get rid of feature_ID column
+  dplyr::select(!c(feature_ID)) %>% 
+  # convert values all to numeric
+  mutate(across(.fns = as.numeric)) %>% 
+  # turn into matrix
+  as.matrix()
+
+# set row names to ASV
+rownames(tac_no_ac_biom_data_matrix) <- tac_no_ac_biom_data$feature_ID
+
+# make biom file with above matrix and save
+write_biom(make_biom(tac_no_ac_biom_data_matrix), "./data/molecular/raw_files/rarefied_and_filtered/feature-table_rarefied_filtered_95_tac_noanacyl.biom")
+
+# remove files
+rm(tac_no_ac_biom_data, tac_no_ac_biom_data_matrix, tm_no_m_biom_data, tm_no_m_biom_data_matrix)
 
 #### (5) Removing "fake" target samples ####
 
