@@ -34,7 +34,7 @@ morpho_bothtaxa <- morpho_bothtaxa %>%
          taxa_factor = factor(taxa, levels = c(str_sort(unique(morpho_bothtaxa$taxa))[-which(str_sort(unique(morpho_bothtaxa$taxa)) == "other_coccoids")],
                                                "other_coccoids")))
 
-# will merge these together in InkScape
+# (differences between the two below are just order that plots appear)
 morpho1 <- ggplot(data = morpho_bothtaxa, 
        aes(x = sample_name, y = percent / 100, fill = taxa_factor)) +
   geom_bar(stat = "identity") +
@@ -83,7 +83,6 @@ percent_present <- lapply(atx_taxa_only, function(x) {
 })
 
 # TM barplot
-
 # plot
 present_morpho_tm <- ggplot(data = percent_present$tm, aes(x = reorder(taxa, -percent_samples), y = percent_samples, fill = taxa)) +
   geom_bar(stat = "identity") +
@@ -96,6 +95,7 @@ present_morpho_tm <- ggplot(data = percent_present$tm, aes(x = reorder(taxa, -pe
 present_morpho_tm
 
 # TAC barplot
+# plot
 present_morpho_tac <- ggplot(data = percent_present$tac, aes(x = reorder(taxa, -percent_samples), y = percent_samples, fill = taxa)) +
   geom_bar(stat = "identity") +
   theme(legend.position = "none") +
@@ -155,5 +155,54 @@ molecular1 <- ggplot(data = molec_bothtaxa,
   facet_grid(sample_type~site, scales = "free") + 
   scale_fill_discrete(name = NULL)
 molecular1
+
+## (b) 
+
+percent_present <- lapply(atx_taxa_only, function(x) {
+  # access dataframe
+  y = x[[1]]
+  
+  # get number of samples
+  n_samples = length(unique(y$sample_name))
+  
+  # calculate number of observations for each taxa
+  y = y %>% 
+    # remove not present taxa
+    filter(relative_abundance != 0) %>% 
+    # need to group different ASVs together
+    dplyr::group_by(sample_name, genus) %>% 
+    dplyr::summarize(total = sum(relative_abundance)) %>% 
+    ungroup() %>% 
+    group_by(genus) %>% 
+    dplyr::summarize(count = length(genus)) %>% 
+    ungroup() %>% 
+    mutate(percent_samples = count / n_samples)
+  
+  return(y)
+})
+
+# TM barplot
+# plot
+present_morpho_tm <- ggplot(data = percent_present$tm, aes(x = reorder(genus, -percent_samples), y = percent_samples, fill = genus)) +
+  geom_bar(stat = "identity") +
+  theme(legend.position = "none") +
+  scale_fill_discrete(palette = c("#FBF6B0", "#CBC5F6", "#FBF6B0", "#FBF6B0", "#C5BD53", "#777122", "#8A80CF", 
+                                  "#C0ED96", "#5E9DE0", "#205288", "#7AB048", "#61389E", "#faafaf", "#b05656")) +
+  labs(x = NULL, y = "Percent of Samples Present") +
+  theme(axis.text.x = element_markdown(angle = 60, vjust = 1, hjust=1, size = 9))
+present_morpho_tm
+# could consider grouping all ASVs that had a 100% match to Anabaena
+
+# TAC barplot
+# plot
+present_morpho_tac <- ggplot(data = percent_present$tac, aes(x = reorder(genus, -percent_samples), y = percent_samples, fill = genus)) +
+  geom_bar(stat = "identity") +
+  theme(legend.position = "none") +
+  scale_fill_discrete(palette = c("#CBC5F6", "#C5BD53", "#777122", "#8A80CF", "#C2DFFF", "#C0ED96", "#5E9DE0", "#205288", 
+                                  "#7AB048", "#61389E", "#faafaf", "#b05656")) +
+  labs(x = NULL, y = "Percent of Samples Present") +
+  theme(axis.text.x = element_markdown(angle = 60, vjust = 1, hjust=1, size = 9))
+present_morpho_tac
+
 
 ## REVISIT THIS. Hitchiker's Guide states that most assignments are wrong

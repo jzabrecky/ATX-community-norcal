@@ -1,20 +1,57 @@
 #### Main figure to show differences in morphologically-identified assemblages among rivers
 ### Jordan Zabrecky
-## last edited: 01.15.2026
+## last edited: 04.04.2026
 
 # This script creates a main figure to show differences in assemblages associated 
-# with Microcoleus and Anabaena among rivers sampled
-
-#### (1) Loading libraries & data ####
+# with nontarget, microcoleus, and anabaena samples
 
 # load from analysis script
-source("./code/4a_amongrivers_microscopy.R")
+source("./code/4b_amongrivers_16s.R")
 
-# rename data to not get overrun
-data_morphological <- data
-data_longer_morphological <- data_longer
-NMDS_list_morphological <- NMDS_list
-NMDS_plots_morphological <- NMDS_plots
+# load additional libraries
+lapply(c("cowplot", "ggtext"), require, character.only = T)
+
+# set universal plot theme
+theme_set(theme_bw() + theme(strip.background = element_blank(),
+                             plot.title = element_text(hjust = 0.5), legend.text = element_markdown(),
+                             text = element_text(size = 8), strip.text = element_text(size = 8),
+                             panel.grid.major = element_blank(), panel.grid.minor = element_blank(),))
+
+# custom palette
+palette <- c("#FBF6B0", "#C5BD53", "#777122", "#C2DFFF", "#5E9DE0", "#205288", 
+             "#C0ED96", "#7AB048", "#3D631A", "#CBC5F6", "#8A80CF", "#61389E")
+
+# color for other or unknown
+end_color <- "lightgray"
+
+
+
+#### (2) Creating Individual Plots ####
+
+# creating string vector to iterate through sample types
+sample_types = c("nt", "tac", "tm")
+
+## (a) NMDS
+
+fig_a <- list()
+for(i in sample_types) {
+  fig_a[[i]] = makeNMDSplot(NMDS_list[[i]], FALSE, FALSE,
+                            color = "site", shape = "site") +
+    theme(legend.position = "none")
+}
+lapply(fig_a, print)
+
+
+
+# target taxa
+t_figure <- plot_grid(fig_a$nt, fig_a$tm, fig_a$tac, nrow = 1)
+t_figure
+
+
+
+#### OLD 
+
+#### (1) Loading libraries & data ####
 
 # load from second analysis script
 source("./code/4b_amongrivers_16s.R")

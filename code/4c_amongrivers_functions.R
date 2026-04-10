@@ -14,43 +14,40 @@
 lapply(c("tidyverse", "plyr", "cowplot", "indicspecies"), require, character.only = T)
 
 # load data 
-data <- read.csv("./data/molecular/PICRUSt2_predicted_KO_select.csv")
+nt <- read.csv("./data/molecular/PICRUSt2_predicted_KO_select.csv") %>% 
+  filter(sample_type == "NT")
+tm <- read.csv("./data/molecular/PICRUSt2_predicted_KO_select_tm_nomicro.csv")
+tac <- read.csv("./data/molecular/PICRUSt2_predicted_KO_select_tac_noanacyl.csv")
+
+# put all dataframes into a list
+data <- list(nt, tm, tac)
+names(data) <- c("nt", "tm", "tac")
 
 #### (2) Plotting #####
 
-# create summary table with means and plus or minuses
-summary <- data %>% 
-  dplyr::group_by(site, my_grouping, sample_type) %>% 
-  dplyr::summarize(mean = mean(predicted_gene_abundance),
-                   sd = sd(predicted_gene_abundance),
-                   total = n(),
-                   se = sd / sqrt(total))
-
-function_plot <- ggplot(summary, aes(x = site, y = mean, fill = site)) +
-  geom_bar(stat = "identity") +
-  geom_errorbar(aes(x=site, ymin=mean-se, ymax=mean+se, color = site), width = 0.3) +
-  facet_grid(my_grouping~sample_type, scale = "free") + 
-  scale_x_discrete(guide = guide_axis(angle = 75))
-function_plot # will make nicer later
+# make box plots!!!
+boxplots <- lapply(data, function(x) {
+  plot = ggplot(x, aes(x = my_grouping, y = predicted_gene_abundance, fill = site)) +
+    geom_boxplot()
+  print(plot)
+  return(plot)
+})
 
 #### (3) Kruskal Wallis Tests ####
 
-# split into list for sample types
-data_list <- split(data, data$sample_type)
-
-kruskal_test_results <- lapply(data_list, function(x) {
+# run tests
+kruskal_test_results <- lapply(data, function(x) {
   function_groups = unique(x$my_grouping)
   results = data.frame(function_groups = NA,
                        kruskal_test = NA)
+  
   for(i in function_groups) {
     results = rbind(results, data.frame(function_groups = i,
-               kruskal_test = (kruskal.test(site~predicted_gene_abundance, data = (x %>% filter(my_grouping == i))))$p.value))
+                                        kruskal_test = (kruskal.test(site~predicted_gene_abundance, data = (x %>% filter(my_grouping == i))))$p.value))
   }
   
   return(results[-1,])
 })
 
 lapply(kruskal_test_results, function(x) x[which(x$kruskal_test < 0.1),])
-# nitrification is the only one significantly different among groups!
-
-# post-hoc Dunns test for nitrification for TM and NT
+# none significantly different among groups

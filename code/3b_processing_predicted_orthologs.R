@@ -1,11 +1,11 @@
-#### Processing predicted functional groups for samples
+#### Processing predicted orthologs for all samples
 ### Jordan Zabrecky
-## last edited: 03.23.2026
+## last edited: 04.09.2026
 
 # This script processes the predicted functional groups (as KEGG orthologs 
 # predicted genes) from PICRUSt2-SC standard pipeline. 
 # This script saves all KO's which are further processed for ones we care about in
-# the next script
+# the script 3c
 # Note: This will only be done for rarefied (95% threshold) & filtered .biom data
 
 #### (1) Loading libraries & data ####
@@ -44,56 +44,79 @@ metadata <- read.csv("./data/molecular/metadata/16s_sample_metadata.csv")
 # join in plate_data_final with metadata
 metadata <- left_join(metadata, plate_data_final, by = c("vial_ID"))
 
-## (b) reading in PICRUSt2-SC estimated 16s rRNA copy number values
-picrust_predfunc <- read_tsv("./data/molecular/picrust2_outputs/pred_metagenome_unstrat.tsv") %>% 
+## (b) reading in PICRUSt2-SC predicted genes
+picrust_predfunc_all <- read_tsv("./data/molecular/picrust2_outputs/all/pred_metagenome_unstrat.tsv") %>% 
+  mutate(`function` = str_remove(`function`, "ko:")) %>% 
+  dplyr::rename(ko_id = `function`) %>% 
+  pivot_longer(cols = c(2:ncol(.)) ,  names_to = "plate_ID",
+               values_to = "abundance") %>% filter(abundance != 0)
+picrust_predfunc_tm <- read_tsv("./data/molecular/picrust2_outputs/tm_nomicro/pred_metagenome_unstrat.tsv") %>% 
+  mutate(`function` = str_remove(`function`, "ko:")) %>% 
+  dplyr::rename(ko_id = `function`) %>% 
+  pivot_longer(cols = c(2:ncol(.)) ,  names_to = "plate_ID",
+               values_to = "abundance") %>% filter(abundance != 0)
+picrust_predfunc_tac <- read_tsv("./data/molecular/picrust2_outputs/tac_noanacyl/pred_metagenome_unstrat.tsv") %>% 
   mutate(`function` = str_remove(`function`, "ko:")) %>% 
   dplyr::rename(ko_id = `function`) %>% 
   pivot_longer(cols = c(2:ncol(.)) ,  names_to = "plate_ID",
                values_to = "abundance") %>% filter(abundance != 0)
 
+# put into list
+picrust_predfunc_list <- list(picrust_predfunc_all, picrust_predfunc_tm, picrust_predfunc_tac)
+names(picrust_predfunc_list) <- c("all", "tm", "tac")
+
 #### (2) Joining Data Together ####
 
 # pivot longer and join with plate metadata
-data = left_join(picrust_predfunc, metadata, by = "plate_ID")
+picrust_predfunc_list <- lapply(picrust_predfunc_list, function(x) left_join(x, metadata, by = "plate_ID"))
 
-# missing vial check
-setdiff(unique(metadata$vial_ID), unique(data$vial_ID)) 
-# 4, 18, 34, 40, 43, 58, 99, 102, 104, 115, 135, 137, 142, 208, 215
-# same as QIIME2 and normalized predicted abundances in "3a_normalizing_16s_copynum.R"
-
-# lastly, deal with a couple samples as also dealt with in qiime2 processing:
+# deal with a couple samples as also dealt with in qiime2 processing:
 
 # (i)  very unsure about TAC at SAL-2 on 9/22/22 (only took a little for 16s)
 # in the field, so will probably just remove (not as clearly Anabaena as the sample at SAL-3)
 # despite some reads being anabaena! (is vial 230)
-data <- data %>% 
-  filter(vial_ID != 230)
+picrust_predfunc_list <- lapply(picrust_predfunc_list, function(x) {
+  y <- x %>% 
+    filter(vial_ID != 230)
+  return(y)
+})
 
 # (ii) fix field date label issue
 # remove TM sample taken on 9/6 at SFE-M-1S (taken inconsistently from other samples; turkey-baster, lots of water)
 # & replace with sample taken on 9/8 (taken correctly; mostly mat )
-data <- data[-which(data$field_date == "9/6/2022" & data$site_reach == "SFE-M-1S" & data$sample_type == "TM"),]
-data[which(data$field_date == "9/8/2022" & data$site_reach == "SFE-M-1S"& data$sample_type == "TM"),]$field_date <- "9/6/2022"
+picrust_predfunc_list$all <- picrust_predfunc_list$all[-which(picrust_predfunc_list$all$field_date == "9/6/2022" & picrust_predfunc_list$all$site_reach == "SFE-M-1S" & picrust_predfunc_list$all$sample_type == "TM"),]
+picrust_predfunc_list$all[which(picrust_predfunc_list$all$field_date == "9/8/2022" & picrust_predfunc_list$all$site_reach == "SFE-M-1S"& picrust_predfunc_list$all$sample_type == "TM"),]$field_date <- "9/6/2022"
+picrust_predfunc_list$tm <- picrust_predfunc_list$tm[-which(picrust_predfunc_list$tm$field_date == "9/6/2022" & picrust_predfunc_list$tm$site_reach == "SFE-M-1S" & picrust_predfunc_list$tm$sample_type == "TM"),]
+picrust_predfunc_list$tm[which(picrust_predfunc_list$tm$field_date == "9/8/2022" & picrust_predfunc_list$tm$site_reach == "SFE-M-1S"& picrust_predfunc_list$tm$sample_type == "TM"),]$field_date <- "9/6/2022"
 
 #### (4) Processing Triplicates ####
 
 # filter out for triplicates and not triplicates
-triplicates <- data %>% 
-  filter(triplicate == "y") %>% 
-  mutate(full_sample_name = paste(site_reach, field_date, sample_type))
+triplicates <- lapply(picrust_predfunc_list, function(x) {
+  y <- x %>% 
+    filter(triplicate == "y") %>% 
+    mutate(full_sample_name = paste(site_reach, field_date, sample_type))
+  return(y)
+})
 
 # remove odd samples as identified in prior processing scripts
 IDs_to_remove <- c(110, 225, 50, 123)
-triplicates_adjusted <- triplicates %>% 
-  filter(!vial_ID %in% IDs_to_remove)
+triplicates_adjusted <- lapply(triplicates, function(x) {
+  y <- x %>% 
+    filter(!vial_ID %in% IDs_to_remove)
+  return(y)
+})
 
 # average across triplicates
-triplicates_adjusted <- triplicates_adjusted %>% 
-  dplyr::group_by(site_reach, site, field_date, sample_type, triplicate, full_sample_name, ko_id, abundance) %>% 
-  # do mean of predicted genes
-  dplyr::summarize(mean_abundance = mean(abundance)) %>%  
-  ungroup() %>% 
-  select(site_reach, site, field_date, sample_type, ko_id, mean_abundance)
+triplicates_adjusted <- lapply(triplicates_adjusted, function(x) {
+  y <- x %>% 
+    dplyr::group_by(site_reach, site, field_date, sample_type, triplicate, full_sample_name, ko_id, abundance) %>% 
+    # do mean of predicted genes
+    dplyr::summarize(mean_abundance = mean(abundance)) %>%  
+    ungroup() %>% 
+    select(site_reach, site, field_date, sample_type, ko_id, mean_abundance)
+  return(y)
+})
 
 # remove excess files
 rm(triplicates)
@@ -101,18 +124,26 @@ rm(triplicates)
 #### (5) Putting Data Together ####
 
 # remove triplicates from original data
-final_data <- data %>% 
-  filter(triplicate == "n") %>% 
-  # filter out fake_targets and blanks %>% 
-  filter(sample_type!= "blank" & fake_target == "n") %>% 
-  select(site_reach, site, field_date, sample_type, ko_id, abundance)
+final_data <- lapply(picrust_predfunc_list, function(x) {
+  y <- x %>% 
+    filter(triplicate == "n") %>% 
+    # filter out fake_targets and blanks %>% 
+    filter(sample_type!= "blank" & fake_target == "n") %>% 
+    select(site_reach, site, field_date, sample_type, ko_id, abundance)
+})
 
 # merge in averaged & re-relativized
-final_data <- rbind(final_data %>% dplyr::rename(predicted_gene_abundance = abundance),
-                    triplicates_adjusted %>% dplyr::rename(predicted_gene_abundance = mean_abundance))
+final_data <- lapply(names(final_data), function(x) {
+  y <- rbind(final_data[[x]] %>% dplyr::rename(predicted_gene_abundance = abundance),
+             triplicates_adjusted[[x]] %>% dplyr::rename(predicted_gene_abundance = mean_abundance))
+  return(y)
+})
+names(final_data) <- c("all", "tm_nomicro", "tac_noanacyl")
 
 # save data
-write.csv(final_data, "./data/molecular/PICRUSt2_predicted_KO_all.csv", row.names = FALSE)
+lapply(names(final_data), function(x) write.csv(final_data[[x]],
+                                                paste("./data/molecular/PICRUSt2_predicted_KO_all_", x, ".csv", sep = ""),
+                                                row.names = FALSE))
 
 #### (6) Quickly Look at Prominent Pathways ####
 
@@ -123,7 +154,7 @@ write.csv(final_data, "./data/molecular/PICRUSt2_predicted_KO_all.csv", row.name
 # and the function below makes weird choices sometimes, 
 # but since we want to get a quick overview on everything first,
 # we will just use that function
-kegg_pathways <- ko2kegg_abundance("./data/molecular/picrust2_outputs/pred_metagenome_unstrat.tsv") %>%
+kegg_pathways <- ko2kegg_abundance("./data/molecular/picrust2_outputs/all/pred_metagenome_unstrat.tsv") %>%
   mutate(pathway_id = rownames(.)) %>% 
   relocate(pathway_id, .before = 1) %>% 
   pivot_longer(cols = c(2:ncol(.)) ,  names_to = "plate_ID",

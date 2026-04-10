@@ -418,10 +418,6 @@ summary(multipatt(cyano_genera$tac[,5:ncol(cyano_genera$tac)], cyano_genera$tac$
 
 #### (8) Misc. Questions ####
 
-## What are the most abundant phylums in each river?
-summary
-#### LEFT OFF HERE ####
-  
 ## How present are other anatoxin associated taxa?
 # using ATX taxa as identified in Christensen & Khan (2019) and Wood et al. (2020)
 # using list from Christensen & Khan et al. (2019): Anabaena, Aphanizomenon,
