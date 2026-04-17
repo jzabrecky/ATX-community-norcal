@@ -66,8 +66,8 @@ data_list <- lapply(data_list, function(x) {
 # add in more detailed groups & sum genes in each group
 data_list <- lapply(data_list, function(x) {
   data = x %>% 
-    mutate(my_grouping = case_when(ko_id %in% cobalamin ~ "cobalamin (B12)",
-                                   ko_id %in% nfixers ~ "nitrogen fixation",
+    mutate(my_grouping = case_when(ko_id %in% cobalamin ~ "cobalamin_B12",
+                                   ko_id %in% nfixers ~ "nitrogen_fixation",
                                    ko_id %in% nitrification ~ "nitrification", 
                                    ko_id %in% pyridoxal ~ "pyridoxal",
                                    ko_id %in% thiamine ~ "thiamine",

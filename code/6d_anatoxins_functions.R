@@ -5,11 +5,14 @@
 # load data 
 nt <- read.csv("./data/molecular/PICRUSt2_predicted_KO_select.csv") %>% 
   filter(sample_type == "NT") %>% 
-  mutate(field_date = mdy(field_date))
+  mutate(field_date = mdy(field_date),
+         month = month(field_date))
 tm <- read.csv("./data/molecular/PICRUSt2_predicted_KO_select_tm_nomicro.csv") %>% 
-  mutate(field_date = mdy(field_date))
+  mutate(field_date = mdy(field_date),
+         month = month(field_date))
 tac <- read.csv("./data/molecular/PICRUSt2_predicted_KO_select_tac_noanacyl.csv") %>% 
-  mutate(field_date = mdy(field_date))
+  mutate(field_date = mdy(field_date),
+         month = month(field_date))
 
 atx <- read.csv("./data/field_and_lab/atx_w_categorical_groupings.csv") %>% 
   mutate(field_date = ymd(field_date))
@@ -48,24 +51,34 @@ for(i in 1:length(unique(all_tm$my_grouping))) {
 ggplot(data = all_tm %>% filter(site == "SFE-M"), aes(x = log(predicted_gene_abundance), y = log_TM_ATX_all_ug_orgmat_g)) +
   facet_wrap(~my_grouping, scales = "free") +
   geom_smooth(method = "lm") +
-  geom_point()
-ggplot(data = all_tm %>% filter(site == "SFE-M"), aes(x = predicted_gene_abundance, y = log_TM_ATX_all_ug_orgmat_g)) +
-  facet_wrap(~my_grouping, scales = "free") +
-  geom_smooth(method = "lm") +
-  geom_point()
-
+  geom_point(aes(shape = site_reach, color = field_date))
 
 ggplot(data = all_tac %>% filter(site == "RUS"), aes(x = log(predicted_gene_abundance), y = log_TAC_ATX_all_ug_orgmat_g)) +
   facet_wrap(~my_grouping, scales = "free") +
   geom_smooth(method = "lm") +
-  geom_point()
+  geom_point(aes(shape = site_reach, color = field_date))
 
 
 ggplot(data = all_tac %>% filter(site == "SFE-M"), aes(x = log(predicted_gene_abundance), y = log_TAC_ATX_all_ug_orgmat_g)) +
   facet_wrap(~my_grouping, scales = "free") +
   geom_smooth(method = "lm") +
-  geom_point()
+  geom_point(aes(shape = site_reach, color = field_date))
 
 test = lm(log_TM_ATX_all_ug_orgmat_g ~ log(predicted_gene_abundance), data = all_tm %>% filter(site == "SFE-M") %>% 
      filter(my_grouping == "nitrification"))
 summary(test)
+
+test = lm(log_TAC_ATX_all_ug_orgmat_g ~ log(predicted_gene_abundance), data = all_tac %>% filter(site == "SFE-M") %>% 
+            filter(my_grouping == "nitrification"))
+summary(test)
+
+test = lm(log_TM_ATX_all_ug_orgmat_g ~ log(predicted_gene_abundance), data = all_tm %>% filter(site == "SFE-M") %>% 
+            filter(my_grouping == "thiamine"))
+summary(test)
+
+test = lm(log_TAC_ATX_all_ug_orgmat_g ~ log(predicted_gene_abundance), data = all_tac %>% filter(site == "RUS") %>% 
+            filter(my_grouping == "phosphatase_transporters"))
+summary(test)
+
+# comparing mats w/ toxins detected versus those without
+# just looking at plots, probably not worthwhile :/
