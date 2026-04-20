@@ -1,8 +1,10 @@
 #### Script of functions used to add broader classifications to microscopy data
 ### Jordan Zabrecky
-## last edited: 02.05.2026
+## last edited: 04.16.2026
 
-# This script hosts functions to add broader classifications to microscopy data
+# This script hosts functions to add broader classifications to microscopy data and
+# automatically add broader classifications to molecular data based on a minimum relative
+# abundance threshold
 
 #### (1) Loading libraries ####
 
@@ -24,10 +26,10 @@ target_broader <- function(data) {
                                ~ "Unicellular Cyanobacteria",
                                taxa == "anabaena_and_cylindrospermum" ~ "Anabaena or Cylindrospermum",
                                taxa == "e_diatoms" ~ "Epithemia",
-                               taxa == "geitlerinema" ~ "Geitlerinema",
+                               taxa == "geitlerinema" |taxa == "leptolyngbya_geitlerinema" | 
+                                 taxa == "leptolyngbya" ~ "Geitlerinema/Leptolyngbya",
                                taxa == "green_algae" ~ "Green Algae",
-                               taxa == "oscillatoria" | taxa == "phormidium_unknown" |
-                                 taxa == "leptolyngbya" | taxa == "homoeothrix"
+                               taxa == "oscillatoria" | taxa == "phormidium_unknown" | taxa == "homoeothrix"
                                ~ "Other Filamentous Cyanobacteria",
                                taxa == "microcoleus" ~ "Microcoleus",
                                taxa == "non_e_diatoms" ~ "Diatoms Other than Epithemia",
@@ -51,7 +53,8 @@ nontarget_broader <- function(data) {
                                ~ "Unicellular Cyanobacteria",
                                taxa == "anabaena_and_cylindrospermum" ~ "Anabaena or Cylindrospermum",
                                taxa == "oscillatoria" | taxa == "phormidium_unknown" |
-                                 taxa == "leptolyngbya" | taxa == "homoeothrix" | taxa == "geitlerinema"
+                                 taxa == "leptolyngbya" | taxa == "homoeothrix" | taxa == "geitlerinema" |
+                                 taxa == "leptolyngbya_geitlerinema"
                                ~ "Other Filamentous Cyanobacteria",
                                taxa == "microcoleus" ~ "Microcoleus",
                                taxa == "non_e_r_diatoms" ~ "Diatoms Other than Epithemia or Rhopalodia",

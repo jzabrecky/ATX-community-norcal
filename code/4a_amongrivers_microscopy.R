@@ -1,6 +1,6 @@
 #### Comparing morphologically-identified assemblages among rivers
 ### Jordan Zabrecky
-## last edited: 02.27.2026
+## last edited: 04.16.2026
 
 # This code compares microscopy data from NT, TM, and TAC samples
 # across rivers to answer Q1. First data is transformed (sqrt).
@@ -154,25 +154,6 @@ for(i in 1:length(data)) {
 # which we do see in our NMDS plots (With the exception maybe of the NT plot, but the centroids
 # for those groups are different)
 
-# let's lastly compare the distance between centroids
-# (mostly to compare for Q2 issue that came up)
-centroid_distance <- lapply(NMDS_list, function(x) { 
-  # calculate centroids
-  centroids = x[[1]] %>% 
-    dplyr::group_by(site) %>% 
-    dplyr::summarize(axis1 = mean(NMDS1),
-                     axis2 = mean(NMDS2)) %>% 
-    ungroup()
-  # calculate distances between centroids
-  distances = dist(centroids[,2:3], method = "euclidean")
-  return(mean(distances))}
-  
-)
-lapply(names(centroid_distance), function(x) print(paste(x, ": ", centroid_distance[[x]], sep = "")))
-# nt: 0.658672167241778
-# tm: 0.684185197772008
-# tac: 0.107665714801558
-
 #### (7) Q: What explains these differences? Loadings & Species Indicator Analyses ####
 
 ## (a) NMDS loadings
@@ -237,14 +218,14 @@ lapply(data, function(x) specnumber(x[,start_col:ncol(x)], groups = x$`site`))
 # TM: SAL 7, SFE-M 12
 # TAC: RUS 11, SAL 7, SFE-M 14
 
-## Is Geilerinema present in all TM samples?
-data$tm$geitlerinema
-count(data$tm$geitlerinema > 0)
+## Is Leptolyngbya/Geitlerinema present in all TM samples?
+data$tm$leptolyngbya_geitlerinema
+count(data$tm$leptolyngbya_geitlerinema > 0)
 # present in 17 out of 23
 
 ## What about the presence of Geitlerinema in TAC samples?
-data$tac$geitlerinema
-count(data$tac$geitlerinema > 0)
+data$tac$leptolyngbya_geitlerinema
+count(data$tac$leptolyngbya_geitlerinema > 0)
 # all of them which is crazy >1%!
 
 ## How about Microcoleus in TAC samples? 

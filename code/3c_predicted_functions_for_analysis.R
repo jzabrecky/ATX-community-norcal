@@ -1,6 +1,6 @@
 #### Further selecting functional groups for samples
 ### Jordan Zabrecky
-## last edited: 04.08.2026
+## last edited: 04.16.2026
 
 # This script processes the further processes the predicted KEGG orthologs 
 # from the previous script and only keeps orthologs in processes we care about
@@ -72,7 +72,7 @@ data_list <- lapply(data_list, function(x) {
                                    ko_id %in% pyridoxal ~ "pyridoxal",
                                    ko_id %in% thiamine ~ "thiamine",
                                    ko_id %in% phosphatase_transporters ~ "phosphatase_transporters")) %>% 
-    dplyr::group_by(site, site_reach, field_date, sample_type, my_grouping) %>% 
+    dplyr::group_by(site, site_reach, field_date, sample_type, my_grouping, ko_id) %>% 
     dplyr::summarize(predicted_gene_abundance = sum(predicted_gene_abundance))
 
   # also fix Russian date (sampling was supposed to be on 7/6 but issues got it pushed to 7/7)

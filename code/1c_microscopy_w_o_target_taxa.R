@@ -1,13 +1,15 @@
 #### Processing microscopy data further (removing target taxa)
 ### Jordan Zabrecky
-## last edited 12.15.2025
+## last edited 04.16.2026
 
 # This code processes target microscopy data from the previous
 # code by removing the target taxa (i.e. Microcoleus or Anabaena/Cylindrospermum)
 # and recalculates the relative abundance of other taxa
 # for TAC samples, we also removed green algae (the substrate) as, to a degree, 
 # the relative abundance of green algae depended on how well we were able to
-# remove Anabaena from it
+# remove Anabaena from it. Additionally, leptolyngbya and geitlerinema are grouped 
+# and phormidium is added into microcoleus as suggested by Rosalina
+
 
 #### (1) Loading libraries ####
 
@@ -17,6 +19,16 @@ lapply(c("tidyverse", "lubridate"), require, character.only = T)
 # read in processed microscopy data
 tm <- read.csv("./data/morphological/tm_algalonly.csv")
 tac <- read.csv("./data/morphological/tac_algalonly.csv")
+
+# join columns according to Rosalina
+tm <- tm %>% 
+  mutate(leptolyngbya_geitlerinema = leptolyngbya + geitlerinema,
+         microcoleus = phormidium_unknown + microcoleus) %>% 
+  select(!c("phormidium_unknown", "geitlerinema", "leptolyngbya"))
+tac <- tac %>% 
+  mutate(leptolyngbya_geitlerinema = leptolyngbya + geitlerinema,
+         microcoleus = phormidium_unknown + microcoleus) %>% 
+  select(!c("phormidium_unknown", "geitlerinema", "leptolyngbya"))
 
 #### (2) Removing target taxa from each sample ####
 

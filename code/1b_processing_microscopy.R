@@ -1,10 +1,12 @@
 #### Processing microscopy data
 ### Jordan Zabrecky
-## last edited 10.10.2025
+## last edited 04.16.2026
 
 # This code processes microscopy data from the EDI data release 
 # (averaging across slides and evaluting rsd), remove non-algal portion of sample,
-# and recalculates relative abundance without that portion
+# and recalculates relative abundance without that portion. Additionally,
+# leptolyngbya and geitlerinema are grouped and phormidium is added into microcoleus
+# as suggested by Rosalina
 
 #### (1) Loading in libraries & data ####
 
@@ -138,7 +140,9 @@ check_t2 <- which(rowSums(target_processed2[4:ncol(target_processed2)]) != 100)
 rowSums(target_processed2[4:ncol(target_processed2)])[check_t2] # all are 100
 rowSums(nt_processed2[4:ncol(nt_processed2)])[check_nt2] # all are 100
 
-#### (3) Final edits to match environmental covariate data ####
+#### (3) Final edits ####
+
+## (a) to match environmental covariate data
 
 # separate out TAC and TM 
 tm_processed2 <- target_processed2 %>% 
@@ -161,6 +165,12 @@ processed <- lapply(processed, function(x) x %>%
                                               grepl("SAL", site_reach) ~ "SAL",
                                               grepl("SFE-SH", site_reach) ~ "SFE-SH")) %>% 
                       relocate(site, .before = "site_reach"))
+
+## (b) merging categories
+processed <- lapply(processed, function(x) x %>% 
+                     mutate(leptolyngbya_geitlerinema = leptolyngbya + geitlerinema,
+                            microcoleus = phormidium_unknown + microcoleus) %>% 
+                     dplyr::select(!c("phormidium_unknown", "geitlerinema", "leptolyngbya")))
 
 # saving csv's
 path <- paste(getwd(), "/data/morphological/", sep = "")
