@@ -1,6 +1,6 @@
 #### Script of functions used in NMDS (and related) analyses
 ### Jordan Zabrecky
-## last edited: 02.02.2026
+## last edited: 04.20.2026
 
 # This script hosts functions used to create NMDS plots
 
@@ -56,10 +56,7 @@ getNMDSdata <- function(data, start_col, end_col = NA, ASV = FALSE) {
   # bind x & y positions to site information
   nmds_final = cbind(as.data.frame(scores(nmds, "sites")), 
                      data %>% select(any_of(c("site_reach", "site", "field_date", 
-                                              "sample_type", "TM_atx_category",
-                                              "TAC_atx_category", "NT_atx_category",
-                                              "TM_atx_detected", "TAC_atx_detected",
-                                              "NT_atx_detected")))) %>% 
+                                              "sample_type", "atx_detected", "atx_group")))) %>% 
     mutate(field_date = ymd(field_date),
            year = year(field_date),
            month = as.character(month(field_date)))

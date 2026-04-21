@@ -1,6 +1,6 @@
 #### Comparing molecular 16s data across time
 ### Jordan Zabrecky
-## last edited: 02.02.2026
+## last edited: 04..2026
 
 # This code compares 16s rRNA (bacterial assemblage) data from NT, TM, and TAC samples
 # across rivers to answer Q2
@@ -16,23 +16,25 @@ data <- lapply(list.files(path = "./data/molecular/transformed/", pattern = ".cs
 names(data) <- c("nt", "tac", "tm")
 
 # also load un-transformed relative abundances and make it longer for bar plots through time
-nt <- read.csv("./data/molecular/16s_nochimera_rarefied_95_FINAL.csv") %>% 
+nt <- read.csv("./data/molecular/16s_nochimera_rarefied_95_copynum_normalized_FINAL.csv") %>% 
   filter(sample_type == "NT")
-tm <- read.csv("./data/molecular/16s_nochimera_rarefied_95_TM_nomicro.csv")
-tac <- read.csv("./data/molecular/16s_nochimera_rarefied_95_TAC_noanacyl.csv")
+tm <- read.csv("./data/molecular/16s_nochimera_rarefied_95_copynum_normalized_TM_nomicro.csv")
+tac <- read.csv("./data/molecular/16s_nochimera_rarefied_95_copynum_normalized_TAC_noanacyl.csv")
 
 # add into list
 unaltered_data <- list(nt, tm, tac)
 names(unaltered_data) <- c("nt", "tm", "tac")
 data_longer <- lapply(unaltered_data, function(x) x <- x %>% # change date format for next step
-                        mutate(field_date = mdy(field_date)))
+                        mutate(field_date = mdy(field_date)) %>% 
+                        # change name of relative abundance to be compatible with my plotting functions
+                        dplyr::rename(relative_abundance = picrust2_relative_abundance))
 data <- lapply(data, function(x) x <- x %>% # change date format for next step
-                        mutate(field_date = ymd(field_date)))
+                        mutate(field_date = ymd(field_date))) 
 
 ##### (2) Function for Analyses ####
 
 # load from supplemental script
-source("./code/supplemental_code/S4a_community_analyses_func.R")
+source("./code/supplemental_code/S4b_community_analyses_func.R")
 
 #### (3) Add  Columns for Sampling Event & Broader Taxa ####
 
@@ -233,5 +235,79 @@ for(i in 1:length(diversity)) {
 }
 # no clear patterns!
 
-#### (8) 
+#### (8) Indicator Species Analyses ####
 
+## (a) phylums ##
+phylums <- lapply(data_longer, function(x) x %>% dplyr::select(event_no, site, site_reach, phylum, relative_abundance) %>% 
+                    dplyr::group_by(event_no, site, site_reach, phylum) %>% 
+                    # put different ASVs of same phylum together
+                    dplyr::summarize(relative_abundance = sum(relative_abundance)) %>% 
+                    ungroup() %>% 
+                    pivot_wider(names_from = phylum, values_from = relative_abundance, values_fill = 0))
+
+# split by river
+phylums_river <- lapply(phylums, function(x) split(x, x$site))
+
+## (i) NT
+for(i in 1:length(phylums_river$nt)) {
+  print(names(phylums_river$nt)[i])
+  print(summary(multipatt(phylums_river$nt[[i]][,start_col:ncol(phylums_river$nt[[i]])],
+                          phylums_river$nt[[i]]$event_no, func = "r.g", control = how(nperm = 999))))
+}
+# RUS: Fusobacteria
+# SFE-M: none
+# SAL: Proteobacteria, Cyanobacteria, Fibrobacterota*, Verrucomimicrobiota**, Planctomycetota **, Patescibacteria *
+
+## (i) TM
+for(i in 1:length(phylums_river$tm)) {
+  print(names(phylums_river$tm)[i])
+  print(summary(multipatt(phylums_river$tm[[i]][,start_col:ncol(phylums_river$tm[[i]])],
+                          phylums_river$tm[[i]]$event_no, func = "r.g", control = how(nperm = 999))))
+}
+# SAL: none, SFE-M: Myxococcota *
+
+## (i) TAC
+for(i in c(1,3)) {
+  print(names(phylums_river$tac)[i])
+  print(summary(multipatt(phylums_river$tac[[i]][,start_col:ncol(phylums_river$tac[[i]])],
+                          phylums_river$tac[[i]]$event_no, func = "r.g", control = how(nperm = 999))))
+}
+# RUS: none
+# SFE-M: Proteobacteria *, Deinococcota *
+
+
+## (a) phylums ##
+classes <- lapply(data_longer, function(x) x %>% dplyr::select(event_no, site, site_reach, class, relative_abundance) %>% 
+                    dplyr::group_by(event_no, site, site_reach, class) %>% 
+                    # put different ASVs of same class together
+                    dplyr::summarize(relative_abundance = sum(relative_abundance)) %>% 
+                    ungroup() %>% 
+                    pivot_wider(names_from = class, values_from = relative_abundance, values_fill = 0))
+
+# split by river
+classes_river <- lapply(classes, function(x) split(x, x$site))
+
+## (i) NT
+for(i in 1:length(classes_river$nt)) {
+  print(names(phylums_river$nt)[i])
+  print(summary(multipatt(classes_river$nt[[i]][,start_col:ncol(classes_river$nt[[i]])],
+                          classes_river$nt[[i]]$event_no, func = "r.g", control = how(nperm = 999))))
+}
+# same case where there is a lot for Salmon but not so much for South Fork Eel or Russian River
+
+## (i) TM
+for(i in 1:length(classes_river$tm)) {
+  print(names(classes_river$tm)[i])
+  print(summary(multipatt(classes_river$tm[[i]][,start_col:ncol(classes_river$tm[[i]])],
+                          classes_river$tm[[i]]$event_no, func = "r.g", control = how(nperm = 999))))
+}
+# SAL: none, SFE-M: Holophagae, Desulfuromonadia, Planctomycetes *
+
+## (i) TAC
+for(i in c(1,3)) {
+  print(names(classes_river$tac)[i])
+  print(summary(multipatt(classes_river$tac[[i]][,start_col:ncol(classes_river$tac[[i]])],
+                          classes_river$tac[[i]]$event_no, func = "r.g", control = how(nperm = 999))))
+}
+# RUS: none
+# SFE-M: Polyangia *, Kiritimatiellae, Vicinamibacteria, Fusobacteria, Deinococcota *

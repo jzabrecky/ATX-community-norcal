@@ -1,8 +1,9 @@
-#### Log-transforming anatoxins and making categories for analyses
+#### Making anatoxin categories for analyses
 ### Jordan Zabrecky
-## last edited: 03.12.2026
+## last edited: 04.20.2026
 
-# This script standardizes anatoxin concentrations to use in Q3 analyses
+# This script makes anatoxin concentrations groupings (e.g., high versus low) 
+# to use in Q3 analyses
 
 #### (1) Loading libraries & data ####
 
@@ -13,86 +14,52 @@ lapply(c("tidyverse"), require, character.only = T)
 atx <- read.csv("data/field_and_lab/environmental_covariates_and_toxins.csv") %>% 
   # will analyze congeners all together standardized by OM, 
   # so removing individual congeners and standardization by chl-a
-  select(field_date, site_reach, site, TM_ATX_all_ug_orgmat_g, TAC_ATX_all_ug_orgmat_g)
+  select(field_date, site_reach, site, TM_ATX_all_ug_orgmat_g, TAC_ATX_all_ug_orgmat_g) %>% 
+  filter(year(ymd(field_date)) == 2022)
 
-#### (2) Log-transforming and deciding ATX categories ####
+#### (2) Exploring ATX data ####
 
-## (a) looking at non-logged data
+# ATX in long format
+atx_long <- atx %>% 
+  pivot_longer(c("TM_ATX_all_ug_orgmat_g", "TAC_ATX_all_ug_orgmat_g"), values_to = "ATX_all_ug_org_mat",
+                    names_to = "taxa_ATX")
 
-# see medians, etc. for each
-summary(atx$TM_ATX_all_ug_orgmat_g)
-summary(atx$TAC_ATX_all_ug_orgmat_g)
-
-# maybe should just use a cut-off of greater than >10 ug?
-ggplot(data = atx, aes(y = TM_ATX_all_ug_orgmat_g)) +
+# see distribution of all
+ggplot(data = atx_long %>% na.omit(), aes(y = ATX_all_ug_org_mat)) +
   geom_boxplot() +
-  scale_y_continuous(transform = "pseudo_log")
-ggplot(data = atx, aes(y = TAC_ATX_all_ug_orgmat_g)) +
+  scale_y_continuous(trans="pseudo_log")
+
+# see distribution of all (with zeros removed)
+ggplot(data = atx_long %>% na.omit() %>% filter(ATX_all_ug_org_mat > 0), aes(y = ATX_all_ug_org_mat)) +
   geom_boxplot() +
-  scale_y_continuous(transform = "pseudo_log")
+  scale_y_continuous(trans="pseudo_log")
 
-## (b) log-transform values
+# get summary (with zeros removed)
+summary(atx_long %>% na.omit() %>% filter(ATX_all_ug_org_mat > 0))
+# makes sense to do <50% quantile, =< 1.98
+# 50-75% quantile =< 5.5 and > 1.98
+# 75-100% quantile > 5.5
 
-# need to replace zeros with a value 
-# lowest non-zero value is 0.03, how about 0.02 as zero replacement?
-log(0.03) # -3.506558
-log(0.02) # -3.912
+#### (3) Adding ATX categories to data
 
-# log values (replace with 0.02 when 0)
-atx <- atx %>% 
-  mutate(log_TM_ATX_all_ug_orgmat_g = case_when(TM_ATX_all_ug_orgmat_g == 0 ~ log(0.02),
-                                                TRUE ~ log(TM_ATX_all_ug_orgmat_g)),
-         log_TAC_ATX_all_ug_orgmat_g = case_when(TAC_ATX_all_ug_orgmat_g == 0 ~ log(0.02),
-                                                 TRUE ~ log(TAC_ATX_all_ug_orgmat_g)))
-
-# see medians, etc. for each for log values
-summary(atx$log_TM_ATX_all_ug_orgmat_g)
-summary(atx$log_TAC_ATX_all_ug_orgmat_g)
-
-# maybe should just use a cut-off of greater than >10 ug?
-ggplot(data = atx, aes(y = log_TM_ATX_all_ug_orgmat_g)) +
-  geom_boxplot()
-ggplot(data = atx, aes(y = log_TAC_ATX_all_ug_orgmat_g)) +
-  geom_boxplot()
-
-# need to make a column for NT samples to compare to toxin concentrations
-# (in case we have both taxa or only one taxa) will take the average of two or the one value
-atx <- atx %>% 
-  mutate(mean_ATX_all_ug_orgmat_g = case_when(is.na(TM_ATX_all_ug_orgmat_g) & 
-                                                is.na(TAC_ATX_all_ug_orgmat_g) ~ NA,
-                                              is.na(TM_ATX_all_ug_orgmat_g) ~ TAC_ATX_all_ug_orgmat_g,
-                                              is.na(TAC_ATX_all_ug_orgmat_g) ~ TM_ATX_all_ug_orgmat_g,
-                                              TRUE ~ (TAC_ATX_all_ug_orgmat_g + TM_ATX_all_ug_orgmat_g) / 2)) %>% 
-  # lastly, log that value as above
-  mutate(log_NT_ATX_all_ug_orgmat_g = case_when(mean_ATX_all_ug_orgmat_g == 0 ~ log(0.02),
-                                                TRUE ~ log(mean_ATX_all_ug_orgmat_g)))
+# save median and 3rd quantile
+med <- median((atx_long %>% na.omit() %>% filter(ATX_all_ug_org_mat > 0))$ATX_all_ug_org_mat)
+third_q <- quantile((atx_long %>% na.omit() %>% filter(ATX_all_ug_org_mat > 0))$ATX_all_ug_org_mat)[4]
 
 # add in categorical grouping
-atx <- atx %>% 
-  mutate(TM_atx_category = case_when(TM_ATX_all_ug_orgmat_g >= 10 ~ "high",
-                                     TM_ATX_all_ug_orgmat_g > 0 ~ "low",
-                                     TM_ATX_all_ug_orgmat_g == 0 ~ "none",
-                                     TRUE ~ NA),
-         TAC_atx_category = case_when(TAC_ATX_all_ug_orgmat_g >= 10 ~ "high",
-                                      TAC_ATX_all_ug_orgmat_g > 0 ~ "low",
-                                      TAC_ATX_all_ug_orgmat_g == 0 ~ "none",
-                                      TRUE ~ NA),
-         NT_atx_category = case_when(mean_ATX_all_ug_orgmat_g >= 10 ~ "high",
-                                     mean_ATX_all_ug_orgmat_g > 0 ~ "low",
-                                     mean_ATX_all_ug_orgmat_g == 0 ~ "none",
-                                     TRUE ~ NA),
-         TM_atx_detected = case_when(TM_atx_category == "none" ~ "none",
-                                     is.na(TM_atx_category) ~ NA,
-                                     TRUE ~ "detected"),
-         TAC_atx_detected = case_when(TAC_atx_category == "none" ~ "none",
-                                      is.na(TAC_atx_category) ~ NA,
-                                      TRUE ~ "detected"),
-         NT_atx_detected = case_when(NT_atx_category == "none" ~ "none",
-                                     is.na(NT_atx_category) ~ NA,
-                                     TRUE ~ "detected"))
+atx_long <- atx_long %>% 
+  mutate(atx_detected = case_when(ATX_all_ug_org_mat > 0 ~ "y",
+                                  TRUE ~ "n"),
+         atx_group = case_when(ATX_all_ug_org_mat <= med & ATX_all_ug_org_mat > 0 ~ "low",
+                               ATX_all_ug_org_mat <= third_q & ATX_all_ug_org_mat > med ~ "medium",
+                               ATX_all_ug_org_mat > third_q ~ "high",
+                               TRUE ~ "none")) %>% 
+  mutate(sample_type = case_when(taxa_ATX == "TM_ATX_all_ug_orgmat_g" ~ "TM",
+                                 taxa_ATX == "TAC_ATX_all_ug_orgmat_g"  ~ "TAC")) %>% 
+  select(field_date, site, site_reach, sample_type, ATX_all_ug_org_mat, atx_detected, atx_group)
 
 #### (3) Saving CSV ####
 
 # save csv
-write.csv(atx, "./data/field_and_lab/atx_w_categorical_groupings.csv", 
+write.csv(atx_long, "./data/field_and_lab/atx_w_categorical_groupings.csv", 
           row.names = FALSE)
