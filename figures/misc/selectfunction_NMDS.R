@@ -83,3 +83,12 @@ runPERMANOVA(tac_ko, 6, group = tac_ko$`site`) # not significantly different p =
 runPERMANOVA(tac_grouping, 6, group = tac_grouping$`site`) # p = 0.059
 runPERMANOVA(nt_ko, 6, group = nt_ko$`site`) # not significantly different p = 0.004
 runPERMANOVA(nt_grouping, 6, group = nt_grouping$`site`) # p = 0.006
+anova(betadisper(vegdist(nt_ko[,6:ncol(nt_ko)], method = "bray"), 
+                 nt_ko$site)) # not significant
+anova(betadisper(vegdist(nt_grouping[,6:ncol(nt_grouping)], method = "bray"), 
+                 nt_grouping$site)) # not significant
+
+anova(betadisper(vegdist(tac_ko[,6:ncol(tac_ko)], method = "bray"), 
+                 tac_ko$site)) # not significant
+anova(betadisper(vegdist(tac_grouping[,6:ncol(tac_grouping)], method = "bray"), 
+                 tac_grouping$site)) # not significant

@@ -1,6 +1,6 @@
 #### Comparing molecular 16s data among rivers
 ### Jordan Zabrecky
-## last edited: 04.04.2026
+## last edited: 04.21.2026
 
 # This code compares normalized 16s relative data from NT, TM, and TAC samples
 # across rivers to answer Q1. First data is transformed (sqrt).
@@ -108,7 +108,6 @@ for(i in 1:length(data_long)) {
   data_long_broader[[i]] <- left_join(data_long_broader[[i]], cyano_order[[i]], by = "order")
   data_long_broader[[i]] <- left_join(data_long_broader[[i]], cyano_genus[[i]], by = "genus")
 }
-
 
 #### (2) Functions for Analyses ####
 

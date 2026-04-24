@@ -74,6 +74,7 @@ makeNMDSplot(tm_NMDS_list, FALSE, FALSE,
 tm_NMDS_list <- getNMDSdata(tm_grouping, start_col = 8, ASV = TRUE)
 makeNMDSplot(tm_NMDS_list, FALSE, FALSE, 
              color = "atx_group", shape = "site")
+runPERMANOVA(tm_grouping, start_col = 8, group = tm_grouping$atx_group)
 
 # south fork eel only
 tm_NMDS_list <- getNMDSdata(tm_ko %>% filter(site == "SFE-M"), start_col = 8, ASV = TRUE)
@@ -83,7 +84,7 @@ makeNMDSplot(tm_NMDS_list, FALSE, FALSE,
 tm_NMDS_list <- getNMDSdata(tm_grouping %>% filter(site == "SFE-M"), start_col = 8, ASV = TRUE)
 makeNMDSplot(tm_NMDS_list, FALSE, FALSE, 
              color = "atx_group", shape = "site")
-
+runPERMANOVA(tm_grouping %>% filter(site == "SFE-M"), start_col = 8, group = (tm_grouping %>% filter(site == "SFE-M"))$atx_group)
 
 # make NMDS plot for TAC all, KO
 tac_NMDS_list <- getNMDSdata(tac_ko, start_col = 8, ASV = TRUE)
@@ -102,6 +103,8 @@ makeNMDSplot(tac_NMDS_list, FALSE, FALSE,
 tac_NMDS_list <- getNMDSdata(tac_grouping %>% filter(site == "RUS"), start_col = 8, ASV = TRUE)
 makeNMDSplot(tac_NMDS_list, FALSE, FALSE, 
              color = "atx_group", shape = "atx_group")
+runPERMANOVA(tac_grouping %>% filter(site == "RUS"), start_col = 8, group = (tac_grouping %>% filter(site == "RUS"))$atx_group)
+
 
 # south fork eel river only
 tac_NMDS_list <- getNMDSdata(tac_ko %>% filter(site == "SFE-M"), start_col = 8, ASV = TRUE)
@@ -111,3 +114,4 @@ makeNMDSplot(tac_NMDS_list, FALSE, FALSE,
 tac_NMDS_list <- getNMDSdata(tac_grouping %>% filter(site == "SFE-M"), start_col = 8, ASV = TRUE)
 makeNMDSplot(tac_NMDS_list, FALSE, FALSE, 
              color = "atx_group", shape = "atx_group")
+runPERMANOVA(tac_grouping %>% filter(site == "SFE-M"), start_col = 8, group = (tac_grouping %>% filter(site == "SFE-M"))$atx_group)

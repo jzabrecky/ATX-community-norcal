@@ -35,11 +35,13 @@ tm_NMDS_list <- getNMDSdata(tm_ko, start_col = 6, ASV = TRUE)
 makeNMDSplot(tm_NMDS_list, FALSE, FALSE, 
              color = "site", shape = "month")
 # functional plot
+runPERMANOVA(tm_ko, start_col = 6, group = tm_ko$site)
 
 
 tac_NMDS_list <- getNMDSdata(tac_ko, start_col = 6, ASV = TRUE)
 makeNMDSplot(tac_NMDS_list, FALSE, FALSE, 
              color = "site", shape = "month")
+runPERMANOVA(tac_ko, start_col = 6, group = tac_ko$site)
 
 nt_NMDS_list <- getNMDSdata(nt_ko, start_col = 6, ASV = TRUE)
 makeNMDSplot(nt_NMDS_list, FALSE, FALSE, 
@@ -52,3 +54,6 @@ nt_nooutlier <- nt_ko %>% filter(!(field_date == as.Date("2022-08-17") & site_re
 nt_NMDS_list_noout <- getNMDSdata(nt_nooutlier, start_col = 6, ASV = TRUE)
 makeNMDSplot(nt_NMDS_list_noout, FALSE, FALSE, 
              color = "site", shape = "month")
+runPERMANOVA(nt_nooutlier, start_col = 6, group = nt_nooutlier$site)
+anova(betadisper(vegdist(nt_nooutlier[,6:ncol(nt_nooutlier)], method = "bray"), 
+                 nt_nooutlier$site))

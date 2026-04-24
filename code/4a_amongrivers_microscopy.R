@@ -1,6 +1,6 @@
 #### Comparing morphologically-identified assemblages among rivers
 ### Jordan Zabrecky
-## last edited: 04.16.2026
+## last edited: 04.21.2026
 
 # This code compares microscopy data from NT, TM, and TAC samples
 # across rivers to answer Q1. First data is transformed (sqrt).
@@ -109,7 +109,7 @@ lapply(summaries_broader, function(x) head(x))
 # NT: diatoms & Microcoleus for Salmon; Spirogyra & Cladorphora for South Fork Eel;
 # and Spirogyra and diatoms other than Epithemia for Russian
 # TM: diatoms other than Epithemia and green algae for Salmon; Epithemia,
-# green algae and other ATX producers for South Fork Eel
+# green algae, diatoms, abd other ATX producers (Geitlerinema/Leptolyngbya) for South Fork Eel
 # TAC: diatoms other than Epithemia dominate for all three, then Epithemia
 
 # get summaries for each taxa
@@ -132,20 +132,50 @@ lapply(NMDS_plots, print)
 
 #### (6) Q: Are communities from each river significantly different? (PERMANOVA) ####
 
+# empty table for permanova outputs
+p_table <- data.frame(test = NA,
+                      sample_type = NA,
+                      p_value = NA,
+                      F_stat = NA)
+
 # run PERMANOVAs
 set.seed(1)
 permanovas <- lapply(data, function(x) runPERMANOVA(data = x, 
                                                     start_col = start_col, 
                                                     group = x$`site`))
-lapply(permanovas, print)
+
+# print and add test results to table
+for(i in 1:length(permanovas)) {
+  
+  # print test results to console
+  print(names(permanovas[i]))
+  print(permanovas[[i]])
+  
+  # save stats to table
+  p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
+                                       sample_type = names(permanovas[i]),
+                                       p_value = permanovas[[i]]$`Pr(>F)`[1],
+                                       F_stat = permanovas[[i]]$`F`[1]))
+}
 # RESULTS: significant difference for TM and NT across rivers, but not TAC
 
 # check dispersion to see if that influences results
 for(i in 1:length(data)) {
+  
+  # run ANOVA
+  set.seed(1) 
+  anova = anova(betadisper(vegdist(data[[i]][,start_col:ncol(data[[i]])], method = "bray"), 
+                           data[[i]]$site))
+  
+  # print results
   print(names(data)[i])
-  set.seed(1)
-  print(anova(betadisper(vegdist(data[[i]][,start_col:ncol(data[[i]])], method = "bray"), 
-                         data[[i]]$site)))
+  print(anova)
+  
+  # add results table
+  p_table <- rbind(p_table, data.frame(test = "PERMDISP",
+                                       sample_type = names(data)[i],
+                                       p_value = anova$`Pr(>F)`[1],
+                                       F_stat = anova$`F value`[1]))
 }
 # TAC not significantly different, but TM and NT are
 # however, based on https://www.youtube.com/watch?v=oLf0EpMJ4yA
@@ -154,27 +184,10 @@ for(i in 1:length(data)) {
 # which we do see in our NMDS plots (With the exception maybe of the NT plot, but the centroids
 # for those groups are different)
 
-#### (7) Q: What explains these differences? Loadings & Species Indicator Analyses ####
+# save tests
+write.csv(p_table[-1,], "./data/PERMANOVA_results/Q1_microscopy.csv", row.names = FALSE)
 
-## (a) NMDS loadings
-# note these are to be interpretted as supplemental, not explanatory
-# get p-values from envfit in vegan ran earlier
-envfit_pvalues <- lapply(NMDS_list, function(x) {
-  newdata = as.data.frame(x$vs$vectors$pvals)
-  newdata = rownames_to_column(newdata, var = "taxa")
-  colnames(newdata) = c("taxa", "pval")
-  newdata = newdata %>% arrange(pval) })
-
-# view results
-lapply(envfit_pvalues, function(x) head(x, 15))
-# RESULT:
-# NT: Cladophora, Epithemia, Homoethrix, Microcoleus, Mougeotia, Diatoms, Nostoc, 
-# Oedogonium, Rhopalodia, Spirogyra, and Stigeoclonium are most influential
-# TM: Diatoms, Epithemia, Nostoc, Green Algae, Coccoids, Geilerinema are most influential
-# TAC: Epithemia, Microcoleus, Nostoc, Oscillatoria, Phormidium, Diatoms, Geitlerinema
-# are most influential
-
-## (b) Species Indicator Analyses
+#### (7) Q: What explains these differences? Species Indicator Analyses ####
 
 # note: if issues, another package may be masking the function unique() ???
 # if so, restart R and run this script only
@@ -185,58 +198,51 @@ lapply(envfit_pvalues, function(x) head(x, 15))
 set.seed(1)
 nt_test <- multipatt(data$nt[,start_col:ncol(data$nt)], data$nt$site, func = "r.g", control = how(nperm = 999))
 summary(nt_test)
-#write.csv(nt_test$sign, "./data/ISA_results/Q1_nt_microscopy.csv")
-# SAL: homoethrix, leptolyngbya, coccoids, unknown green algae
+write.csv(nt_test$sign, "./data/ISA_results/Q1_nt_microscopy.csv")
+# SAL: homoethrix, leptolyngbya, coccoids, unknown green algae, ulothrix
 # SFE: cladophora, stauridium, nostoc, coelastrum, unknown, tetraedron, cosmarium, rivularia,
-# ankistrodesmus, lacunastrum
-# RUS: mougeotia, phormidium
+# ankistrodesmus, lacunastrum, aphanothece
+# RUS: mougeotia
 # RUS + SAL: diatoms, stigeoclonium
 # RUS + SFE: spirogyra, epithemia, anabaena, scenedesmus, odeogonium, rhopalodia
 # SAL + SFE: microcoleus
 
 # (ii) TM
-set.seed(1)
+set.seed(2)
 tm_test <- multipatt(data$tm[,start_col:ncol(data$tm)], data$tm$site, func = "r.g", control = how(nperm = 999))
 summary(tm_test)
-#write.csv(tm_test$sign, "./data/ISA_results/Q1_tm_microscopy.csv")
+write.csv(tm_test$sign, "./data/ISA_results/Q1_tm_microscopy.csv")
 # SAL: diatoms
-# SFE: anabaena, nostoc
+# SFE: anabaena, epithemia, nostoc
 
 # (iii) TAC
-set.seed(1)
+set.seed(3)
 tac_test <- multipatt(data$tac[,start_col:ncol(data$tac)], data$tac$site, func = "r.g", control = how(nperm = 999))
 summary(tac_test)
-#write.csv(tac_test$sign, "./data/ISA_results/Q1_tac_microscopy.csv")
-# RUS: phormidium, oscillatoria
-# SFE: nodularia, microcoleus
+write.csv(tac_test$sign, "./data/ISA_results/Q1_tac_microscopy.csv")
+# nothing!
 
 #### (8) Misc. Q's ####
 
-## How many more taxa groups were identified in South Fork Eel samples than Salmon River samples?
+## (1) How many more taxa groups were identified in South Fork Eel samples than Salmon River samples?
 lapply(data, function(x) specnumber(x[,start_col:ncol(x)], groups = x$`site`))
-# NT: RUS 30, SAL 32, SFE-M 37
-# TM: SAL 7, SFE-M 12
-# TAC: RUS 11, SAL 7, SFE-M 14
+# NT: RUS 28, SAL 30, SFE-M 36
+# TM: SAL 6, SFE-M 11
+# TAC: RUS 10, SAL 6, SFE-M 13
 
-## Is Leptolyngbya/Geitlerinema present in all TM samples?
-data$tm$leptolyngbya_geitlerinema
-count(data$tm$leptolyngbya_geitlerinema > 0)
-# present in 17 out of 23
+## (2) For target taxa, what is the range of the % the target taxa is present?
+# (plus green algae abundance for A/C samples)
+tm_w_target <- read.csv("./data/morphological/tm_algalonly.csv")
+min(tm_w_target$microcoleus) # 30.4%
+max(tm_w_target$microcoleus) # 94.8%
 
-## What about the presence of Geitlerinema in TAC samples?
-data$tac$leptolyngbya_geitlerinema
-count(data$tac$leptolyngbya_geitlerinema > 0)
-# all of them which is crazy >1%!
+tac_w_target <- read.csv("./data/morphological/tac_algalonly.csv")
+min(tac_w_target$anabaena_and_cylindrospermum) # 13.2%
+max(tac_w_target$anabaena_and_cylindrospermum) # 75.7%
+min(tac_w_target$green_algae) # 2.7%
+max(tac_w_target$green_algae) # 70.7%
 
-## How about Microcoleus in TAC samples? 
-## (particularly interested in Russian River where we did not obsere M. macroscopically)
-data$tac$microcoleus
-count(data$tac$microcoleus > 0 & data$tac$site == "RUS")
-# true for 22/28
-# 10 of those are russian river
-count(data$tac$site == "RUS") # of 15 samples
-
-## Finally, let's group a little farther for NT samples
+## (3) If we group broader for NT samples, what is most abundant for each river? 
 # five groups: diatom, spirogyra, cladophora, diazotrophic cyanos, non-diazo filamentous cyanos,
 # other green algae, coccoidal cyanobacteria
 # join diatoms, spirogyra, cladophora, diazotrophic cyanobacteria, filamentous cyanobacteria (non-diaztotrophic),
@@ -250,7 +256,7 @@ even_broader_NT <- data_longer$nt %>%
                                   broader == "Anabaena or Cylindrospermum" ~ "Diazotrophic Cyanobacteria",
                                   broader == "Other N-fixing Cyanobacteria" ~ "Diazotrophic Cyanobacteria",
                                   broader == "Unicellular Cyanobacteria" ~ "Coccoidal Cyanobacteria",
-                                  broader == "Microcoleus" ~ "Non-diaztrophic Cyanobacteria",
+                                  broader == "Microcoleus" ~ "Other Filamentous Cyanobacteria",
                                   broader == "Other Green Algae" ~ "Other Green Algae",
                                  TRUE ~ broader)) %>% 
   # merge groups for total in each broader group (i.e., reduce rows)
@@ -261,40 +267,3 @@ even_broader_NT <- data_longer$nt %>%
   dplyr::group_by(site, even_broader) %>% 
   dplyr::summarize(mean = mean(total))
 view(even_broader_NT)
-
-### MAY MOVE BELOW TO Q3
-
-## Let's look at only other anatoxin associated taxa in all samples
-# using list from Christensen & Khan et al. (2019): Anabaena, Aphanizomenon,
-# Aphanothece, Arthospira, Cylindrospermopsis, Cylindrospermum, Gomphosphaeria,
-# Limnothrix, Lyngbya, Microcystis, Nostoc, Oscillatoria, Phormidium/Microcoleus,
-# Planktothrix, Planktolyngbia, Synechocystis, Psuedoanabaena,
-# Raphidopsis, Tychonema
-# noting that it doesn't have Geilerinema, so we should also include list
-# of ATX producers from Wood et al. (2020) which adds: Fisherella, 
-# Geitlerinema, Leptolyngbya, Microseira (formerly Lyngbya), planktothrix
-lapply(data, function(x) colnames(x[,5:ncol(x)]))
-atx_taxa_only <- lapply(data_longer, function(x) {
-  
-  # make dataframe with only taxa in list above 
-  # (only writing what taxa we recorded from that list)
-  df = x %>% 
-    filter(taxa %in% c("aphanothece", "anabaena_and_cylindrospermum",
-                       "other_coccoids", "geitlerinema", "leptolyngbya", 
-                       "lyngbya", "other_coccoids", "nostoc",
-                       "oscillatoria", "phormidium_unknown", "microcoleus")) %>% 
-    mutate(sample_name = paste("(", month(field_date), "-", day(field_date), ") ", site_reach, sep = ""))
-  
-  # make bar plot (show each sample individually)
-  plot <- ggplot(data = df, aes(x = sample_name, y = percent / 100, fill = taxa)) +
-    geom_bar(stat = "identity") +
-    scale_x_discrete(guide = guide_axis(angle = 90)) +
-    labs(x = NULL, y = "Relative Abundance") +
-    facet_wrap(~site, scales = "free_x")
-  print(plot) # view plot
-    
-  # return a list including dataframe, then plot
-  return(list(df, plot))
-})
-
-# NOTE: may shove this to a later script

@@ -43,28 +43,36 @@ source("./code/supplemental_code/S4b_community_analyses_func.R")
 tm_NMDS_list <- getNMDSdata(tm_ko, start_col = 8, ASV = TRUE)
 makeNMDSplot(tm_NMDS_list, FALSE, FALSE, 
              color = "atx_group", shape = "site")
+runPERMANOVA(tm_ko, start_col = 8, group = tm_ko$atx_group)
 # functional plot
 
 # South Fork Eel Only
 tm_NMDS_list <- getNMDSdata(tm_ko %>% filter(site == "SFE-M"), start_col = 8, ASV = TRUE)
 makeNMDSplot(tm_NMDS_list, FALSE, FALSE, 
              color = "atx_group", shape = "atx_group")
+runPERMANOVA(tm_ko %>% filter(site == "SFE-M"), start_col = 8, group = (tm_ko %>% filter(site == "SFE-M"))$atx_group)
+runPERMANOVA(tm_ko %>% filter(site == "SFE-M"), start_col = 8, group = (tm_ko %>% filter(site == "SFE-M"))$atx_detected)
 
 # make NMDS plot for TAC
 tac_NMDS_list <- getNMDSdata(tac_ko, start_col = 8, ASV = TRUE)
 makeNMDSplot(tac_NMDS_list, FALSE, FALSE, 
              color = "atx_group", shape = "site")
+runPERMANOVA(tac_ko, start_col = 8, group = tac_ko$atx_group)
 # functional plot
 
 # South Fork Eel Only
 tac_NMDS_list <- getNMDSdata(tac_ko %>% filter(site == "SFE-M"), start_col = 8, ASV = TRUE)
 makeNMDSplot(tac_NMDS_list, FALSE, FALSE, 
              color = "atx_group", shape = "atx_group")
+runPERMANOVA(tac_ko %>% filter(site == "SFE-M"), start_col = 8, group = (tac_ko %>% filter(site == "SFE-M"))$atx_group)
+runPERMANOVA(tac_ko %>% filter(site == "SFE-M"), start_col = 8, group = (tac_ko %>% filter(site == "SFE-M"))$atx_detected)
 
 # Russian River only
 tac_NMDS_list <- getNMDSdata(tac_ko %>% filter(site == "RUS"), start_col = 8, ASV = TRUE)
 makeNMDSplot(tac_NMDS_list, FALSE, FALSE, 
              color = "atx_group", shape = "atx_group")
+runPERMANOVA(tac_ko %>% filter(site == "RUS"), start_col = 8, group = (tac_ko %>% filter(site == "RUS"))$atx_group)
+runPERMANOVA(tac_ko %>% filter(site == "RUS"), start_col = 8, group = (tac_ko %>% filter(site == "RUS"))$atx_detected)
 
 
 #### Species indicator test ####
