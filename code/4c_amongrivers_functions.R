@@ -7,6 +7,7 @@
 # Data is analyzed using Kruskal-Wallis Tests and visualizations
 
 # TBD on keeping ISA results
+# also look at NMDS data versions
 
 #### (1) Loading libraries & data ####
 

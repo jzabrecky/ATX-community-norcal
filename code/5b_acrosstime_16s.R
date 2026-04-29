@@ -1,6 +1,6 @@
 #### Comparing molecular 16s data across time
 ### Jordan Zabrecky
-## last edited: 04..2026
+## last edited: 04.24.2026
 
 # This code compares 16s rRNA (bacterial assemblage) data from NT, TM, and TAC samples
 # across rivers to answer Q2

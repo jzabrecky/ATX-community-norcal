@@ -25,7 +25,6 @@ palette <- c("#FBF6B0", "#C5BD53", "#777122", "#C2DFFF", "#5E9DE0", "#205288",
 end_color <- "lightgray"
 
 
-
 #### (2) Creating Individual Plots ####
 
 # creating string vector to iterate through sample types
@@ -41,7 +40,14 @@ for(i in sample_types) {
 }
 lapply(fig_a, print)
 
+## (b) classes bar plot
 
+fig_b <- list()
+for(i in sample_types) {
+  fig_b[[i]] = barplot_class_plots[[i]]
+}
+lapply(fig_b, print)
+# need to reduce TAC, merge NA with other, basically more customized groups
 
 # target taxa
 t_figure <- plot_grid(fig_a$nt, fig_a$tm, fig_a$tac, nrow = 1)

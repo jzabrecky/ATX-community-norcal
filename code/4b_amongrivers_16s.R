@@ -1,32 +1,37 @@
 #### Comparing molecular 16s data among rivers
 ### Jordan Zabrecky
-## last edited: 04.21.2026
+## last edited: 04.23.2026
 
 # This code compares normalized 16s relative data from NT, TM, and TAC samples
 # across rivers to answer Q1. First data is transformed (sqrt).
 # Data is analyzed using NMDS and PERMANOVA. We also averaged across all samples
 # from a river and created bar plots to visually compare average samples at each river
 
-# TBD on keeping ISA results
-
 #### (1) Loading libraries & data ####
+
+## (a) load in data and libraries)
 
 # load libraries
 lapply(c("tidyverse", "plyr", "vegan", "cowplot", "indicspecies"), require, character.only = T)
 
-# we will use the NT data, and TM excluding Microcoleus, and TAC excluding Anabaena and Green Algae
+# we will use the NT data, and TM excluding Microcoleus, and TAC excluding Anabaena
 nt <- read.csv("./data/molecular/16s_nochimera_rarefied_95_copynum_normalized_FINAL.csv") %>% 
   filter(sample_type == "NT")
 tm <- read.csv("./data/molecular/16s_nochimera_rarefied_95_copynum_normalized_TM_nomicro.csv")
 tac <- read.csv("./data/molecular/16s_nochimera_rarefied_95_copynum_normalized_TAC_noanacyl.csv")
 
+## (b) making a long format dataframe for bar graphs
+
 # add into list
 data_long <- list(nt, tm, tac)
 names(data_long) <- c("nt", "tm", "tac")
 
-# change format of field_data
+# change format of field_data & add column for both phylum - class
 data_long <- lapply(data_long, function(x) x <- x %>% 
-                      mutate(field_date = mdy(field_date)))
+                      mutate(field_date = mdy(field_date),
+                             phylum_class = paste(phylum, " - ", class)))
+
+## (c) making wider dataframe with ASVs & Hellinger-transforming
 
 # pivot wider using ASVs for community matrix
 data <- lapply(data_long, function(x) {
@@ -56,6 +61,8 @@ for(i in 1:length(data)) {
 #write.csv(data$tac, "./data/molecular/transformed/16s_nochimera_rarefied_95_TAC_noanacyl_sqrttransformed.csv",
 #          row.names = FALSE)
 
+## (d) adding broader categories for bar plots to long data format
+
 # lastly, add in broader categories to data_long so we don't have several with barplots
 # could do this quickly with forcats package, but since we are lumping, may make sense
 # to have more customized categories
@@ -70,14 +77,14 @@ phylums <- lapply(data_long, function(x) x %>%
                                                   TRUE ~ phylum)) %>% 
                     select(phylum, phylum_cat))
 classes <- lapply(data_long, function(x) x %>%
-                    # calculate average abundance for each class
-                    group_by(class) %>% 
+                    # calculate average abundance for each (phylum - ) class
+                    group_by(phylum_class) %>% 
                     dplyr::summarize(mean = mean(relative_abundance)) %>% 
                     # put into "Other" category if NA or % is less than #%
-                    mutate(classes_cat = case_when(is.na(class) ~ "Other",
+                    mutate(classes_cat = case_when(is.na(phylum_class) ~ "Other",
                                                   mean < 0.05  ~ "Other",
-                                                  TRUE ~ class)) %>% 
-                    select(class, classes_cat))
+                                                  TRUE ~ phylum_class)) %>% 
+                    select(phylum_class, classes_cat))
 cyano_order <- lapply(data_long, function(x) x %>%
                         # filter for cyanobacteria phylum
                         filter(phylum == "Cyanobacteria") %>% 
@@ -104,10 +111,23 @@ cyano_genus <- lapply(data_long, function(x) x %>%
 data_long_broader <- data_long
 for(i in 1:length(data_long)) {
   data_long_broader[[i]] <- left_join(data_long_broader[[i]], phylums[[i]], by = "phylum")
-  data_long_broader[[i]] <- left_join(data_long_broader[[i]], classes[[i]], by = "class")
+  data_long_broader[[i]] <- left_join(data_long_broader[[i]], classes[[i]], by = "phylum_class")
   data_long_broader[[i]] <- left_join(data_long_broader[[i]], cyano_order[[i]], by = "order")
   data_long_broader[[i]] <- left_join(data_long_broader[[i]], cyano_genus[[i]], by = "genus")
 }
+
+## (e) lastly, make a wide community matrix based on classes
+# this is to see if differences are also significant with a broader category rather than just ASVs
+data_wide_class <- lapply(data_long, function(x) {
+  y <- x %>% 
+    select(site, site_reach, field_date, sample_type, triplicate, phylum_class, qiime2_relative_abundance) %>%
+    # sum for different ASVs in same class
+    dplyr::group_by(site, site_reach, field_date, sample_type, triplicate, phylum_class) %>% 
+    dplyr::summarize(qiime2_relative_abundance = sum(qiime2_relative_abundance)) %>% 
+    ungroup() %>% 
+    # now, can pivot_wider
+    pivot_wider(names_from = phylum_class, values_from = qiime2_relative_abundance, values_fill = 0)
+})
 
 #### (2) Functions for Analyses ####
 
@@ -179,7 +199,7 @@ means_medians <- lapply(diversity, function(x) x %>%
                           dplyr::group_by(site) %>% 
                           dplyr::summarize(mean = mean(shannon_diversity),
                                            median = median(shannon_diversity)))
-view(means_medians$nt)
+view(means_medians$tac)
 
 # save diversity calculations (RUN ONCE)
 #lapply(names(diversity), function(x) write.csv(diversity[[x]], 
@@ -187,6 +207,8 @@ view(means_medians$nt)
 #                                               row.names = FALSE))
 
 #### (5) NMDS Plots ####
+
+## (a) ASV-based (main focus)
 
 # get NMDS for each dataframe (sqrt-transformed!)
 set.seed(1) # set seed for reproducibility
@@ -199,46 +221,72 @@ NMDS_plots <- lapply(NMDS_list, function(x) makeNMDSplot(x, FALSE, FALSE,
 lapply(NMDS_plots, print)
 # RESULT: TM and NT groups are visually distinct among rivers, but not for TAC
 
+## (b) class-based
+# get NMDS for each dataframe (sqrt-transformed!)
+set.seed(1) # set seed for reproducibility
+NMDS_list_class <- lapply(data_wide_class, function(x) getNMDSdata(x, start_col, ASV = TRUE))
+
+# making plots
+NMDS_plots_class <- lapply(NMDS_list_class, function(x) makeNMDSplot(x, FALSE, FALSE, 
+                                                         color = "site", shape = "month"))
+
+lapply(NMDS_plots_class, print)
+# RESULT: NT definitely plots closer, TM still different seeming, maybe TAC slightly further which is weird
+
 #### (6) Q: Are communities from each river significantly different? (PERMANOVA) ####
+
+# empty table for permanova outputs
+p_table <- data.frame(test = NA,
+                      subtype = NA,
+                      sample_type = NA,
+                      p_value = NA,
+                      F_stat = NA)
+
+## (a) ASV based (main analysis)
 
 # run PERMANOVAs
 set.seed(1)
 permanovas <- lapply(data, function(x) runPERMANOVA(x, start_col, group = x$`site`))
-lapply(permanovas, print)
+
+# print and add test results to table
+for(i in 1:length(permanovas)) {
+  
+  # print test results to console
+  print(names(permanovas[i]))
+  print(permanovas[[i]])
+  
+  # save stats to table
+  p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
+                                       subtype = "ASVs",
+                                       sample_type = names(permanovas[i]),
+                                       p_value = permanovas[[i]]$`Pr(>F)`[1],
+                                       F_stat = permanovas[[i]]$`F`[1]))
+}
 # RESULTS: significant difference for all but not convinced about the TAC
 # as visually they plotted on top of each other but had different dispersion
 
 # check dispersion to see if that influences results
 for(i in 1:length(data)) {
   set.seed(1)
+  anova = anova(betadisper(vegdist(data[[i]][,start_col:ncol(data[[i]])], method = "bray"), 
+                           data[[i]]$site))
+  
+  
+  # print results
   print(names(data)[i])
-  print(anova(betadisper(vegdist(data[[i]][,start_col:ncol(data[[i]])], method = "bray"), 
-                         data[[i]]$site)))
+  print(anova)
+  
+  # add results table
+  p_table <- rbind(p_table, data.frame(test = "PERMDISP",
+                                       subtype = "ASVs",
+                                       sample_type = names(data)[i],
+                                       p_value = anova$`Pr(>F)`[1],
+                                       F_stat = anova$`F value`[1]))
 }
 # dispersion not significantly different for NT, a little for TM (*) and very for
 # TAC (***)
 
-# Since, I am not convinced about TAC being significantly different visually, 
-# let's compare centroid distance differences
-set.seed(1)
-centroid_distance <- lapply(NMDS_list, function(x) { 
-                                # calculate centroids
-                                centroids = x[[1]] %>% 
-                                  dplyr::group_by(site) %>% 
-                                  dplyr::summarize(axis1 = mean(NMDS1),
-                                                   axis2 = mean(NMDS2)) %>% 
-                                  ungroup()
-                                # calculate distances between centroids
-                                distances = dist(centroids[,2:3], method = "euclidean")
-                                return(mean(distances))}
-                    
-)
-lapply(names(centroid_distance), function(x) print(paste(x, ": ", centroid_distance[[x]], sep = "")))
-# nt: 1.46816727428784
-# tm: 1.58190801917234
-# tac: 0.519095592038606
-# TAC centroid distances are much closer on average, they are less than the distances
-# for algal assemblages for TM and NT and but much more than TAC (which was 0.108)
+# due to these results, I am not convinced TAC is necessarily different....
 
 ## what if we remove the single salmon sample?
 test <- data$tac %>% filter(site != "SAL")
@@ -249,10 +297,56 @@ print(anova(betadisper(vegdist(test[start_col:ncol(test)], method = "bray"),
 set.seed(1)
 runPERMANOVA(test, start_col, group = test$`site`) # still very significant here (***)
 
+## (b) class based (secondary analysis)
+
+# run PERMANOVAs
+set.seed(1)
+permanovas_class <- lapply(data_wide_class, function(x) runPERMANOVA(x, start_col, group = x$`site`))
+
+# print and add test results to table
+for(i in 1:length(permanovas_class)) {
+  
+  # print test results to console
+  print(names(permanovas_class[i]))
+  print(permanovas_class[[i]])
+  
+  # save stats to table
+  p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
+                                       subtype = "classes",
+                                       sample_type = names(permanovas_class[i]),
+                                       p_value = permanovas_class[[i]]$`Pr(>F)`[1],
+                                       F_stat = permanovas_class[[i]]$`F`[1]))
+}
+# RESULTS: NT and TAC different **, but not TAC
+# this confirms my suspicions
+
+# check dispersion to see if that influences results
+for(i in 1:length(data_wide_class)) {
+  set.seed(1)
+  anova_classes = anova(betadisper(vegdist(data_wide_class[[i]][,start_col:ncol(data_wide_class[[i]])], method = "bray"), 
+                           data_wide_class[[i]]$site))
+  
+  
+  # print results
+  print(names(data_wide_class)[i])
+  print(anova_classes)
+  
+  # add results table
+  p_table <- rbind(p_table, data.frame(test = "PERMDISP",
+                                       subtype = "classes",
+                                       sample_type = names(data)[i],
+                                       p_value = anova_classes$`Pr(>F)`[1],
+                                       F_stat = anova_classes$`F value`[1]))
+}
+# NT not significant, TM is *, and TAC is *
+
+# save tests
+write.csv(p_table[-1,], "./data/PERMANOVA_results/Q1_molecular.csv", row.names = FALSE)
+
 #### (7) Q: What explains these differences? Species Indicator Analyses ####
 
-# will likely not report on this because there is so much and its hard to parse
-# what is important but here it is
+# Previously looked at various groupings (orders & genuses w/in cyanobacteria, etc.)
+# but have decided phylums and phylum-classes made most sense
 
 ## (a) phylums
 
@@ -276,33 +370,40 @@ phylums <- lapply(data_long, function(x) {
       return(y)})
 
 # (i) NT
-summary(multipatt(phylums$nt[,5:ncol(phylums$nt)], phylums$nt$site, func = "r.g", control = how(nperm = 999)))
+set.seed(1)
+nt_phylum_test <- summary(multipatt(phylums$nt[,5:ncol(phylums$nt)], phylums$nt$site, func = "r.g", control = how(nperm = 999)))
 # lots of unique identified with RUS including ***: Actinobacteriota, Elusimicrobiota,
 # Desulfobacteria, Planctomycetota, Verrucomicrobiota
 # SAL: Deincoccota (***), Armatimonadota (**)
+# SFE-M: Sumerlaeota
 # RUS + SAL: Proteobacteria *
-# SAL + SFE-M: Cyanobacteria **
+# SAL + SFE-M: Cyanobacteria ***
+write.csv(nt_phylum_test$sign, "./data/ISA_results/Q1_nt_molecular_phylum.csv")
 
 # (ii) TM
-summary(multipatt(phylums$tm[,5:ncol(phylums$tm)], phylums$tm$site, func = "r.g", control = how(nperm = 999)))
+set.seed(1)
+tm_phylum_test <- summary(multipatt(phylums$tm[,5:ncol(phylums$tm)], phylums$tm$site, func = "r.g", control = how(nperm = 999)))
 # only identified for SFE-M including **: Desulfobacteria, Cyanobacteria, Verrucomicrobiota,
 # Chloroflexiota
+write.csv(tm_phylum_test$sign, "./data/ISA_results/Q1_tm_molecular_phylum.csv")
 
 # (iii) TAC
-summary(multipatt(phylums$tac[,5:ncol(phylums$tac)], phylums$tac$site, func = "r.g", control = how(nperm = 999)))
-# only identified for SAL: Fibrobacterota *, Spirochaetota * 
+set.seed(1)
+tac_phylum_test <- summary(multipatt(phylums$tac[,5:ncol(phylums$tac)], phylums$tac$site, func = "r.g", control = how(nperm = 999)))
+# only identified for SAL: Fibrobacterota *, Spirochaetota ** 
+write.csv(tac_phylum_test$sign, "./data/ISA_results/Q1_tac_molecular_phylum.csv")
 
 ## (b) classes
 
 classes <- lapply(data_long, function(x) {
   # subset columns we care about and pivot wider
   y = x %>% 
-    select(site_reach, site, field_date, sample_type, class, relative_abundance) %>% 
-    dplyr::group_by(site_reach, site, field_date, sample_type, class) %>% 
+    select(site_reach, site, field_date, sample_type, phylum_class, relative_abundance) %>% 
+    dplyr::group_by(site_reach, site, field_date, sample_type, phylum_class) %>% 
     # remove multiples of phylums due to differing ASVs
     dplyr::summarize(relative_abundance = sum(relative_abundance)) %>% 
     ungroup() %>% 
-    pivot_wider(names_from = class, values_from = relative_abundance)
+    pivot_wider(names_from = phylum_class, values_from = relative_abundance)
   # if there is a column NA, remove it
   if("NA" %in% colnames(y)) {
     y = y %>% 
@@ -315,7 +416,9 @@ classes <- lapply(data_long, function(x) {
   return(y)})
 
 # (i) NT
-summary(multipatt(classes$nt[,5:ncol(classes$nt)], classes$nt$site, func = "r.g", control = how(nperm = 999)))
+set.seed(1)
+nt_class_test <- summary(multipatt(classes$nt[,5:ncol(classes$nt)], classes$nt$site, func = "r.g", control = how(nperm = 999)))
+write.csv(nt_class_test$sign, "./data/ISA_results/Q1_molecular_nt_molecular_class.csv")
 # lots for RUS (not listing)
 # SAL: Fimbriimonadia ***, Deinococci ***
 # SFE-M: Rhodothermia *
@@ -324,137 +427,29 @@ summary(multipatt(classes$nt[,5:ncol(classes$nt)], classes$nt$site, func = "r.g"
 # SAL + SFE-M: Cyanobacteria ***, Gracilibacteria *
 
 # (ii) TM
-summary(multipatt(classes$tm[,5:ncol(classes$tm)], classes$tm$site, func = "r.g", control = how(nperm = 999)))
+set.seed(1)
+tm_class_test <- summary(multipatt(classes$tm[,5:ncol(classes$tm)], classes$tm$site, func = "r.g", control = how(nperm = 999)))
+write.csv(tm_class_test$sign, "./data/ISA_results/Q1_molecular_tm_molecular_class.csv")
 # SAL: Bacteroidia *
-# SFE-M: many but no with ***
+# SFE-M: many but no with ***-
 
 # (iii) TAC
-summary(multipatt(classes$tac[,5:ncol(classes$tac)], classes$tac$site, func = "r.g", control = how(nperm = 999)))
+set.seed(1)
+tac_class_test <- summary(multipatt(classes$tac[,5:ncol(classes$tac)], classes$tac$site, func = "r.g", control = how(nperm = 999)))
+write.csv(tac_class_test$sign, "./data/ISA_results/Q1_molecular_tac_molecular_class.csv")
 # only for SAL including Vampirivibrionia ***
- 
-## (c) cyanobacteria orders (also will likely not discuss in paper)
-
-cyano_orders <- lapply(data_long, function(x) {
-  # subset columns we care about and pivot wider
-  y = x %>% 
-    filter(phylum == "Cyanobacteria") %>% 
-    select(site_reach, site, field_date, sample_type, order, relative_abundance) %>% 
-    dplyr::group_by(site_reach, site, field_date, sample_type, order) %>% 
-    # remove multiples of phylums due to differing ASVs
-    dplyr::summarize(relative_abundance = sum(relative_abundance)) %>% 
-    pivot_wider(names_from = order, values_from = relative_abundance)
-  # if there is a column NA, remove it
-  if("NA" %in% colnames(y)) {
-    y = y %>% 
-      select(!c("NA"))
-  }
-  # replace NA (indicating that ASV was not present in sample) with 0
-  y[,5:ncol(y)][is.na(y[,5:ncol(y)])] = 0
-  # lastly, square-root transform the data
-  y[,5:ncol(y)] <- sqrt(y[,5:ncol(y)])
-  return(y)})
-
-# (i) NT
-summary(multipatt(cyano_orders$nt[,5:ncol(cyano_orders$nt)], cyano_orders$nt$site, func = "r.g", control = how(nperm = 999)))
-# RUS: Obscuribacterales **
-# SAL: all *** Gloeobacterales, Gomontiellales, Chroococcidiopsidales, Leptolynbyales
-# SFE-M: Nodosineales ***, Choococcidiopsidaceae ***, Psuedanabaenales *
-# RUS + SAL: Pleurocapsales **
-# RUS + SFE-M: Chroococcales **, Synechococcales **
-# SAL + SFE-M: Nostocales ***
-
-# (ii) TM
-summary(multipatt(cyano_orders$tm[,5:ncol(cyano_orders$tm)], cyano_orders$tm$site, func = "r.g", control = how(nperm = 999)))
-# only identified for SFE-M: Pseudanabaenales **, Chroococcales ***, Synechococcales ***,
-# Sericytochromatia **, Endosymbiotic Diazoplast **, Leptolynbyaceae *
-
-# (iii) TAC
-summary(multipatt(cyano_orders$tac[,5:ncol(cyano_orders$tac)], cyano_orders$tac$site, func = "r.g", control = how(nperm = 999)))
-# only identified for SAL: Gastranaerophilales **, Vampirovibrionales **
-
-## (d) Cyanobacteria Genera (Likely will not report due to high resolution of genus!)
-
-cyano_genera <- lapply(data_long, function(x) {
-  # subset columns we care about and pivot wider
-  y = x %>% 
-    filter(phylum == "Cyanobacteria") %>% 
-    select(site_reach, site, field_date, sample_type, genus, relative_abundance) %>% 
-    dplyr::group_by(site_reach, site, field_date, sample_type, genus) %>% 
-    # remove multiples of genera due to differing ASVs
-    dplyr::summarize(relative_abundance = sum(relative_abundance)) %>% 
-    pivot_wider(names_from = genus, values_from = relative_abundance)
-  # if there is a column NA, remove it
-  if("NA" %in% colnames(y)) {
-    y = y %>% 
-      select(!c("NA"))
-  }
-  # replace NA (indicating that ASV was not present in sample) with 0
-  y[,5:ncol(y)][is.na(y[,5:ncol(y)])] = 0
-  # lastly, square-root transform the data
-  y[,5:ncol(y)] <- sqrt(y[,5:ncol(y)])
-  return(y)})
-
-# (i) NT
-summary(multipatt(cyano_genera$nt[,5:ncol(cyano_genera$nt)], cyano_genera$nt$site, func = "r.g", control = how(nperm = 999)))
-# RUS: Chroococcopsis **, Vampirovibrio *
-# SAL: all *** Calothrix, Gloeobacter, Cyanothece, Aliterella, Oscillatoria, Phormidium, 
-# Chamaesiphon, and ** Pleurocapsa
-# SFE-M: Synechoccus ***, Snowella ***, Nodosilinea ***, Arthronema ***, Tolypothrix **,
-# Synechocystis **, Nodularia **, Cuspidothrix **, Limnothrix **, Sphaerospermopsis **,
-# Merismopedia *, Gloeotrichia *, Aphanizomenon *
-# RUS + SFE-M: Microcystis **, Cyanobium **, Geminocystis *
-# SAL + SFE-M: Schizothrix **
-
-# (ii) TM
-summary(multipatt(cyano_genera$tm[,5:ncol(cyano_genera$tm)], cyano_genera$tm$site, func = "r.g", control = how(nperm = 999)))
-# only identified for SFE-M: Psuedanabaena **, Cyanobium ***, Geminocystis *, Sericytochromatia **,
-# Microcystis **, Limnothrix *, Endosymbiotic Diazoplast **, Leptolyngbya *, Nostoc *
-
-# (iii) TAC
-summary(multipatt(cyano_genera$tac[,5:ncol(cyano_genera$tac)], cyano_genera$tac$site, func = "r.g", control = how(nperm = 999)))
-# only identified for SAL: Aphanizomenon *, Gastranerophilales **, Kamptonema *, Arthronema *,
-# Vampirovibrio **
 
 #### (8) Misc. Questions ####
 
-## How present are other anatoxin associated taxa?
-# using ATX taxa as identified in Christensen & Khan (2019) and Wood et al. (2020)
-# using list from Christensen & Khan et al. (2019): Anabaena, Aphanizomenon,
-# Aphanothece, Arthospira, Cylindrospermopsis, Cylindrospermum, Gomphosphaeria,
-# Limnothrix, Lyngbya, Microcystis, Nostoc, Oscillatoria, Phormidium/Microcoleus,
-# Planktothrix, Planktolyngbia, Synechocystis, Psuedoanabaena,
-# Raphidopsis, Tychonema
-# noting that it doesn't have Geilerinema, so we should also include list
-# of ATX producers from Wood et al. (2020) which adds: Fisherella, 
-# Geitlerinema, Leptolyngbya, Microseira (formerly Lyngbya)
-atx_taxa_only <- lapply(data_long, function(x) {
-  
-  # make dataframe with only taxa in list above 
-  # (only writing what taxa we recorded from that list)
-  df = x %>% 
-    filter(genus %in% c("Anabaena", "Aphanizomenon", "Cylindrospermum", "Cylindrospermopsis",
-                        "Limnothrix", "Leptolyngbya", "Microcystis", "Nostoc", "Oscillatoria",
-                        "Phormidium", "Microcoleus", "Planktothrix", "Synechocystis", 
-                        "Geitlerinema", "Pseudanabaena"
-    )) %>% 
-    # searching the TAC and TM dataframes do not yield: aphanothece, arthospira, gomphosphaeria,
-    # lyngbya, planktolyngbya, microseira
-    mutate(sample_name = paste("(", month(field_date), "-", day(field_date), ") ", site_reach, sep = "")) %>% 
-    select(sample_name, field_date, sample_type, site, site_reach, relative_abundance, order, genus) %>% 
-    mutate(order_genus = paste(order, " - ", genus, sep = ""))
-  
-  # make bar plot (show each sample individually)
-  plot <- ggplot(data = df, aes(x = sample_name, y = relative_abundance / 100, fill = genus)) +
-    geom_bar(stat = "identity") +
-    scale_x_discrete(guide = guide_axis(angle = 90)) +
-    labs(x = NULL, y = "Relative Abundance") +
-    facet_wrap(~site, scales = "free_x")
-  print(plot) # view plot
-  
-  # return a list including dataframe, then plot
-  return(list(df, plot))
+## (1) What are the top five most abundant phylum-class for each river?
+summaries <- lapply(data_long, function(x) {
+  y <- x %>% 
+    dplyr::group_by(site, phylum_class) %>% 
+    dplyr::summarize(mean = mean(relative_abundance),
+                     sd = sd(relative_abundance))
 })
-
-# some discrepancies here between and microscopy data
-# could be limits of 16s with genus level or the poor resolution of database
-# for more, see Dvorak et al. (2025)
+view(summaries$nt)
+## (NT)
+# South Fork Eel: Cyanobacteria > Alphaproteobacteria > Verrucomicrobiae > Gammaproteobacteria
+# Salmon: Cyanobacteria > Deinococci > Alphaproteobacteria > Gammaproteobacteria > Fimbriimonadia
+# Russian: Cyanobacteria > Verrucomicrobiae > Gammaproteobacteria > Abditibacteria
