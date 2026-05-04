@@ -1,6 +1,6 @@
 #### Comparing molecular 16s data among rivers
 ### Jordan Zabrecky
-## last edited: 04.23.2026
+## last edited: 05.03.2026
 
 # This code compares normalized 16s relative data from NT, TM, and TAC samples
 # across rivers to answer Q1. First data is transformed (sqrt).
@@ -141,6 +141,13 @@ calc_diversity <- function(data, start_col) {
   vector = diversity(data[,start_col:ncol(data)])
 }
 
+# another for species number
+# @param data is dataframe of wide abundances
+# @param start_col is column where abundance data starts
+calc_speciesnum <- function(data, start_col) {
+  vector = specnumber(data[,start_col:ncol(data)])
+}
+
 #### (3) Relative Abundance Bar Plots ####
 
 # put bar plots into lists
@@ -179,8 +186,10 @@ for(i in 1:length(barplot_phylum_plots)) {
 # calculate diversity for each dataframe
 diversity <- lapply(data, function(x) {
   x = x %>% 
-    mutate(shannon_diversity = calc_diversity(x, start_col)) %>% 
-    select(field_date, site_reach, site, shannon_diversity)})
+    mutate(shannon_diversity = calc_diversity(x, start_col),
+           species_num = calc_speciesnum(x, start_col),
+           evenness = shannon_diversity / log(species_num)) %>% 
+    select(field_date, site_reach, site, shannon_diversity, species_num, evenness)})
 
 # plot diversity as boxplots
 for(i in 1:length(diversity)) {
@@ -189,10 +198,23 @@ for(i in 1:length(diversity)) {
   print(boxplot)
 }
 
+# plot evenness as boxplots
+for(i in 1:length(diversity)) {
+  boxplot = ggplot(data = diversity[[i]], aes(x = site, y = evenness, fill = site)) +
+    geom_boxplot()
+  print(boxplot)
+}
+
 # Does diversity differ across rivers?
 set.seed(1)
 lapply(diversity, function(x) kruskal.test(shannon_diversity~site, data = x))
 # significantly different for TM (p = 0.02), close but not for NT (0.05), and not for TAC (p = 0.45)
+
+# Does evenness differ across rivers?
+set.seed(1)
+lapply(diversity, function(x) kruskal.test(evenness~site, data = x))
+# significantly different for TM (p = 0.007), close but not for NT (0.007), and... close for TAC (p = 0.0501)
+
 
 # What is the mean of each?
 means_medians <- lapply(diversity, function(x) x %>% 

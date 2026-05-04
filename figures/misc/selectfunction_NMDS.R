@@ -50,27 +50,27 @@ tac_ko <- read.csv("./data/molecular/PICRUSt2_predicted_KO_select_tac_noanacyl.c
 source("./code/supplemental_code/S4b_community_analyses_func.R")
 
 # make NMDS plot for TM
-tm_NMDS_list <- getNMDSdata(tm_ko, start_col = 6, ASV = TRUE)
+tm_NMDS_list <- getNMDSdata(tm_ko, start_col = 6, ASV = FALSE)
 makeNMDSplot(tm_NMDS_list, FALSE, FALSE, 
              color = "site", shape = "month")
 # functional plot
-tm_NMDS_list <- getNMDSdata(tm_grouping, start_col = 6, ASV = TRUE)
-makeNMDSplot(tm_NMDS_list, FALSE, FALSE, 
+tm_NMDS_list <- getNMDSdata(tm_grouping, start_col = 6, ASV = FALSE)
+makeNMDSplot(tm_NMDS_list, TRUE, TRUE, 
              color = "site", shape = "month")
 
 
 tac_NMDS_list <- getNMDSdata(tac_ko, start_col = 6, ASV = TRUE)
 makeNMDSplot(tac_NMDS_list, FALSE, FALSE, 
              color = "site", shape = "month")
-tac_NMDS_list <- getNMDSdata(tac_grouping, start_col = 6, ASV = TRUE)
-makeNMDSplot(tac_NMDS_list, FALSE, FALSE, 
+tac_NMDS_list <- getNMDSdata(tac_grouping, start_col = 6, ASV = FALSE)
+makeNMDSplot(tac_NMDS_list, TRUE, TRUE, 
              color = "site", shape = "month")
 
 nt_NMDS_list <- getNMDSdata(nt_ko, start_col = 6, ASV = TRUE)
 makeNMDSplot(nt_NMDS_list, FALSE, FALSE, 
              color = "site", shape = "month")
-nt_NMDS_list <- getNMDSdata(nt_grouping, start_col = 6, ASV = TRUE)
-makeNMDSplot(nt_NMDS_list, FALSE, FALSE, 
+nt_NMDS_list <- getNMDSdata(nt_grouping, start_col = 6, ASV = FALSE)
+makeNMDSplot(nt_NMDS_list, TRUE, TRUE, 
              color = "site", shape = "month")
 
 #### PERMANOVA test ####
@@ -92,3 +92,20 @@ anova(betadisper(vegdist(tac_ko[,6:ncol(tac_ko)], method = "bray"),
                  tac_ko$site)) # not significant
 anova(betadisper(vegdist(tac_grouping[,6:ncol(tac_grouping)], method = "bray"), 
                  tac_grouping$site)) # not significant
+
+#### Species Indicator Test ####
+
+library(indicspecies)
+
+summary(multipatt(tm_grouping[,6:ncol(tm_grouping)], tm_grouping$site, func = "r.g", control = how(nperm = 999)))
+# none significant
+
+
+summary(multipatt(tac_grouping[,6:ncol(tac_grouping)], tac_grouping$site, func = "r.g", control = how(nperm = 999)))
+# stuff significantly associated with Salmon, but am personally weirded out by how high the predictions are for that site
+
+test <- multipatt(nt_grouping[,6:ncol(nt_grouping)], nt_grouping$site, func = "r.g", control = how(nperm = 999))
+# pyridoxal in SAL and SFE-M, nitrification in Russian and Salmon
+summary(test)
+test
+# nitrogen fixation close to significant

@@ -71,8 +71,8 @@ tm_NMDS_list <- getNMDSdata(tm_ko, start_col = 8, ASV = TRUE)
 makeNMDSplot(tm_NMDS_list, FALSE, FALSE, 
              color = "atx_group", shape = "site")
 
-tm_NMDS_list <- getNMDSdata(tm_grouping, start_col = 8, ASV = TRUE)
-makeNMDSplot(tm_NMDS_list, FALSE, FALSE, 
+tm_NMDS_list <- getNMDSdata(tm_grouping, start_col = 8, ASV = FALSE)
+makeNMDSplot(tm_NMDS_list, TRUE, TRUE, 
              color = "atx_group", shape = "site")
 runPERMANOVA(tm_grouping, start_col = 8, group = tm_grouping$atx_group)
 
@@ -81,8 +81,8 @@ tm_NMDS_list <- getNMDSdata(tm_ko %>% filter(site == "SFE-M"), start_col = 8, AS
 makeNMDSplot(tm_NMDS_list, FALSE, FALSE, 
              color = "atx_group", shape = "site")
 
-tm_NMDS_list <- getNMDSdata(tm_grouping %>% filter(site == "SFE-M"), start_col = 8, ASV = TRUE)
-makeNMDSplot(tm_NMDS_list, FALSE, FALSE, 
+tm_NMDS_list <- getNMDSdata(tm_grouping %>% filter(site == "SFE-M"), start_col = 8, ASV = FALSE)
+makeNMDSplot(tm_NMDS_list, TRUE, TRUE, 
              color = "atx_group", shape = "site")
 runPERMANOVA(tm_grouping %>% filter(site == "SFE-M"), start_col = 8, group = (tm_grouping %>% filter(site == "SFE-M"))$atx_group)
 
@@ -100,8 +100,8 @@ tac_NMDS_list <- getNMDSdata(tac_ko %>% filter(site == "RUS"), start_col = 8, AS
 makeNMDSplot(tac_NMDS_list, FALSE, FALSE, 
              color = "atx_group", shape = "atx_group")
 
-tac_NMDS_list <- getNMDSdata(tac_grouping %>% filter(site == "RUS"), start_col = 8, ASV = TRUE)
-makeNMDSplot(tac_NMDS_list, FALSE, FALSE, 
+tac_NMDS_list <- getNMDSdata(tac_grouping %>% filter(site == "RUS"), start_col = 8, ASV = FALSE)
+makeNMDSplot(tac_NMDS_list, TRUE, FALSE, 
              color = "atx_group", shape = "atx_group")
 runPERMANOVA(tac_grouping %>% filter(site == "RUS"), start_col = 8, group = (tac_grouping %>% filter(site == "RUS"))$atx_group)
 
@@ -111,8 +111,8 @@ tac_NMDS_list <- getNMDSdata(tac_ko %>% filter(site == "SFE-M"), start_col = 8, 
 makeNMDSplot(tac_NMDS_list, FALSE, FALSE, 
              color = "atx_group", shape = "atx_group")
 
-tac_NMDS_list <- getNMDSdata(tac_grouping %>% filter(site == "SFE-M"), start_col = 8, ASV = TRUE)
-makeNMDSplot(tac_NMDS_list, FALSE, FALSE, 
+tac_NMDS_list <- getNMDSdata(tac_grouping %>% filter(site == "SFE-M"), start_col = 8, ASV = FALSE)
+makeNMDSplot(tac_NMDS_list, TRUE, TRUE, 
              color = "atx_group", shape = "atx_group")
 runPERMANOVA(tac_grouping %>% filter(site == "SFE-M"), start_col = 8, group = (tac_grouping %>% filter(site == "SFE-M"))$atx_group)
 
@@ -138,12 +138,20 @@ atx_nt <- full_join(atx %>% filter(sample_type == "TM") %>%
   dplyr::rename(atx_group = nt_atx_group)
 
 # join w/ NT
-nt_ko_final <- left_join(atx_nt, nt_ko, by = c("field_date", "site", "site_reach")) %>% 
+nt_ko_final <- left_join(nt_ko, atx_nt, by = c("field_date", "site", "site_reach")) %>% 
   relocate(atx_detected, .before = "field_date") %>% 
-  relocate(atx_group, .before = "field_date")
+  relocate(atx_group, .before = "field_date") %>% 
+  mutate(atx_detected = case_when(is.na(atx_detected) ~ "not_present",
+                                  TRUE ~ atx_detected),
+         atx_group = case_when(is.na(atx_group) ~ "not_present",
+                               TRUE ~ atx_group))
 nt_grouping_final <- left_join(atx_nt, nt_grouping, by = c("field_date", "site", "site_reach")) %>% 
   relocate(atx_detected, .before = "field_date") %>% 
-  relocate(atx_group, .before = "field_date")
+  relocate(atx_group, .before = "field_date") %>% 
+  mutate(atx_detected = case_when(is.na(atx_detected) ~ "not_present",
+                                  TRUE ~ atx_detected),
+         atx_group = case_when(is.na(atx_group) ~ "not_present",
+                               TRUE ~ atx_group))
 
 # remove rows w/ missing data
 nt_ko_final <- nt_ko_final %>% 

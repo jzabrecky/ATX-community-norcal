@@ -1,6 +1,6 @@
 #### Making anatoxin categories for analyses
 ### Jordan Zabrecky
-## last edited: 04.20.2026
+## last edited: 05.03.2026
 
 # This script makes anatoxin concentrations groupings (e.g., high versus low) 
 # to use in Q3 analyses
@@ -22,7 +22,8 @@ atx <- read.csv("data/field_and_lab/environmental_covariates_and_toxins.csv") %>
 # ATX in long format
 atx_long <- atx %>% 
   pivot_longer(c("TM_ATX_all_ug_orgmat_g", "TAC_ATX_all_ug_orgmat_g"), values_to = "ATX_all_ug_org_mat",
-                    names_to = "taxa_ATX")
+                    names_to = "taxa_ATX") %>% 
+  na.omit()
 
 # see distribution of all
 ggplot(data = atx_long %>% na.omit(), aes(y = ATX_all_ug_org_mat)) +
@@ -40,7 +41,24 @@ summary(atx_long %>% na.omit() %>% filter(ATX_all_ug_org_mat > 0))
 # 50-75% quantile =< 5.5 and > 1.98
 # 75-100% quantile > 5.5
 
-#### (3) Adding ATX categories to data
+#### (3) Log-Transforming ATX ####
+
+## (b) log-transform values
+
+# need to replace zeros with a value 
+# lowest non-zero value is 0.03, how about 0.02 as zero replacement?
+log(0.03) # -3.506558
+log(0.02) # -3.912
+
+# log values (replace with 0.02 when 0)
+atx_long <- atx_long %>% 
+  mutate(log_ATX_all_ug_org_mat = case_when(ATX_all_ug_org_mat == 0 ~ log(0.02),
+                                                TRUE ~ log(ATX_all_ug_org_mat)))
+
+# view plot
+hist(atx_long$log_ATX_all_ug_org_mat) # yes, this is better
+hist(atx_long$ATX_all_ug_org_mat)
+#### (4) Adding ATX categories to data ####
 
 # save median and 3rd quantile
 med <- median((atx_long %>% na.omit() %>% filter(ATX_all_ug_org_mat > 0))$ATX_all_ug_org_mat)
@@ -56,7 +74,8 @@ atx_long <- atx_long %>%
                                TRUE ~ "none")) %>% 
   mutate(sample_type = case_when(taxa_ATX == "TM_ATX_all_ug_orgmat_g" ~ "TM",
                                  taxa_ATX == "TAC_ATX_all_ug_orgmat_g"  ~ "TAC")) %>% 
-  select(field_date, site, site_reach, sample_type, ATX_all_ug_org_mat, atx_detected, atx_group)
+  select(field_date, site, site_reach, sample_type, ATX_all_ug_org_mat, log_ATX_all_ug_org_mat,
+         atx_detected, atx_group)
 
 #### (3) Saving CSV ####
 
