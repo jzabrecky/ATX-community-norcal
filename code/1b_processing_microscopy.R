@@ -1,12 +1,10 @@
 #### Processing microscopy data
 ### Jordan Zabrecky
-## last edited 04.16.2026
+## last edited 05.05.2026
 
 # This code processes microscopy data from the EDI data release 
 # (averaging across slides and evaluting rsd), remove non-algal portion of sample,
-# and recalculates relative abundance without that portion. Additionally,
-# leptolyngbya and geitlerinema are grouped and phormidium is added into microcoleus
-# as suggested by Rosalina
+# and recalculates relative abundance without that portion
 
 #### (1) Loading in libraries & data ####
 
@@ -24,7 +22,7 @@ nontarget <- read.csv("./data/EDI_data_package/microscopy_non_target_samples.csv
 # look at average, sd, & rsd for each taxa across slides
 target_multislides <- target %>% 
   filter(slide_rep != "Final") %>% 
-  pivot_longer(microcoleus:aphanothece, names_to = "taxa", values_to = "percent") %>% 
+  pivot_longer(microcoleus:ncol(.), names_to = "taxa", values_to = "percent") %>% 
   dplyr::group_by(taxa, site_reach, field_date, sample_type) %>% 
   dplyr::summarize(mean = mean(percent),
                    sd = sd(percent),
@@ -64,7 +62,7 @@ target_processed <- rbind(target_processed, target_multislides_wider)
 # look at average, sd, & rsd for each taxa across slides
 # no samples here are averaged over as indicated by "Final"
 nontarget_multislides <- nontarget %>% 
-  pivot_longer(non_algal:unknown, names_to = "taxa", values_to = "percent") %>% 
+  pivot_longer(non_algal:ncol(.), names_to = "taxa", values_to = "percent") %>% 
   dplyr::group_by(taxa, site_reach, field_date, sample_type) %>% 
   dplyr::summarize(mean = mean(percent),
                    sd = sd(percent),
@@ -94,14 +92,7 @@ check_t <- which(rowSums(target_processed[4:ncol(target_processed)]) != 100)
 # check these values- maybe slight variations in float?
 # like minor issues when averaging such small decimals across multiple slides
 rowSums(target_processed[4:ncol(target_processed)])[check_t] # is 100
-rowSums(nt_processed[4:ncol(nt_processed)])[check_nt] # most are 100
-# but for the few that aren't (52, 58, 60) which are 99.975, 99.975, 99.980, we will just add 
-# the remainder to the dominant taxa in that sample
-nt_processed[52,]$spirogyra <- nt_processed[52,]$spirogyra + (100 - 99.975)
-nt_processed[58,]$spirogyra <- nt_processed[58,]$spirogyra + (100 - 99.975)
-nt_processed[60,]$cladophora <- nt_processed[60,]$cladophora + (100 - 99.980)
-
-# run through check and rowSums code again to make sure they are all now 100 in appearance
+rowSums(nt_processed[4:ncol(nt_processed)])[check_nt] # all are 100
 
 #### (3) Remove non-algal portion from relative abundance & recalculate ####
 
@@ -142,8 +133,6 @@ rowSums(nt_processed2[4:ncol(nt_processed2)])[check_nt2] # all are 100
 
 #### (3) Final edits ####
 
-## (a) to match environmental covariate data
-
 # separate out TAC and TM 
 tm_processed2 <- target_processed2 %>% 
  filter(sample_type == "TM")
@@ -165,12 +154,6 @@ processed <- lapply(processed, function(x) x %>%
                                               grepl("SAL", site_reach) ~ "SAL",
                                               grepl("SFE-SH", site_reach) ~ "SFE-SH")) %>% 
                       relocate(site, .before = "site_reach"))
-
-## (b) merging categories
-processed <- lapply(processed, function(x) x %>% 
-                     mutate(leptolyngbya_geitlerinema = leptolyngbya + geitlerinema,
-                            microcoleus = phormidium_unknown + microcoleus) %>% 
-                     dplyr::select(!c("phormidium_unknown", "geitlerinema", "leptolyngbya")))
 
 # saving csv's
 path <- paste(getwd(), "/data/morphological/", sep = "")
