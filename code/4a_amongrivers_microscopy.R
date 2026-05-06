@@ -1,6 +1,6 @@
 #### Comparing morphologically-identified assemblages among rivers
 ### Jordan Zabrecky
-## last edited: 04.21.2026
+## last edited: 05.05.2026
 
 # This code compares microscopy data from NT, TM, and TAC samples
 # across rivers to answer Q1. First data is transformed (sqrt).
@@ -164,18 +164,19 @@ for(i in 1:length(data)) {
   
   # run ANOVA
   set.seed(1) 
-  anova = anova(betadisper(vegdist(data[[i]][,start_col:ncol(data[[i]])], method = "bray"), 
-                           data[[i]]$site))
-  
+  PERMDISP = betadisper(vegdist(data[[i]][,start_col:ncol(data[[i]])], method = "bray"), 
+                        data[[i]]$site)
+  test = adonis2(dist(PERMDISP$distances) ~ data[[i]]$site)
+
   # print results
   print(names(data)[i])
-  print(anova)
+  print(test)
   
   # add results table
   p_table <- rbind(p_table, data.frame(test = "PERMDISP",
                                        sample_type = names(data)[i],
-                                       p_value = anova$`Pr(>F)`[1],
-                                       F_stat = anova$`F value`[1]))
+                                       p_value = test$`Pr(>F)`[1],
+                                       F_stat = test$`F`[1]))
 }
 # TAC not significantly different, but TM and NT are
 # however, based on https://www.youtube.com/watch?v=oLf0EpMJ4yA
@@ -199,7 +200,7 @@ set.seed(1)
 nt_test <- multipatt(data$nt[,start_col:ncol(data$nt)], data$nt$site, func = "r.g", control = how(nperm = 999))
 summary(nt_test)
 write.csv(nt_test$sign, "./data/ISA_results/Q1_nt_microscopy.csv")
-# SAL: homoethrix, leptolyngbya, coccoids, unknown green algae, ulothrix
+# SAL: calothrix, leptolyngbya/geitlerinema, coccoids, unknown green algae, ulothrix
 # SFE: cladophora, stauridium, nostoc, coelastrum, unknown, tetraedron, cosmarium, rivularia,
 # ankistrodesmus, lacunastrum, aphanothece
 # RUS: mougeotia
@@ -226,21 +227,27 @@ write.csv(tac_test$sign, "./data/ISA_results/Q1_tac_microscopy.csv")
 
 ## (1) How many more taxa groups were identified in South Fork Eel samples than Salmon River samples?
 lapply(data, function(x) specnumber(x[,start_col:ncol(x)], groups = x$`site`))
-# NT: RUS 28, SAL 30, SFE-M 36
-# TM: SAL 6, SFE-M 11
-# TAC: RUS 10, SAL 6, SFE-M 13
+# NT: RUS 29, SAL 30, SFE-M 38
+# TM: SAL 7, SFE-M 11
+# TAC: RUS 11, SAL 7, SFE-M 13
 
 ## (2) For target taxa, what is the range of the % the target taxa is present?
 # (plus green algae abundance for A/C samples)
 tm_w_target <- read.csv("./data/morphological/tm_algalonly.csv")
 min(tm_w_target$microcoleus) # 30.4%
 max(tm_w_target$microcoleus) # 94.8%
+mean(tm_w_target$microcoleus) # 75.0%
+sd(tm_w_target$microcoleus) # 12.8%
 
 tac_w_target <- read.csv("./data/morphological/tac_algalonly.csv")
 min(tac_w_target$anabaena_and_cylindrospermum) # 13.2%
 max(tac_w_target$anabaena_and_cylindrospermum) # 75.7%
+mean(tac_w_target$anabaena_and_cylindrospermum) # 35.9%
+sd(tac_w_target$anabaena_and_cylindrospermum) # 15.3%
 min(tac_w_target$green_algae) # 2.7%
 max(tac_w_target$green_algae) # 70.7%
+mean(tac_w_target$green_algae) # 24.98%
+sd(tac_w_target$green_algae) # 17.4%
 
 ## (3) If we group broader for NT samples, what is most abundant for each river? 
 # five groups: diatom, spirogyra, cladophora, diazotrophic cyanos, non-diazo filamentous cyanos,
@@ -256,7 +263,7 @@ even_broader_NT <- data_longer$nt %>%
                                   broader == "Anabaena or Cylindrospermum" ~ "Diazotrophic Cyanobacteria",
                                   broader == "Other N-fixing Cyanobacteria" ~ "Diazotrophic Cyanobacteria",
                                   broader == "Unicellular Cyanobacteria" ~ "Coccoidal Cyanobacteria",
-                                  broader == "Microcoleus" ~ "Other Filamentous Cyanobacteria",
+                                  broader == "Microcoleus" ~ "Non-Diazotrophic Filamentous Cyanobacteria",
                                   broader == "Other Green Algae" ~ "Other Green Algae",
                                  TRUE ~ broader)) %>% 
   # merge groups for total in each broader group (i.e., reduce rows)
@@ -265,5 +272,6 @@ even_broader_NT <- data_longer$nt %>%
   dplyr::ungroup() %>% 
   # regroup to calculate average per site across all samples
   dplyr::group_by(site, even_broader) %>% 
-  dplyr::summarize(mean = mean(total))
+  dplyr::summarize(mean = mean(total),
+                   sd = sd(total))
 view(even_broader_NT)

@@ -1,6 +1,6 @@
 #### Script of functions used to add broader classifications to microscopy data
 ### Jordan Zabrecky
-## last edited: 04.16.2026
+## last edited: 05.05.2026
 
 # This script hosts functions to add broader classifications to microscopy data and
 # automatically add broader classifications to molecular data based on a minimum relative
@@ -19,17 +19,16 @@ target_broader <- function(data) {
   # add in column for broader classification
   new_data <- data %>% 
     mutate(broader = case_when(taxa == "lyngbya" | taxa == "nodularia" |  taxa == "calothrix" |
-                                 taxa == "scytonema" | taxa == "gloeotrichia" | taxa == "rivularia" |
+                                 taxa == "scytonema" | taxa == "gloeotrichia" | taxa == "rivularia_or_early_stage_gloeotrichia" |
                                  taxa == "tolypothrix" ~ "Other N-fixing Cyanobacteria",
                                taxa == "nostoc" ~ "Nostoc",
                                taxa == "chroococcus" | taxa == "other_coccoids" | taxa == "aphanothece"
                                ~ "Unicellular Cyanobacteria",
                                taxa == "anabaena_and_cylindrospermum" ~ "Anabaena or Cylindrospermum",
                                taxa == "e_diatoms" ~ "Epithemia",
-                               taxa == "geitlerinema" |taxa == "leptolyngbya_geitlerinema" | 
-                                 taxa == "leptolyngbya" ~ "Geitlerinema/Leptolyngbya",
+                               taxa == "leptolyngbya_and_geitlerinema" ~ "Geitlerinema/Leptolyngbya",
                                taxa == "green_algae" ~ "Green Algae",
-                               taxa == "oscillatoria" | taxa == "phormidium_unknown" | taxa == "homoeothrix"
+                               taxa == "oscillatoria" | taxa == "phormidium_unknown" | taxa == "miscellaneous_oscillatoriales"
                                ~ "Other Filamentous Cyanobacteria",
                                taxa == "microcoleus" ~ "Microcoleus",
                                taxa == "non_e_diatoms" ~ "Diatoms Other than Epithemia",
@@ -45,16 +44,16 @@ nontarget_broader <- function(data) {
   # add in column for broader classification
   new_data <- data %>% 
     mutate(broader = case_when(taxa == "lyngbya" | taxa == "nodularia" |  taxa == "calothrix" |
-                                 taxa == "scytonema" | taxa == "gloeotrichia" | taxa == "rivularia" |
+                                 taxa == "scytonema" | taxa == "gloeotrichia" | taxa == "rivularia_or_early_stage_gloeotrichia" |
                                  taxa == "tolypothrix"
                                ~ "Other N-fixing Cyanobacteria",
                                taxa == "nostoc" ~ "Nostoc",
-                               taxa == "chroococcus" | taxa == "other_coccoids" | taxa == "aphanothece"
+                               taxa == "chroococcus" | taxa == "other_coccoids" | taxa == "aphanothece" |
+                                 taxa == "microcystis"
                                ~ "Unicellular Cyanobacteria",
                                taxa == "anabaena_and_cylindrospermum" ~ "Anabaena or Cylindrospermum",
                                taxa == "oscillatoria" | taxa == "phormidium_unknown" |
-                                 taxa == "leptolyngbya" | taxa == "homoeothrix" | taxa == "geitlerinema" |
-                                 taxa == "leptolyngbya_geitlerinema"
+                                taxa == "miscellaneous_oscillatoriales" | taxa == "leptolyngbya_and_geitlerinema"
                                ~ "Other Filamentous Cyanobacteria",
                                taxa == "microcoleus" ~ "Microcoleus",
                                taxa == "non_e_r_diatoms" ~ "Diatoms Other than Epithemia or Rhopalodia",
@@ -64,7 +63,7 @@ nontarget_broader <- function(data) {
                                taxa == "ankistrodesmus" | taxa == "gloeocystis" | taxa == "lacunastrum" | 
                                  taxa == "oocystis" | taxa == "pediastrum" | taxa == "scenedesmus_no_spines" |
                                  taxa == "cosmarium" | taxa == "desmodesmus_spines" | taxa == "closterium" |
-                                 taxa == "coelastrum" | taxa == "stauridium" | taxa == "tetraedron"
+                                 taxa == "coelastrum" | taxa == "stauridium" | taxa == "tetraedron" | taxa == "desmid"
                                ~ "Other Green Algae",
                                taxa == "cladophora" ~ "Cladophora",
                                # filamentous green algae (now grouping w/ unicellular)

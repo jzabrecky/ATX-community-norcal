@@ -1,11 +1,13 @@
 #### Comparing molecular 16s data among rivers
 ### Jordan Zabrecky
-## last edited: 05.03.2026
+## last edited: 05.05.2026
 
 # This code compares normalized 16s relative data from NT, TM, and TAC samples
 # across rivers to answer Q1. First data is transformed (sqrt).
 # Data is analyzed using NMDS and PERMANOVA. We also averaged across all samples
 # from a river and created bar plots to visually compare average samples at each river
+
+# IDENTIFY OUTLIER SAMPLE - I THINK IT CREATES ISSUES IN ATX?!??
 
 #### (1) Loading libraries & data ####
 
@@ -205,28 +207,40 @@ for(i in 1:length(diversity)) {
   print(boxplot)
 }
 
-# Does diversity differ across rivers?
-set.seed(1)
-lapply(diversity, function(x) kruskal.test(shannon_diversity~site, data = x))
-# significantly different for TM (p = 0.02), close but not for NT (0.05), and not for TAC (p = 0.45)
+# save test results
+p_table <- data.frame(sample_type = NA,
+                      diversity_kruskal = NA,
+                      evenness_kruksal = NA)
 
-# Does evenness differ across rivers?
-set.seed(1)
-lapply(diversity, function(x) kruskal.test(evenness~site, data = x))
-# significantly different for TM (p = 0.007), close but not for NT (0.007), and... close for TAC (p = 0.0501)
-
+for(i in names(diversity)) {
+  
+  # run tests
+  set.seed(1)
+  diversity_kruskal = (kruskal.test(shannon_diversity ~ site, data = diversity[[i]]))$p.value
+  evenness_kruskal = (kruskal.test(evenness ~ site, data = diversity[[i]]))$p.value
+  
+  # add to table
+  p_table <- rbind(p_table, data.frame(sample_type = i,
+                                       diversity_kruskal = diversity_kruskal,
+                                       evenness_kruskal = evenness_kruskal))
+}
 
 # What is the mean of each?
 means_medians <- lapply(diversity, function(x) x %>% 
                           dplyr::group_by(site) %>% 
                           dplyr::summarize(mean = mean(shannon_diversity),
-                                           median = median(shannon_diversity)))
+                                           median = median(shannon_diversity),
+                                           sd = sd(shannon_diversity)))
 view(means_medians$tac)
 
 # save diversity calculations (RUN ONCE)
-#lapply(names(diversity), function(x) write.csv(diversity[[x]], 
-#                                               paste("./data/molecular/shannon_diversity/", x, "_diversity.csv", sep = ""),
-#                                               row.names = FALSE))
+lapply(names(diversity), function(x) write.csv(diversity[[x]], 
+                                               paste("./data/molecular/shannon_diversity/", x, "_diversity.csv", sep = ""),
+                                               row.names = FALSE))
+
+# also save test results
+write.csv(p_table[-1,], "./data/kruskal_wallis_results/Q1_diversity.csv",
+          row.names = FALSE)
 
 #### (5) NMDS Plots ####
 
@@ -368,7 +382,9 @@ write.csv(p_table[-1,], "./data/PERMANOVA_results/Q1_molecular.csv", row.names =
 #### (7) Q: What explains these differences? Species Indicator Analyses ####
 
 # Previously looked at various groupings (orders & genuses w/in cyanobacteria, etc.)
-# but have decided phylums and phylum-classes made most sense
+# but have decided phylums and phylum-classes made most sense though still will probably
+# not use this information much as there are so many classes! Diversity gives a better
+# and much quicker overview I think!
 
 ## (a) phylums
 
@@ -393,27 +409,30 @@ phylums <- lapply(data_long, function(x) {
 
 # (i) NT
 set.seed(1)
-nt_phylum_test <- summary(multipatt(phylums$nt[,5:ncol(phylums$nt)], phylums$nt$site, func = "r.g", control = how(nperm = 999)))
+nt_phylum_test <- multipatt(phylums$nt[,5:ncol(phylums$nt)], phylums$nt$site, func = "r.g", control = how(nperm = 999))
+summary(nt_phylum_test)
 # lots of unique identified with RUS including ***: Actinobacteriota, Elusimicrobiota,
 # Desulfobacteria, Planctomycetota, Verrucomicrobiota
 # SAL: Deincoccota (***), Armatimonadota (**)
 # SFE-M: Sumerlaeota
 # RUS + SAL: Proteobacteria *
 # SAL + SFE-M: Cyanobacteria ***
-write.csv(nt_phylum_test$sign, "./data/ISA_results/Q1_nt_molecular_phylum.csv")
+write.csv(nt_phylum_test$sign, "./data/ISA_results/Q1_nt_molecular_phylum.csv", row.names = FALSE)
 
 # (ii) TM
 set.seed(1)
-tm_phylum_test <- summary(multipatt(phylums$tm[,5:ncol(phylums$tm)], phylums$tm$site, func = "r.g", control = how(nperm = 999)))
+tm_phylum_test <- multipatt(phylums$tm[,5:ncol(phylums$tm)], phylums$tm$site, func = "r.g", control = how(nperm = 999))
+summary(tm_phylum_test)
 # only identified for SFE-M including **: Desulfobacteria, Cyanobacteria, Verrucomicrobiota,
 # Chloroflexiota
-write.csv(tm_phylum_test$sign, "./data/ISA_results/Q1_tm_molecular_phylum.csv")
+write.csv(tm_phylum_test$sign, "./data/ISA_results/Q1_tm_molecular_phylum.csv", row.names = FALSE)
 
 # (iii) TAC
 set.seed(1)
-tac_phylum_test <- summary(multipatt(phylums$tac[,5:ncol(phylums$tac)], phylums$tac$site, func = "r.g", control = how(nperm = 999)))
+tac_phylum_test <- multipatt(phylums$tac[,5:ncol(phylums$tac)], phylums$tac$site, func = "r.g", control = how(nperm = 999))
+summary(tac_phylum_test)
 # only identified for SAL: Fibrobacterota *, Spirochaetota ** 
-write.csv(tac_phylum_test$sign, "./data/ISA_results/Q1_tac_molecular_phylum.csv")
+write.csv(tac_phylum_test$sign, "./data/ISA_results/Q1_tac_molecular_phylum.csv", row.names = FALSE)
 
 ## (b) classes
 
@@ -439,8 +458,9 @@ classes <- lapply(data_long, function(x) {
 
 # (i) NT
 set.seed(1)
-nt_class_test <- summary(multipatt(classes$nt[,5:ncol(classes$nt)], classes$nt$site, func = "r.g", control = how(nperm = 999)))
-write.csv(nt_class_test$sign, "./data/ISA_results/Q1_molecular_nt_molecular_class.csv")
+nt_class_test <- multipatt(classes$nt[,5:ncol(classes$nt)], classes$nt$site, func = "r.g", control = how(nperm = 999))
+summary(nt_class_test)
+write.csv(nt_class_test$sign, "./data/ISA_results/Q1_molecular_nt_molecular_class.csv", row.names = FALSE)
 # lots for RUS (not listing)
 # SAL: Fimbriimonadia ***, Deinococci ***
 # SFE-M: Rhodothermia *
@@ -450,15 +470,17 @@ write.csv(nt_class_test$sign, "./data/ISA_results/Q1_molecular_nt_molecular_clas
 
 # (ii) TM
 set.seed(1)
-tm_class_test <- summary(multipatt(classes$tm[,5:ncol(classes$tm)], classes$tm$site, func = "r.g", control = how(nperm = 999)))
-write.csv(tm_class_test$sign, "./data/ISA_results/Q1_molecular_tm_molecular_class.csv")
+tm_class_test <- multipatt(classes$tm[,5:ncol(classes$tm)], classes$tm$site, func = "r.g", control = how(nperm = 999))
+summary(tm_class_test)
+write.csv(tm_class_test$sign, "./data/ISA_results/Q1_molecular_tm_molecular_class.csv", row.names = FALSE)
 # SAL: Bacteroidia *
 # SFE-M: many but no with ***-
 
 # (iii) TAC
 set.seed(1)
-tac_class_test <- summary(multipatt(classes$tac[,5:ncol(classes$tac)], classes$tac$site, func = "r.g", control = how(nperm = 999)))
-write.csv(tac_class_test$sign, "./data/ISA_results/Q1_molecular_tac_molecular_class.csv")
+tac_class_test <- multipatt(classes$tac[,5:ncol(classes$tac)], classes$tac$site, func = "r.g", control = how(nperm = 999))
+summary(tac_class_test)
+write.csv(tac_class_test$sign, "./data/ISA_results/Q1_molecular_tac_molecular_class.csv", row.names = FALSE)
 # only for SAL including Vampirivibrionia ***
 
 #### (8) Misc. Questions ####
