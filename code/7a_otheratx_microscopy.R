@@ -1,26 +1,28 @@
+#### Identifying other anatoxin-associated taxa in microscopy target samples
+### Jordan Zabrecky
+## last edited: 05.06.2026
 
+# This code identifies other anatoxin-associated taxa as listed by
+# Christensen & Khan (2019) and Wood et al. (2020) in microscopy samples
 
-## OLD CODE SNIPPETS BELOW TO REORGANIZE :)
+#### (1) Load data and libraries ####
 
-#### could move the below to Q4 ####
+# load libraries
+lapply(c("tidyverse"), require, character.only = T)
 
-## Is Leptolyngbya/Geitlerinema present in all TM samples?
-data$tm$leptolyngbya_geitlerinema
-count(data$tm$leptolyngbya_geitlerinema > 0)
-# present in 17 out of 23
+# load microscopy data & pivot longer
+tm <- read.csv("./data/morphological/tm_algalonly_nomicro.csv") %>% 
+  pivot_longer(c(5:ncol(.)), names_to = "taxa", values_to = "percent") %>% 
+  filter(year(ymd(field_date)) == 2022)
+tac <- read.csv("./data/morphological/tac_algalonly_noanacylgreenalgae.csv")%>% 
+  pivot_longer(c(5:ncol(.)), names_to = "taxa", values_to = "percent") %>% 
+  filter(year(ymd(field_date)) == 2022)
 
-## What about the presence of Leptolyngbya/Geitlerinema in TAC samples?
-data$tac$leptolyngbya_geitlerinema
-count(data$tac$leptolyngbya_geitlerinema > 0)
-# all of them which is crazy at >1%!
+# put data into list
+data_longer <- list(tac, tm)
+names(data_longer) <- c("tac", "tm")
 
-## How about Microcoleus in TAC samples? 
-## (particularly interested in Russian River where we did not obsere M. macroscopically)
-data$tac$microcoleus
-count(data$tac$microcoleus > 0 & data$tac$site == "RUS")
-# true for 22/28
-# 10 of those are russian river
-count(data$tac$site == "RUS") # of 15 samples
+#### (2) Identify other Anatoxin-Associated Taxa ####
 
 # Let's look at only other anatoxin associated taxa in all samples
 # using list from Christensen & Khan et al. (2019): Anabaena, Aphanizomenon,
@@ -31,28 +33,50 @@ count(data$tac$site == "RUS") # of 15 samples
 # noting that it doesn't have Geilerinema, so we should also include list
 # of ATX producers from Wood et al. (2020) which adds: Fisherella, 
 # Geitlerinema, Leptolyngbya, Microseira (formerly Lyngbya), planktothrix
-lapply(data, function(x) colnames(x[,5:ncol(x)]))
+
+# see our taxa groups
+unique(tac$taxa)
+unique(tm$taxa)
+
+# subset for only anatoxin producing taxa, calculate number of samples with that taxa,
+# and mean and standard deviation of taxa in samples
 atx_taxa_only <- lapply(data_longer, function(x) {
   
   # make dataframe with only taxa in list above 
   # (only writing what taxa we recorded from that list)
   df = x %>% 
     filter(taxa %in% c("aphanothece", "anabaena_and_cylindrospermum",
-                       "other_coccoids", "geitlerinema", "leptolyngbya", 
-                       "lyngbya", "other_coccoids", "nostoc",
+                       "other_coccoids", "leptolyngbya_and_geitlerinema", 
+                       "miscellaneous_oscillatoriales", "other_coccoids", "nostoc",
                        "oscillatoria", "phormidium_unknown", "microcoleus")) %>% 
     mutate(sample_name = paste("(", month(field_date), "-", day(field_date), ") ", site_reach, sep = ""))
   
-  # make bar plot (show each sample individually)
-  plot <- ggplot(data = df, aes(x = sample_name, y = percent / 100, fill = taxa)) +
-    geom_bar(stat = "identity") +
-    scale_x_discrete(guide = guide_axis(angle = 90)) +
-    labs(x = NULL, y = "Relative Abundance") +
-    facet_wrap(~site, scales = "free_x")
-  print(plot) # view plot
   
-  # return a list including dataframe, then plot
-  return(list(df, plot))
+  # get number of samples
+  n_samples = length(unique(df$sample_name))
+  
+  # determine percent of samples with each taxa as well as mean percent for each taxa
+  df2 = df %>% 
+    filter(percent != 0) %>% 
+    dplyr::group_by(taxa) %>% 
+    dplyr::summarize(count = length(taxa)) %>% 
+    ungroup() %>% 
+    mutate(percent_samples = count / n_samples * 100)
+  
+  # get mean and sd
+  df3 = df %>% 
+    # care about means when present?
+    filter(percent != 0) %>% 
+    dplyr::group_by(taxa) %>% 
+    dplyr::summarize(mean = mean(percent),
+                     sd = sd(percent)) %>% 
+    ungroup()
+  
+  # return a list of dataframes
+  final <- list(df, df2, df3)
+  names(final) <- c("raw", "percent_samples", "mean_sd")
+  return(final)
 })
 
-# NOTE: may shove this to a later script
+# view results
+view(atx_taxa_only$tac$percent_samples)
