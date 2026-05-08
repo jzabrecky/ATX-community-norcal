@@ -66,13 +66,13 @@ data_list <- lapply(data_list, function(x) {
 # add in more detailed groups & sum genes in each group
 data_list <- lapply(data_list, function(x) {
   data = x %>% 
-    mutate(my_grouping = case_when(ko_id %in% cobalamin ~ "cobalamin_B12",
+    mutate(functional_grouping = case_when(ko_id %in% cobalamin ~ "cobalamin_B12",
                                    ko_id %in% nfixers ~ "nitrogen_fixation",
                                    ko_id %in% nitrification ~ "nitrification", 
                                    ko_id %in% pyridoxal ~ "pyridoxal",
                                    ko_id %in% thiamine ~ "thiamine",
                                    ko_id %in% phosphatase_transporters ~ "phosphatase_transporters")) %>% 
-    dplyr::group_by(site, site_reach, field_date, sample_type, my_grouping, ko_id) %>% 
+    dplyr::group_by(site, site_reach, field_date, sample_type, functional_grouping, ko_id) %>% 
     dplyr::summarize(predicted_gene_abundance = sum(predicted_gene_abundance))
 
   # also fix Russian date (sampling was supposed to be on 7/6 but issues got it pushed to 7/7)
@@ -91,7 +91,7 @@ write.csv(data_list$tac_noanacyl, "./data/molecular/PICRUSt2_predicted_KO_select
 # summary 
 summary <- lapply(data_list, function(x) {
   data = x %>% 
-    dplyr::group_by(site, sample_type, my_grouping) %>% 
+    dplyr::group_by(site, sample_type, functional_grouping) %>% 
     dplyr::summarize(mean_predicted_gene_abundance = mean(predicted_gene_abundance)) %>% 
     ungroup()
   return(data)
@@ -99,7 +99,7 @@ summary <- lapply(data_list, function(x) {
 
 # prelim comparisons by site across sample type
 lapply(summary, function(x) {
-  plot = ggplot(x, aes(y = mean_predicted_gene_abundance, x = my_grouping, fill = site)) +
+  plot = ggplot(x, aes(y = mean_predicted_gene_abundance, x = functional_grouping, fill = site)) +
     geom_bar(stat = "identity", position = "dodge") +
     facet_wrap(~sample_type, scale = "free") + 
     scale_x_discrete(guide = guide_axis(angle = 60))
@@ -109,7 +109,7 @@ lapply(summary, function(x) {
 # temporal summary
 temporal_summary <- lapply(data_list, function(x) {
   data = x %>% 
-    dplyr::group_by(site, sample_type, field_date, my_grouping) %>% 
+    dplyr::group_by(site, sample_type, field_date, functional_grouping) %>% 
     dplyr::summarize(mean_predicted_gene_abundance = mean(predicted_gene_abundance)) %>% 
     ungroup()
   return(data)
@@ -119,7 +119,7 @@ temporal_summary <- lapply(data_list, function(x) {
 lapply(temporal_summary, function(x) {
   plot = ggplot(x, aes(y = mean_predicted_gene_abundance, x = field_date, fill = site)) +
     geom_bar(stat = "identity") +
-    facet_grid(my_grouping~sample_type, scale = "free_y") + 
+    facet_grid(functional_grouping~sample_type, scale = "free_y") + 
     scale_x_discrete(guide = guide_axis(angle = 60))
   print(plot)
 })

@@ -1,6 +1,6 @@
 #### Relative abundance of other ATX producers in TM and TAC samples
 ### Jordan Zabrecky
-## last edited: 05.06.2026
+## last edited: 05.07.2026
 
 # This code produces figures to answer Q4 asking what is the full suite of
 # anatoxin associated taxa within target samples?
@@ -18,16 +18,6 @@ source("./code/7b_otheratx_molecular.R")
 
 # rename for clarification
 molecular_atx_taxa <- atx_taxa_only
-
-# load additional libraries
-lapply(c("ggtext", "cowplot"), require, character.only = T)
-
-#### OLD BELOW
-
-#### (1) Morphological data ####
-
-# source data from morphological script
-source("./code/4a_amongrivers_microscopy.R")
 
 # load additional libraries
 lapply(c("ggtext", "cowplot"), require, character.only = T)
@@ -52,7 +42,7 @@ present_morpho_tm <- ggplot(data = microscopy_atx_taxa$tm$percent_samples, aes(x
   theme(legend.position = "none") +
   scale_fill_discrete(palette = c("#C0ED96", "#C5BD53", "#C2DFFF", "#7AB048", "#205288", "#CBC5F6", "#5E9DE0")) +
   labs(x = NULL, y = NULL) +
-  scale_x_discrete(labels = c("Other Coccoidal<br>Cyanobacteria", "*Leptolyngbya*<br>and *Geitlerinema*", 
+  scale_x_discrete(labels = c("Other Coccoidal<br>Cyanobacteria", "*Leptolyngbya* and<br>*Geitlerinema*", 
                                "*Anabaena* and<br>*Cylindrospermum*", "*Nostoc*", 
                                 "Miscellaneous<br>Oscillatoriales", "*Oscillatoria*", "*Phormidium*")) +
   theme(axis.text.x = element_markdown(angle = 60, vjust = 1, hjust=1, size = 9)) +
@@ -65,7 +55,7 @@ present_morpho_tac <- ggplot(data = microscopy_atx_taxa$tac$percent_samples, aes
   theme(legend.position = "none") +
   scale_fill_discrete(palette = c("#C5BD53", "#777122", "#C2DFFF", "#7AB048", "#205288", "#CBC5F6", "#5E9DE0")) +
   labs(x = NULL, y = NULL) +
-  scale_x_discrete(labels = c("*Geitlerinema* and<br>*Leptolyngbya*", "Other Coccoidal<br>Cyanobacteria", "*Microcoleus*", 
+  scale_x_discrete(labels = c("*Leptolyngbya* and<br>*Geitlerinema*", "Other Coccoidal<br>Cyanobacteria", "*Microcoleus*", 
                               "*Oscillatoria*", "*Nostoc*", "*Phormidium*", "Miscellaneous<br>Oscillatoriales")) +
   theme(axis.text.x = element_markdown(angle = 60, vjust = 1, hjust=1, size = 9)) +
   scale_y_continuous(limits = c(0,100))
@@ -105,7 +95,10 @@ present_micro_tac
 
 # put together plots
 final <- plot_grid(present_morpho_tm, present_morpho_tac, present_micro_tm, present_micro_tac,
-                   align = "hv", ncol = 2)
+                   align = "hv", ncol = 2) +
+  theme(plot.background = element_rect(fill = "white", color = "white"))
 final
 
-# save!
+# save
+ggsave("./figures/tiff_files/Q4_atx_taxa.tiff", dpi = 600,
+       width=17, height=13, unit="cm")

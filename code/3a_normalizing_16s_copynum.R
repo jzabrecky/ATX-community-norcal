@@ -1,6 +1,6 @@
 #### Normalizing relative abundance with predicted 16s gene copy numbers
 ### Jordan Zabrecky
-## last edited: 03.20.2026
+## last edited: 05.07.2026
 
 # This script pulls in relative abundance based on the predicted 16s gene 
 # copy numbers for each ASV obtained via PICRUSt2-SC and compares it to 
@@ -280,6 +280,13 @@ for(i in 1:nrow(test_samples)) {
 
 #### (7) Save csv ####
 
+# check that samples sum to 100 one more time!
+test <- final_data %>% 
+  group_by(site, site_reach, field_date, sample_type) %>% 
+  dplyr::summarize(picrust2_total = sum(picrust2_relative_abundance))
+test$picrust2_total[which(test$picrust2_total != 100)] # all 100!
+rm(test)
+
 # save full csv
 write.csv(final_data, "./data/molecular/16s_nochimera_rarefied_95_copynum_normalized_FINAL.csv",
           row.names = FALSE)
@@ -287,10 +294,37 @@ write.csv(final_data, "./data/molecular/16s_nochimera_rarefied_95_copynum_normal
 # save versions of TM and TAC with Microcoleus 
 # and Anabaena/Cylindrospermum/Trichormus removed respectively
 
-# for microcoleus
+# NEED TO RECALCULATE RELATIVE ABUNDANCES BELOW
+
+## (a) TM data
+
+# remove microcoleus
 TM_data <- final_data %>% 
   filter(genus != "Microcoleus") %>% 
   filter(sample_type == "TM")
+  
+# calculate total abundances per vial
+total_abundance_per_vial_TM <- TM_data %>% 
+  dplyr::group_by(site, site_reach, field_date, sample_type) %>% 
+  dplyr::summarize(total_abundance = sum(picrust2_relative_abundance))
+
+# join into TM data and re-relativize abundance
+TM_data <- left_join(TM_data, total_abundance_per_vial_TM, by = c("site", "site_reach",
+                                                                  "field_date", "sample_type")) %>% 
+  mutate(picrust2_rerelativized_abundance = picrust2_relative_abundance / total_abundance * 100) %>% 
+  # reformatting to match original format
+  select(!c(picrust2_relative_abundance, total_abundance)) %>% 
+  dplyr::rename(picrust2_relative_abundance = picrust2_rerelativized_abundance) %>% 
+  relocate(picrust2_relative_abundance, .before = "triplicate")
+
+# double-check that it adds to 100!
+test <- TM_data %>% 
+  group_by(site, site_reach, field_date, sample_type) %>% 
+  dplyr::summarize(picrust2_total = sum(picrust2_relative_abundance))
+test$picrust2_total[which(test$picrust2_total != 100)] # all 100!
+rm(test)
+
+# save!
 write.csv(TM_data, "./data/molecular/16s_nochimera_rarefied_95_copynum_normalized_TM_nomicro.csv", row.names = FALSE)
 
 # for anabaena/cylindrospermum
@@ -299,4 +333,27 @@ TAC_data <- final_data %>%
 # remove that as well as other close to 100% matches that are phylogenetically related
   filter(! genus %in% c("Anabaena","Cylindrospermum","Trichormus","Cylindrospermopsis")) %>% 
   filter(sample_type == "TAC")
+
+# calculate total abundances per vial
+total_abundance_per_vial_TAC <- TAC_data %>% 
+  dplyr::group_by(site, site_reach, field_date, sample_type) %>% 
+  dplyr::summarize(total_abundance = sum(picrust2_relative_abundance))
+
+# join into TM data and re-relativize abundance
+TAC_data <- left_join(TAC_data, total_abundance_per_vial_TAC, by = c("site", "site_reach",
+                                                                  "field_date", "sample_type")) %>% 
+  mutate(picrust2_rerelativized_abundance = picrust2_relative_abundance / total_abundance * 100) %>% 
+  # reformatting to match original format
+  select(!c(picrust2_relative_abundance, total_abundance)) %>% 
+  dplyr::rename(picrust2_relative_abundance = picrust2_rerelativized_abundance) %>% 
+  relocate(picrust2_relative_abundance, .before = "triplicate")
+
+# double-check that it adds to 100!
+test <- TAC_data %>% 
+  group_by(site, site_reach, field_date, sample_type) %>% 
+  dplyr::summarize(picrust2_total = sum(picrust2_relative_abundance))
+test$picrust2_total[which(test$picrust2_total != 100)] # all 100!
+rm(test)
+
+# save!
 write.csv(TAC_data, "./data/molecular/16s_nochimera_rarefied_95_copynum_normalized_TAC_noanacyl.csv", row.names = FALSE)

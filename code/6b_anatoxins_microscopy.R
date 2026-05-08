@@ -1,6 +1,6 @@
 #### Comparing microscopy data with regard to anatoxin concentrations
 ### Jordan Zabrecky
-## last edited: 03.12.2026
+## last edited: 05.07.2026
 
 # This script examines how communities as identified by microscopy
 # change with increasing anatoxin concentrations with PERMANOVA, NMDS,
@@ -20,11 +20,39 @@ names(data) <- sample_types
 
 # read in environmental covariates & toxin data
 atx <- read.csv("./data/field_and_lab/atx_w_categorical_groupings.csv")
-# as a reminder, NAs mean no sample was taken!!! so this is different 
-# from 0's or non-detects when a sample was present, but no anatoxins were detected
+
+# need to join in NT data
 
 # join data and anatoxin data
 data_tog <- lapply(data, function(x) left_join(x, atx, by = c("field_date", "site_reach", "site")))
+
+#### (2) Do samples change with varying anatoxin concentrations in a river? ####
+
+# looking at river & sample type separately as we have established that the communities can differ
+# among rivers and sample types
+SFE_TM <- 
+
+## (a) SFE-M TM
+set.seed(1)
+lapply(sample_types, function(x) {
+  # set column name for anatoxin based on sample type
+  atx_col = paste("log_", str_to_upper(x), "_ATX_all_ug_orgmat_g", sep = "")
+  
+  # PERMANOVA test
+  print(paste(x, "PERMANOVA"))
+  print(runPERMANOVA(data_tog[[x]], start_col, end_col = ncol(data[[x]]), 
+                     group = as.vector(data_tog[[x]][atx_col])[[1]], na.action = "na.omit"))
+  
+  # BETADISPER test
+  print(paste(x, "BETADISPER"))
+  print(anova(betadisper(vegdist(data_tog[[x]][,start_col:ncol(data[[x]])], method = "bray"), 
+                         as.vector(data_tog[[x]][atx_col])[[1]])))
+  
+  return()
+})
+
+
+#### OLD BELOW #### ----------------------------------------------------------
 
 #### (2) How do samples change with varying anatoxin concentrations among all rivers? ####
 

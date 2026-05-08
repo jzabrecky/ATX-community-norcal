@@ -1,9 +1,15 @@
 #### Main figure to show differences in morphologically-identified assemblages among rivers
 ### Jordan Zabrecky
-## last edited: 04.04.2026
+## last edited: 05.07.2026
 
 # This script creates a main figure to show differences in assemblages associated 
 # with nontarget, microcoleus, and anabaena samples
+
+# THINGS TO CONSIDER: 
+# - removing Russian outlier sample
+# - separating classes for certain types then the rest as phylums?
+
+#### (1) Loading libraries & data ####
 
 # load from analysis script
 source("./code/4b_amongrivers_16s.R")
@@ -24,7 +30,6 @@ palette <- c("#FBF6B0", "#C5BD53", "#777122", "#C2DFFF", "#5E9DE0", "#205288",
 # color for other or unknown
 end_color <- "lightgray"
 
-
 #### (2) Creating Individual Plots ####
 
 # creating string vector to iterate through sample types
@@ -42,144 +47,92 @@ lapply(fig_a, print)
 
 ## (b) classes bar plot
 
+# putting together data so they share the same ~12 Phylum-Classes for the figure!
+all <- rbind(data_long$nt, data_long$tm, data_long$tac)
+
+# use function 
+source("./code/supplemental_code/S4c_grouping_func.R")
+all_phylumclass <- microbial_grouping(all, "phylum_class", 0.065) %>% 
+  mutate(broader_factor = factor(broader,
+                                 levels = c(str_sort(unique(broader))[-which(str_sort(unique(broader)) == "Other")],
+                                            "Other")))
+
+# split dataframe back up to plot separately
+all_split <- split(all_phylumclass, all_phylumclass$sample_type)
+
+## make figures
 fig_b <- list()
 for(i in sample_types) {
-  fig_b[[i]] = barplot_class_plots[[i]]
-}
-lapply(fig_b, print)
-# need to reduce TAC, merge NA with other, basically more customized groups
-
-# target taxa
-t_figure <- plot_grid(fig_a$nt, fig_a$tm, fig_a$tac, nrow = 1)
-t_figure
-
-
-
-#### OLD 
-
-#### (1) Loading libraries & data ####
-
-# load from second analysis script
-source("./code/4b_amongrivers_16s.R")
-
-# TBD- load from PICRUSt analysis
-
-# load additional libraries
-lapply(c("cowplot"), require, character.only = T)
-
-# set universal plot theme (just text size for now)
-theme_set(theme_bw() + theme(text = element_text(size = 10)))
-
-# custom palette
-palette <- c("#FBF6B0", "#C5BD53", "#777122", "#C2DFFF", "#5E9DE0", "#205288", 
-             "#C0ED96", "#7AB048", "#3D631A", "#CBC5F6", "#8A80CF", "#61389E")
-
-#### (2) Creating Individual Plots ####
-
-# list of desired figures:
-# a- NMDS algal
-# b- NMDS bacterial
-# c- NMDS functional
-# d- algal taxa groups (bar plot)
-# e- bacterial phylum class (bar plot)
-# f- functional groups (bar plot)
-# h- alpha diversity (scatterplot)
-# i- venn diagram
-
-# creating string vector to iterate through sample types
-sample_types = c("nt", "tac", "tm")
-
-## (a) NMDS algal
-
-fig_a <- list()
-for(i in sample_types) {
-  fig_a[[i]] = makeNMDSplot(NMDS_list_morphological[[i]], FALSE, FALSE,
-                            color = "site", shape = "site")
-}
-lapply(fig_a, print)
-
-
-## (b) NMDS bacterial
-
-fig_b <- list()
-for(i in sample_types) {
-  fig_b[[i]] <- makeNMDSplot(NMDS_list[[i]], FALSE, FALSE,
-                             color = "site", shape = "site")
+  fig_b[[i]] = barplot(all_split[[str_to_upper(i)]], x = "site", y = "relative_abundance",
+                       fill = "broader_factor") +
+    scale_fill_discrete(palette = c(palette[-length(palette)], end_color)) +
+    labs(x = NULL, y = NULL) #+
+    #theme(legend.position = "none")
 }
 lapply(fig_b, print)
 
-## (c) NMDS functional - TBD
+## okay, real quick let's see a phylum version
 
-## (d) algal taxa bar plot
+# putting together data so they share the same ~12 Phylum-Classes for the figure!
+all_phylum <- microbial_grouping(all, "phylum", 0.05) %>% 
+  # add in case if NA
+  mutate(broader = case_when(is.na(phylum) ~ "Other",
+                                    TRUE ~ broader)) %>% 
+  # then factor
+  mutate(broader_factor = factor(broader,
+                                 levels = c(str_sort(unique(broader))[-which(str_sort(unique(broader)) == "Other")],
+                                            "Other")))
 
-fig_d <- list()
-col_num <- list(14, 9, 10) # list for number of fill colors
-names(col_num) <- sample_types
+# split dataframe back up to plot separately
+all_p_split <- split(all_phylum, all_phylum$sample_type)
+
+## make figures
+fig_b_ver2 <- list()
 for(i in sample_types) {
-  fig_d[[i]] <- barplot_broader_plots[[i]] +
-    scale_fill_discrete(palette = palette)
+  fig_b_ver2[[i]] = barplot(all_p_split[[str_to_upper(i)]], x = "site", y = "relative_abundance",
+                       fill = "broader_factor") +
+    scale_fill_discrete(palette = c(palette[-length(palette)], end_color)) +
+    labs(x = NULL, y = NULL) #+
+  #theme(legend.position = "none")
 }
-lapply(fig_d, print)
+lapply(fig_b_ver2, print)
 
-# put in line with supplemental figure 
-
-## (e) bacterial taxa bar plot
-
-fig_e <- list()
+# just to visually compare between the two
 for(i in sample_types) {
-  fig_e[[i]] <- barplot_phylum_plots[[i]] + 
-    scale_fill_discrete(palette = palette)
+  print(plot_grid(fig_b[[i]], fig_b_ver2[[i]]))
 }
-lapply(fig_e, print)
 
-## (f) functional taxa TBD
+# Eh maybe just put class one in supplemental!
 
-## (e) alpha diversity (shannon diversity index)
+## (c) diversity box plot
 
-fig_d <- list()
-d_colors <- list(c("#ebdf38", "#62a7f8", "#416f16"),
-                 c("#ebdf38", "#62a7f8", "#416f16"),
-                 c("#62a7f8", "#416f16"))
-names(d_colors) <- sample_types
-for(i in sample_types){
-  fig_d[[i]] <- ggplot(data = diversity[[i]], aes(x = site, y = shannon_diversity, 
-                                                  fill = site)) +
-    geom_boxplot(alpha = 0.5) +
-    geom_jitter(aes(color = site), alpha = 0.9, size = 2) +
-    scale_fill_discrete(palette = d_colors[[i]]) +
-    scale_color_discrete(palette = d_colors[[i]])
-}
-lapply(fig_d, print)
-
-## (f) ASV venn diagram
-
-# figures created in other script:
-# "fig_Q1_ASV_venn_diagrams.R"
-# will put everything together in Inkscape, but for now will use the previous plots as 
-# a place holder
-
-#### (3) Putting Figures Together ####
-
-# will create top row and bottom row first separately, then put together for final figure
-final_figure <- list()
+fig_c <- list()
 for(i in sample_types) {
-  top_row = plot_grid(fig_a[[i]] + theme(legend.position = "none"),
-                      fig_c[[i]] + theme(legend.position = "none"), 
-                      # will add legends for the above separately, as they are small 
-                      # and can fit into a different space!
-                      fig_d[[i]] + theme(legend.position = "none"), 
-                      nrow = 1, rel_widths = c(1.5, 1.5, 1))
-  bottom_row = plot_grid(fig_b[[i]] + theme(legend.position = "right"), 
-                         fig_b[[i]] + theme(legend.position = "right"), 
-                         fig_d[[i]] + theme(legend.position = "none"), 
-                         nrow = 1, rel_widths = c(1.5, 1.5, 1))
-  final_figure[[i]] <- plot_grid(top_row, bottom_row, 
-                                 ncol = 1, rel_heights = c(1.25, 1),
-                                 scale = 0.95)
+  fig_c[[i]] = ggplot(data = diversity[[i]], aes(x = site, y = shannon_diversity, fill = site)) +
+    geom_boxplot() +
+    scale_fill_manual(values = c("SAL" = "#62a7f8",
+                                 "SFE-M" = "#416f16",
+                                 "RUS" = "#bdb000")) +
+    labs(x = NULL, y = NULL) +
+    theme(legend.position = "none")
 }
-lapply(final_figure, print)
+lapply(fig_c, print)
 
-# consider putting PERMANOVA and/or PERMDISP results on top of NMDS!
-# also add in titles for title space!
+#### (3) Putting Figure Together ####
 
-# save when complete :)
+# put figure together
+final <-  plot_grid(fig_a$nt, fig_a$tm, fig_a$tac, fig_b$nt, fig_b$tm, fig_b$tac,
+                    fig_c$nt, fig_c$tm, fig_c$tac, align = "hv")
+final
+
+# save
+ggsave("./figures/tiff_files/Q1_molecular.tiff", dpi = 600,
+       width=18, height=20, unit="cm")
+
+# saving sfs stuff
+plot_grid(fig_a$tac, fig_a$tm)
+ggsave("./figures/SFS_figures/target_molecular.tiff", dpi = 600,
+       width=17.6, height=6, unit="cm")
+plot_grid(fig_c$tac, fig_c$tm)
+ggsave("./figures/SFS_figures/target_molecular_diversity.tiff", dpi = 600,
+       width=17.6, height=6, unit="cm")

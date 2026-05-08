@@ -1,6 +1,6 @@
 #### Comparing molecular 16s data among rivers
 ### Jordan Zabrecky
-## last edited: 05.05.2026
+## last edited: 05.07.2026
 
 # This code compares normalized 16s relative data from NT, TM, and TAC samples
 # across rivers to answer Q1. First data is transformed (sqrt).
@@ -8,6 +8,8 @@
 # from a river and created bar plots to visually compare average samples at each river
 
 # IDENTIFY OUTLIER SAMPLE - I THINK IT CREATES ISSUES IN ATX?!??
+
+# okay need to confirm that the relative abundances sum to 100
 
 #### (1) Loading libraries & data ####
 
@@ -210,7 +212,7 @@ for(i in 1:length(diversity)) {
 # save test results
 p_table <- data.frame(sample_type = NA,
                       diversity_kruskal = NA,
-                      evenness_kruksal = NA)
+                      evenness_kruskal = NA)
 
 for(i in names(diversity)) {
   
@@ -379,121 +381,80 @@ for(i in 1:length(data_wide_class)) {
 # save tests
 write.csv(p_table[-1,], "./data/PERMANOVA_results/Q1_molecular.csv", row.names = FALSE)
 
-#### (7) Q: What explains these differences? Species Indicator Analyses ####
-
-# Previously looked at various groupings (orders & genuses w/in cyanobacteria, etc.)
-# but have decided phylums and phylum-classes made most sense though still will probably
-# not use this information much as there are so many classes! Diversity gives a better
-# and much quicker overview I think!
-
-## (a) phylums
-
-phylums <- lapply(data_long, function(x) {
-    # subset columns we care about and pivot wider
-      y = x %>% 
-        select(site_reach, site, field_date, sample_type, phylum, relative_abundance) %>% 
-        dplyr::group_by(site_reach, site, field_date, sample_type, phylum) %>% 
-        # remove multiples of phylums due to differing ASVs
-        dplyr::summarize(relative_abundance = sum(relative_abundance)) %>% 
-        pivot_wider(names_from = phylum, values_from = relative_abundance)
-      # if there is a column NA, remove it
-      if("NA" %in% colnames(y)) {
-        y = y %>% 
-          select(!c("NA"))
-      }
-      # replace NA (indicating that ASV was not present in sample) with 0
-      y[,5:ncol(y)][is.na(y[,5:ncol(y)])] = 0
-      # lastly, square-root transform the data
-      y[,5:ncol(y)] <- sqrt(y[,5:ncol(y)])
-      return(y)})
-
-# (i) NT
-set.seed(1)
-nt_phylum_test <- multipatt(phylums$nt[,5:ncol(phylums$nt)], phylums$nt$site, func = "r.g", control = how(nperm = 999))
-summary(nt_phylum_test)
-# lots of unique identified with RUS including ***: Actinobacteriota, Elusimicrobiota,
-# Desulfobacteria, Planctomycetota, Verrucomicrobiota
-# SAL: Deincoccota (***), Armatimonadota (**)
-# SFE-M: Sumerlaeota
-# RUS + SAL: Proteobacteria *
-# SAL + SFE-M: Cyanobacteria ***
-write.csv(nt_phylum_test$sign, "./data/ISA_results/Q1_nt_molecular_phylum.csv", row.names = FALSE)
-
-# (ii) TM
-set.seed(1)
-tm_phylum_test <- multipatt(phylums$tm[,5:ncol(phylums$tm)], phylums$tm$site, func = "r.g", control = how(nperm = 999))
-summary(tm_phylum_test)
-# only identified for SFE-M including **: Desulfobacteria, Cyanobacteria, Verrucomicrobiota,
-# Chloroflexiota
-write.csv(tm_phylum_test$sign, "./data/ISA_results/Q1_tm_molecular_phylum.csv", row.names = FALSE)
-
-# (iii) TAC
-set.seed(1)
-tac_phylum_test <- multipatt(phylums$tac[,5:ncol(phylums$tac)], phylums$tac$site, func = "r.g", control = how(nperm = 999))
-summary(tac_phylum_test)
-# only identified for SAL: Fibrobacterota *, Spirochaetota ** 
-write.csv(tac_phylum_test$sign, "./data/ISA_results/Q1_tac_molecular_phylum.csv", row.names = FALSE)
-
-## (b) classes
-
-classes <- lapply(data_long, function(x) {
-  # subset columns we care about and pivot wider
-  y = x %>% 
-    select(site_reach, site, field_date, sample_type, phylum_class, relative_abundance) %>% 
-    dplyr::group_by(site_reach, site, field_date, sample_type, phylum_class) %>% 
-    # remove multiples of phylums due to differing ASVs
-    dplyr::summarize(relative_abundance = sum(relative_abundance)) %>% 
-    ungroup() %>% 
-    pivot_wider(names_from = phylum_class, values_from = relative_abundance)
-  # if there is a column NA, remove it
-  if("NA" %in% colnames(y)) {
-    y = y %>% 
-      select(!c("NA"))
-  }
-  # replace NA (indicating that ASV was not present in sample) with 0
-  y[,5:ncol(y)][is.na(y[,5:ncol(y)])] = 0
-  # lastly, square-root transform the data
-  y[,5:ncol(y)] <- sqrt(y[,5:ncol(y)])
-  return(y)})
-
-# (i) NT
-set.seed(1)
-nt_class_test <- multipatt(classes$nt[,5:ncol(classes$nt)], classes$nt$site, func = "r.g", control = how(nperm = 999))
-summary(nt_class_test)
-write.csv(nt_class_test$sign, "./data/ISA_results/Q1_molecular_nt_molecular_class.csv", row.names = FALSE)
-# lots for RUS (not listing)
-# SAL: Fimbriimonadia ***, Deinococci ***
-# SFE-M: Rhodothermia *
-# RUS + SAL: Gammaproteobacteria **, Acidimicrobiia *
-# RUS + SFE-M: including Desulfuromonadia **, Desulfovibrionia **
-# SAL + SFE-M: Cyanobacteria ***, Gracilibacteria *
-
-# (ii) TM
-set.seed(1)
-tm_class_test <- multipatt(classes$tm[,5:ncol(classes$tm)], classes$tm$site, func = "r.g", control = how(nperm = 999))
-summary(tm_class_test)
-write.csv(tm_class_test$sign, "./data/ISA_results/Q1_molecular_tm_molecular_class.csv", row.names = FALSE)
-# SAL: Bacteroidia *
-# SFE-M: many but no with ***-
-
-# (iii) TAC
-set.seed(1)
-tac_class_test <- multipatt(classes$tac[,5:ncol(classes$tac)], classes$tac$site, func = "r.g", control = how(nperm = 999))
-summary(tac_class_test)
-write.csv(tac_class_test$sign, "./data/ISA_results/Q1_molecular_tac_molecular_class.csv", row.names = FALSE)
-# only for SAL including Vampirivibrionia ***
-
 #### (8) Misc. Questions ####
 
 ## (1) What are the top five most abundant phylum-class for each river?
-summaries <- lapply(data_long, function(x) {
+summaries_phyla <- lapply(data_long, function(x) {
   y <- x %>% 
-    dplyr::group_by(site, phylum_class) %>% 
-    dplyr::summarize(mean = mean(relative_abundance),
-                     sd = sd(relative_abundance))
+    # first group different ASVs together by phylum class
+    dplyr::group_by(site_reach, site, field_date, sample_type, phylum) %>% 
+    dplyr::summarize(total_abun = sum(relative_abundance)) %>% 
+    ungroup()
+  
+  z <- y %>% 
+    dplyr::group_by(site, sample_type, phylum) %>% 
+    dplyr::summarize(mean = mean(total_abun),
+                     sd = sd(total_abun))
+
+  return(z)
 })
-view(summaries$nt)
-## (NT)
-# South Fork Eel: Cyanobacteria > Alphaproteobacteria > Verrucomicrobiae > Gammaproteobacteria
-# Salmon: Cyanobacteria > Deinococci > Alphaproteobacteria > Gammaproteobacteria > Fimbriimonadia
-# Russian: Cyanobacteria > Verrucomicrobiae > Gammaproteobacteria > Abditibacteria
+view(summaries_phyla$nt)
+summaries_class <- lapply(data_long, function(x) {
+  y <- x %>% 
+    # first group different ASVs together by phylum class
+    dplyr::group_by(site_reach, site, field_date, sample_type, phylum_class) %>% 
+    dplyr::summarize(total_abun = sum(relative_abundance)) %>% 
+    ungroup()
+  
+  z <- y %>% 
+    dplyr::group_by(site, sample_type, phylum_class) %>% 
+    dplyr::summarize(mean = mean(total_abun),
+                     sd = sd(total_abun))
+  
+  return(z)
+})
+view(summaries_class$nt)
+
+## (2) How about for the sample type together (specifically for TAC)?
+sample_summaries <- lapply(data_long, function(x) {
+  y <- x %>% 
+    # first group different ASVs together by phylum class
+    dplyr::group_by(site_reach, site, field_date, sample_type, phylum) %>% 
+    dplyr::summarize(total_abun = sum(relative_abundance)) %>% 
+    ungroup()
+  
+  z <- y %>% 
+    dplyr::group_by(sample_type, phylum) %>% 
+    dplyr::summarize(mean = mean(total_abun),
+                     sd = sd(total_abun))
+  
+  return(z)
+})
+view(sample_summaries$tac)
+
+## (2) How much of the sample is the target taxa for target samples?
+tm_w_target <- read.csv("./data/molecular/16s_nochimera_rarefied_95_copynum_normalized_FINAL.csv") %>% 
+  filter(sample_type == "TM") %>% 
+  filter(genus == "Microcoleus") %>% 
+  group_by(site, site_reach, sample_type, field_date) %>% 
+  dplyr::summarize(total = sum(picrust2_relative_abundance))
+
+# need to figure out how much
+min(tm_w_target$total) # 0.12% (quite low! is SFE-M-3 9/6/2022 - will look at it more later)
+max(tm_w_target$total) # 92.02%
+mean(tm_w_target$total) # 53.6%
+sd(tm_w_target$total) # 30.6%
+
+curious_sample <- read.csv("./data/molecular/16s_nochimera_rarefied_95_copynum_normalized_FINAL.csv") %>% 
+  filter(site_reach == "SFE-M-3" & field_date == "9/6/2022" & sample_type == "TM")
+# seems like mostly proteobacteria
+
+tac_w_target <- read.csv("./data/molecular/16s_nochimera_rarefied_95_copynum_normalized_FINAL.csv") %>%
+  filter(sample_type == "TAC") %>% 
+  filter(genus %in% c("Anabaena","Cylindrospermum","Trichormus","Cylindrospermopsis")) %>% 
+  group_by(site, site_reach, sample_type, field_date) %>% 
+  dplyr::summarize(total = sum(picrust2_relative_abundance))
+min(tac_w_target$total) # 0.04
+max(tac_w_target$total) # 29.9
+mean(tac_w_target$total) # 8.7%
+sd(tac_w_target$total) # 8.6%
