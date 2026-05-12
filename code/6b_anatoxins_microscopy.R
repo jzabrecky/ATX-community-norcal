@@ -1,10 +1,11 @@
 #### Comparing microscopy data with regard to anatoxin concentrations
 ### Jordan Zabrecky
-## last edited: 05.07.2026
+## last edited: 05.11.2026
 
 # This script examines how communities as identified by microscopy
 # change with increasing anatoxin concentrations with PERMANOVA, NMDS,
-# and ISA
+# and ISA. Note that as only one Salmon sample contained detectable 
+# anatoxin, we omit the Salmon River samples from this analyses
 
 #### (1) Loading libraries & data ####
 
@@ -13,432 +14,227 @@ lapply(c("tidyverse", "plyr", "vegan", "cowplot",
          "indicspecies"), require, character.only = T)
 
 # read in relative abundance files (data transformed in previous script, "4a_amongrivers_microscopy.R")
-data <- lapply(list.files(path = "./data/morphological/transformed/", pattern = ".csv"),
+abun_data <- lapply(list.files(path = "./data/morphological/transformed/", pattern = ".csv"),
                function(x) read.csv(paste("./data/morphological/transformed/", x, sep = "")))
-sample_types <- c("nt", "tac", "tm")
-names(data) <- sample_types
+sample_types <- c("NT", "TAC", "TM")
+names(abun_data) <- sample_types
 
-# read in environmental covariates & toxin data
+# read in toxin data
 atx <- read.csv("./data/field_and_lab/atx_w_categorical_groupings.csv")
 
-# need to join in NT data
+# split
+atx <- split(atx, atx$sample_type)
 
-# join data and anatoxin data
-data_tog <- lapply(data, function(x) left_join(x, atx, by = c("field_date", "site_reach", "site")))
-
-#### (2) Do samples change with varying anatoxin concentrations in a river? ####
-
-# looking at river & sample type separately as we have established that the communities can differ
-# among rivers and sample types
-SFE_TM <- 
-
-## (a) SFE-M TM
-set.seed(1)
-lapply(sample_types, function(x) {
-  # set column name for anatoxin based on sample type
-  atx_col = paste("log_", str_to_upper(x), "_ATX_all_ug_orgmat_g", sep = "")
-  
-  # PERMANOVA test
-  print(paste(x, "PERMANOVA"))
-  print(runPERMANOVA(data_tog[[x]], start_col, end_col = ncol(data[[x]]), 
-                     group = as.vector(data_tog[[x]][atx_col])[[1]], na.action = "na.omit"))
-  
-  # BETADISPER test
-  print(paste(x, "BETADISPER"))
-  print(anova(betadisper(vegdist(data_tog[[x]][,start_col:ncol(data[[x]])], method = "bray"), 
-                         as.vector(data_tog[[x]][atx_col])[[1]])))
-  
-  return()
+# join in data
+data <- lapply(names(atx), function(x) {
+  left_join(atx[[x]], abun_data[[x]], by = c("field_date", "site", "site_reach", "sample_type"))
 })
+names(data) <- sample_types
 
+# set start_column
+start_col <- 9
 
-#### OLD BELOW #### ----------------------------------------------------------
+# lastly, make long 
+data_long <- lapply(data, function(x) {
+  return(pivot_longer(x, cols = c(9:ncol(x)), values_to = "percent",
+               names_to = "taxa"))
+})
+names(data_long) <- sample_types
 
-#### (2) How do samples change with varying anatoxin concentrations among all rivers? ####
-
-# load community analyses functions from other script
+# source code for analyses
 source("./code/supplemental_code/S4b_community_analyses_func.R")
+source("./code/supplemental_code/S4c_grouping_func.R")
 
-# set start column for community data
-start_col <- 5
+# make broader categories for plotting
+data_long$TM <- target_broader(data_long$TM)
+data_long$TAC <- target_broader(data_long$TAC)
+data_long$NT <- nontarget_broader(data_long$NT)
 
-## (a) PERMANOVAs
+# lastly, want to analyze rivers separately
+# as we know the assemblages often differ among rivers!
+data_river <- lapply(data, function(x) split(x, x$`site`))
 
-## (i) log-anatoxins
+#### (2) Relative Abundance Bar Plots ####
+
+# put bar plots into lists
+barplot_taxa_plots <- lapply(data_long, function(x) barplot(x, x = "atx_group", y = "percent", fill = "taxa"))
+barplot_broader_plots <- lapply(data_long, function(x) barplot(x, x = "atx_group", y  = "percent", fill = "broader"))
+
+# titles for plots
+titles <- c("Non-Target Samples", 
+            "Microcoleus Samples (excluding M)",
+            "Anabaena/Cylindrospermum Samples (excluding AC & GA)")
+
+# view plots
+for(i in 1:length(barplot_taxa_plots)) {
+  print(barplot_taxa_plots[[i]] + labs(title = titles[i]) + facet_wrap(~site))
+  print(barplot_broader_plots[[i]] + labs(title = titles[i]) + facet_wrap(~site))
+}
+# feel like the one main noticeable thing is Nostoc in none samples for target
+# would not think this is causation but rather a function of time/succession!
+
+#### (4) NMDS Plots ####
+
+# get NMDS for each dataframe (sqrt-transformed!)
+
+## (a) South Fork Eel River
 set.seed(1)
-lapply(sample_types, function(x) {
-  # set column name for anatoxin based on sample type
-  atx_col = paste("log_", str_to_upper(x), "_ATX_all_ug_orgmat_g", sep = "")
-  
-  # PERMANOVA test
-  print(paste(x, "PERMANOVA"))
-  print(runPERMANOVA(data_tog[[x]], start_col, end_col = ncol(data[[x]]), 
-               group = as.vector(data_tog[[x]][atx_col])[[1]], na.action = "na.omit"))
-  
-  # BETADISPER test
-  print(paste(x, "BETADISPER"))
-  print(anova(betadisper(vegdist(data_tog[[x]][,start_col:ncol(data[[x]])], method = "bray"), 
-                   as.vector(data_tog[[x]][atx_col])[[1]])))
-  
-  return()
-})
-# NT, *** permanova, * betadisper
-# TAC: * permanova, 0.484 betadisper
-# TM: ** permanova, ** betadisper
+NMDS_list_eel <- lapply(sample_types, function(x) getNMDSdata(data_river[[x]]$`SFE-M`, start_col))
 
-# (ii) anatoxin groupings
+# making plots
+NMDS_plots_eel <- lapply(NMDS_list_eel, function(x) makeNMDSplot(x, TRUE, TRUE, 
+                                                         color = "atx_group", shape = "atx_group"))
+
+lapply(NMDS_plots_eel, print)
+# seems like difference between detected and non-detected, but not for variability
+
+## (b) Russian River
 set.seed(1)
-lapply(sample_types, function(x) {
-  # set column name for anatoxin based on sample type
-  atx_col = paste(str_to_upper(x), "_atx_category", sep = "")
-  
-  # PERMANOVA test
-  print(paste(x, "PERMANOVA"))
-  print(runPERMANOVA(data_tog[[x]], start_col, end_col = ncol(data[[x]]), 
-                     group = as.vector(data_tog[[x]][atx_col])[[1]], na.action = "na.omit"))
-  
-  # BETADISPER test
-  print(paste(x, "BETADISPER"))
-  print(anova(betadisper(vegdist(data_tog[[x]][,start_col:ncol(data[[x]])], method = "bray"), 
-                         as.vector(data_tog[[x]][atx_col])[[1]])))
-  
-  return()
-})
-# NT: *, *
-# TAC: *, not
-# TM: *, ***
+NMDS_list_rus <- lapply(c("TAC", "NT"), function(x) getNMDSdata(data_river[[x]]$`RUS`, start_col))
 
-# (iii) anatoxin binary
+# making plots
+NMDS_plots_rus <- lapply(NMDS_list_rus, function(x) makeNMDSplot(x, TRUE, TRUE, 
+                                                                 color = "atx_group", shape = "atx_group"))
+
+lapply(NMDS_plots_rus, print)
+# less of a difference observable here
+
+#### (5) Do communities differ with varying ATX concentrations? (PERMANOVA) ####
+
+# create table to save results
+p_table <-  data.frame(test = NA,
+                       sample_type = NA,
+                       river = NA,
+                       atx = NA,
+                       p_value = NA,
+                       F_stat = NA)
+
+## (a) Detected versus no Detected anatoxins?
+
 set.seed(1)
-lapply(sample_types, function(x) {
-  # set column name for anatoxin based on sample type
-  atx_col = paste(str_to_upper(x), "_atx_detected", sep = "")
-  
-  # PERMANOVA test
-  print(paste(x, "PERMANOVA"))
-  print(runPERMANOVA(data_tog[[x]], start_col, end_col = ncol(data[[x]]), 
-                     group = as.vector(data_tog[[x]][atx_col])[[1]], na.action = "na.omit"))
-  
-  # BETADISPER test
-  print(paste(x, "BETADISPER"))
-  print(anova(betadisper(vegdist(data_tog[[x]][,start_col:ncol(data[[x]])], method = "bray"), 
-                         as.vector(data_tog[[x]][atx_col])[[1]])))
-  
-  return()
-})
-# NT: **, *
-# TAC: not, not
-# TM: *, ***
-
-## (b) ISA
-
-# (i) atx categories
-set.seed(1)
-lapply(sample_types, function(x) {
-  # set column name for anatoxin based on sample type
-  atx_col = paste(str_to_upper(x), "_atx_category", sep = "")
-  
-  # remove columns where atx_col is na
-  if(x == "nt" | x == "tm") { 
-    # tm also included here to remove sample from 8-23-2022 as we did not have enough to analyze
-    temp = data_tog[[x]][-which(is.na(data_tog[[x]][atx_col])),]
-  } else {
-    temp = data_tog[[x]]
+for(s in c("SFE-M", "RUS")) {
+  for(i in sample_types) {
+    if(s == "RUS" & i == "TM") {
+    } else {
+      permanova = runPERMANOVA(data = data_river[[i]][[s]], start_col = start_col, 
+                                 group = data_river[[i]][[s]]$`atx_detected`)
+      
+      p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
+                                           sample_type = i,
+                                           river = s,
+                                           atx = "detected",
+                                           p_value = permanova$`Pr(>F)`[1],
+                                           F_stat = permanova$`F`[1]))
+      
+      permdisp = betadisper(vegdist(data_river[[i]][[s]][,start_col:ncol(data_river[[i]][[s]])], 
+                                    method = "bray"), data_river[[i]][[s]]$atx_detected)
+      test = adonis2(dist(permdisp$distances) ~ data_river[[i]][[s]]$atx_detected)
+      
+      p_table <- rbind(p_table, data.frame(test = "PERMDISP",
+                                           sample_type = i,
+                                           river = s,
+                                           atx = "detected",
+                                           p_value = test$`Pr(>F)`[1],
+                                           F_stat = test$`F`[1]))
+    }
   }
-  
-  # run ISA
-  print(paste(x, "ISA"))
-  summary(multipatt(temp[,start_col:ncol(data[[x]])], as.vector(temp[atx_col])[[1]]), 
-                               func = "r.g", control = how(nperm = 999))
-})
-# NT: assortment of unicellular green algae and rivularia, rhopalodia & anabaena for high & low
-# TAC: microcoleus associated with high and low samples
-# TM: geitlerinema associated with high and low samples
+}
+# Difference with South Fork Eel but not for Russian River
 
-# (ii) atx detected
 set.seed(1)
-lapply(sample_types, function(x) {
-  # set column name for anatoxin based on sample type
-  atx_col = paste(str_to_upper(x), "_atx_detected", sep = "")
-  
-  # remove columns where atx_col is na
-  if(x == "nt" | x == "tm") { 
-    # tm also included here to remove sample from 8-23-2022 as we did not have enough to analyze
-    temp = data_tog[[x]][-which(is.na(data_tog[[x]][atx_col])),]
-  } else {
-    temp = data_tog[[x]]
+for(s in c("SFE-M", "RUS")) {
+  for(i in sample_types) {
+    if(s == "RUS" & i == "TM") {
+    } else {
+      permanova = runPERMANOVA(data = data_river[[i]][[s]], start_col = start_col, 
+                               group = data_river[[i]][[s]]$`atx_group`)
+      
+      p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
+                                           sample_type = i,
+                                           river = s,
+                                           atx = "atx_group",
+                                           p_value = permanova$`Pr(>F)`[1],
+                                           F_stat = permanova$`F`[1]))
+      
+      permdisp = betadisper(vegdist(data_river[[i]][[s]][,start_col:ncol(data_river[[i]][[s]])], 
+                                    method = "bray"), data_river[[i]][[s]]$atx_group)
+      test = adonis2(dist(permdisp$distances) ~ data_river[[i]][[s]]$atx_group)
+      
+      p_table <- rbind(p_table, data.frame(test = "PERMDISP",
+                                           sample_type = i,
+                                           river = s,
+                                           atx = "atx_group",
+                                           p_value = test$`Pr(>F)`[1],
+                                           F_stat = test$`F`[1]))
+    }
   }
-  
-  # run ISA
-  print(paste(x, "ISA"))
-  summary(multipatt(temp[,start_col:ncol(data[[x]])], as.vector(temp[atx_col])[[1]]), 
-          func = "r.g", control = how(nperm = 999))
-})
-# weirder results here:
-# NT: detected- cosmarium
-# TAC: detected- microcoleus
-# TM: none
+}
+# Differences in groups for SFE-M and TAC RUS (but barely)
+# the second point is interesting
 
+# save PERMANOVA results
+write.csv(p_table[-1,], "./data/PERMANOVA_results/Q3_microscopy.csv", row.names = FALSE)
 
-## (c) NMDS
+#### (6) What taxa may be indicative of ATX groups? ####
 
-# get NMDS data
-NMDS_data <- lapply(sample_types, function(x) getNMDSdata(data_tog[[x]], start_col, 
-                    end_col = ncol(data[[x]])))
-names(NMDS_data) <- sample_types
+# just going to do each separately
 
-# (i) with atx category
-lapply(sample_types, function(x) {
-  
-  # set column name for anatoxin based on sample type
-  atx_col = paste(str_to_upper(x), "_atx_category", sep = "")
-  
-  makeNMDSplot(NMDS_data[[x]], FALSE, FALSE, color = atx_col, shape = "site")
-})
-# visually distinct for TM (note only one high sample for TM with current designation)
-# NT obviously a mess with all rivers in one graph
-
-# (ii) with atx detected
-lapply(sample_types, function(x) {
-  
-  # set column name for anatoxin based on sample type
-  atx_col = paste(str_to_upper(x), "_atx_detected", sep = "")
-  
-  makeNMDSplot(NMDS_data[[x]], FALSE, FALSE, color = atx_col, shape = "site")
-})
-# looks more visually distinct for TM
-
-#### (3) How do samples change with varying anatoxin concentrations within a river? ####
-
-# split data based on river!
-data_river <- lapply(data_tog, function(x) split(x, x$site))
-
-## (a) PERMANOVA
-
-## (i) log-anatoxins
+## (a) SFE NT
 set.seed(1)
-lapply(sample_types, function(x) {
-  
-  lapply(names(data_river[[x]]), function(y) {
-    if(y == "SAL" & x == "tac") {
-      print("no test")
-    } else {
-      # set column name for anatoxin based on sample type
-      atx_col = paste("log_", str_to_upper(x), "_ATX_all_ug_orgmat_g", sep = "")
-      
-      # PERMANOVA test
-      print(paste(y, x, "PERMANOVA"))
-      print(runPERMANOVA(data_river[[x]][[y]], start_col, end_col = ncol(data[[x]]), 
-                         group = as.vector(data_river[[x]][[y]][atx_col])[[1]], na.action = "na.omit"))
-      
-      # BETADISPER test
-      print(paste(y, x, "BETADISPER"))
-      print(anova(betadisper(vegdist(data_river[[x]][[y]][,start_col:ncol(data[[x]])], method = "bray"), 
-                             as.vector(data_river[[x]][[y]][atx_col])[[1]])))
-    
-      return()
-    }
-  })
-})
-# RUS:
-# nt not, *
-# tac *, not
-# SAL:
-# nt not, not
-# tm not, not
-# tac no test
-# SFE:
-# nt *, not
-# tm **, **
-# tac: ***, ***
+eel_nt_test_det <- multipatt(data_river$NT$`SFE-M`[,start_col:ncol(data_river$NT$`SFE-M`)], 
+                     data_river$NT$`SFE-M`$atx_detected, func = "r.g", control = how(nperm = 999))
+summary(eel_nt_test_det)
+eel_nt_test_group <- multipatt(data_river$NT$`SFE-M`[,start_col:ncol(data_river$NT$`SFE-M`)], 
+                             data_river$NT$`SFE-M`$atx_group, func = "r.g", control = how(nperm = 999))
+summary(eel_nt_test_group)
+write.csv(eel_nt_test_group$sign, "./data/ISA_results/Q3_nt_microscopy_SFE.csv")
+# detected: rophalodia, epithemia, anabaena
+# high & medium: epithemia, anabaena
+# high & medium & low: rophalodia
 
-## (ii) atx category
+## (b) SFE TM
 set.seed(1)
-lapply(sample_types, function(x) {
-  
-  lapply(names(data_river[[x]]), function(y) {
-    if(y == "SAL" & x == "tac") {
-      print("no test")
-    } else {
-      
-      # set column name for anatoxin based on sample type
-      atx_col = paste(str_to_upper(x), "_atx_category", sep = "")
-      
-      # PERMANOVA test
-      print(paste(y, x, "PERMANOVA"))
-      print(runPERMANOVA(data_river[[x]][[y]], start_col, end_col = ncol(data[[x]]), 
-                         group = as.vector(data_river[[x]][[y]][atx_col])[[1]], na.action = "na.omit"))
-      
-      # BETADISPER test
-      print(paste(y, x, "BETADISPER"))
-      print(anova(betadisper(vegdist(data_river[[x]][[y]][,start_col:ncol(data[[x]])], method = "bray"), 
-                             as.vector(data_river[[x]][[y]][atx_col])[[1]])))
-      
-      return()
-    }
-  })
-})
-# RUS:
-# nt not, not
-# tac not, not
-# SAL:
-# nt no test (for whatever reason was not working) -- SHOULD BE FIXED NOW
-# will first double-check grouping with Joanna
-# tm not, not
-# tac no test
-# SFE:
-# nt not, not
-# tm **, *
-# tac: **, not
+eel_tm_test_det <- multipatt(data_river$TM$`SFE-M`[,start_col:ncol(data_river$TM$`SFE-M`)], 
+                             data_river$TM$`SFE-M`$atx_detected, func = "r.g", control = how(nperm = 999))
+summary(eel_tm_test_det)
+eel_tm_test_group <- multipatt(data_river$TM$`SFE-M`[,start_col:ncol(data_river$TM$`SFE-M`)], 
+                               data_river$TM$`SFE-M`$atx_group, func = "r.g", control = how(nperm = 999))
+summary(eel_tm_test_group)
+write.csv(eel_tm_test_group$sign, "./data/ISA_results/Q3_tm_microscopy_SFE.csv")
+# detected: other coccoids & geitlerinema; not detected: nostoc
+# none: nostoc, medium: other coccoids
 
-## (iii) atx detected
+## (c) SFE TAC
 set.seed(1)
-lapply(sample_types, function(x) {
-  
-  lapply(names(data_river[[x]]), function(y) {
-    if(y == "SAL" & x == "tac") {
-      print("no test")
-    } else {
-      
-      # set column name for anatoxin based on sample type
-      atx_col = paste(str_to_upper(x), "_atx_detected", sep = "")
-      
-      # PERMANOVA test
-      print(paste(y, x, "PERMANOVA"))
-      print(runPERMANOVA(data_river[[x]][[y]], start_col, end_col = ncol(data[[x]]), 
-                         group = as.vector(data_river[[x]][[y]][atx_col])[[1]], na.action = "na.omit"))
-      
-      # BETADISPER test
-      print(paste(y, x, "BETADISPER"))
-      print(anova(betadisper(vegdist(data_river[[x]][[y]][,start_col:ncol(data[[x]])], method = "bray"), 
-                             as.vector(data_river[[x]][[y]][atx_col])[[1]])))
-      
-      return()
-    }
-  })
-})
-#RUS:
-# nt not, not
-# tac not, not
-# SAL:
-# nt not not
-# tm not, not
-# tac *, not
-# SFE:
-# nt **, not
-# tm **, *
-# tac: ***, not
-d
-## (b) ISA
+eel_tac_test_det <- multipatt(data_river$TAC$`SFE-M`[,start_col:ncol(data_river$TAC$`SFE-M`)], 
+                             data_river$TAC$`SFE-M`$atx_detected, func = "r.g", control = how(nperm = 999))
+summary(eel_tac_test_det)
+eel_tac_test_group <- multipatt(data_river$TAC$`SFE-M`[,start_col:ncol(data_river$TAC$`SFE-M`)], 
+                               data_river$TAC$`SFE-M`$atx_group, func = "r.g", control = how(nperm = 999))
+summary(eel_tac_test_group)
+write.csv(eel_tac_test_group$sign, "./data/ISA_results/Q3_tac_microscopy_SFE.csv")
+# not detected: nostoc
+# low & medium: nodularia
 
-## (i) anatoxin groupings
+## (d) RUS NT
 set.seed(1)
-lapply(sample_types, function(x) {
-  lapply(names(data_river[[x]]), function(y) {
-    if(y == "SAL" & x == "tac") {
-      print("no test")
-    } else {
-      # set column name for anatoxin based on sample type
-      atx_col = paste(str_to_upper(x), "_atx_category", sep = "")
-      
-      # remove columns where atx_col is na
-      if(x == "nt" | (x == "tm" & y == "SFE-M")) { 
-        # tm also included here to remove sample from 8-23-2022 as we did not have enough to analyze
-        temp = data_river[[x]][[y]][-which(is.na(data_river[[x]][[y]][atx_col])),]
-      } else {
-        temp = data_river[[x]][[y]]
-      }
-      
-      # run ISA
-      print(paste(x, y, "ISA"))
-      summary(multipatt(temp[,start_col:ncol(data[[x]])], as.vector(temp[atx_col])[[1]]), 
-              func = "r.g", control = how(nperm = 999))
-    }
-  })
-})
-# RUS:
-# nt (low) phormidium & oscillatoria
-# tac (low) phormidium
-# SAL:
-# nt nothing
-# tm not, not
-# tac no test
-# SFE:
-# nt (high & low) rophalodia, anabaena_and_cylindrospermum, leptolyngbya
-# tm (high & none) nostoc, (high) leptolyngbya
-# tac: (high & low) microcoleus, (none) nostoc
+rus_nt_test_det <- multipatt(data_river$NT$`RUS`[,start_col:ncol(data_river$NT$`RUS`)], 
+                              data_river$NT$`RUS`$atx_detected, func = "r.g", control = how(nperm = 999))
+summary(rus_nt_test_det)
+rus_nt_test_group <- multipatt(data_river$NT$`RUS`[,start_col:ncol(data_river$NT$`RUS`)], 
+                                data_river$NT$`RUS`$atx_group, func = "r.g", control = how(nperm = 999))
+summary(rus_nt_test_group)
+write.csv(rus_nt_test_group$sign, "./data/ISA_results/Q3_nt_microscopy_RUS.csv")
+# detected: phormidium_unknown, oscillatoria; not-detected: scenedesmus
+# high: miscellaneous oscillatoriales
 
-## (ii) anatoxin binary
+## (e) RUS TAC
 set.seed(1)
-lapply(sample_types, function(x) {
-  lapply(names(data_river[[x]]), function(y) {
-    if(y == "SAL" & x == "tac") {
-      print("no test")
-    } else {
-      # set column name for anatoxin based on sample type
-      atx_col = paste(str_to_upper(x), "_atx_detected", sep = "")
-      
-      # remove columns where atx_col is na
-      if(x == "nt" | (x == "tm" & y == "SFE-M")) { 
-        # tm also included here to remove sample from 8-23-2022 as we did not have enough to analyze
-        temp = data_river[[x]][[y]][-which(is.na(data_river[[x]][[y]][atx_col])),]
-      } else {
-        temp = data_river[[x]][[y]]
-      }
-      
-      # run ISA
-      print(paste(x, y, "ISA"))
-      summary(multipatt(temp[,start_col:ncol(data[[x]])], as.vector(temp[atx_col])[[1]]), 
-              func = "r.g", control = how(nperm = 999))
-    }
-  })
-})
-# RUS:
-# nt (detected) phormidium & oscillatoria
-# tac (detected) phormidium
-# SAL:
-# nt nothing
-# tm not, not
-# tac no test
-# SFE:
-# nt (detected) rophalodia
-# tm (none) nostoc
-# tac: (detected) microcoleus, (none) nostoc
-
-
-## (c) NMDS
-
-# get NMDS data
-NMDS_data_river <- lapply(sample_types, function(x) {
-    temp_list = lapply(names(data_river[[x]]), function(y) {
-                      if((y == "SFE-M") | (y == "RUS" & x != "tm")) {
-                        return(getNMDSdata(data_river[[x]][[y]], start_col, 
-                                    end_col = ncol(data[[x]])))
-                      } else {
-                        return(NA)
-                      }
-  })
-  names(temp_list) = names(data_river[[x]])
-  return(temp_list)
-})
-names(NMDS_data_river) = sample_types
-
-# (i) with atx category
-lapply(sample_types, function(x) {
-  lapply(names(data_river[[x]]), function(y) {
-    
-    if(class(NMDS_data_river[[x]][[y]]) == "list") {
-  
-      # set column name for anatoxin based on sample type
-      atx_col = paste(str_to_upper(x), "_atx_category", sep = "")
-      
-      makeNMDSplot(NMDS_data_river[[x]][[y]], FALSE, FALSE, color = atx_col, shape = "site")
-    }
-  })
-})
-# visually distinct for TM (note only one high sample for TM with current designation)
-# NT obviously a mess with all rivers in one graph
-
-#### (4) How continuously present are other anatoxin producers? ####
-
-# copy code from 4a
+rus_tac_test_det <- multipatt(data_river$TAC$`RUS`[,start_col:ncol(data_river$TAC$`RUS`)], 
+                              data_river$TAC$`RUS`$atx_detected, func = "r.g", control = how(nperm = 999))
+summary(rus_tac_test_det)
+rus_tac_test_group <- multipatt(data_river$TAC$`RUS`[,start_col:ncol(data_river$TAC$`RUS`)], 
+                                data_river$TAC$`RUS`$atx_group, func = "r.g", control = how(nperm = 999))
+summary(rus_tac_test_group)
+write.csv(rus_tac_test_group$sign, "./data/ISA_results/Q3_tac_microscopy_RUS.csv")
+# miscellaneous oscillatoriales for high; nothing for detected versus not detected

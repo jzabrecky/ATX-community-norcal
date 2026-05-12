@@ -188,7 +188,7 @@ for(i in 1:length(data)) {
 # save tests
 write.csv(p_table[-1,], "./data/PERMANOVA_results/Q1_microscopy.csv", row.names = FALSE)
 
-#### (7) Q: What explains these differences? Species Indicator Analyses ####
+#### (7) Q: What taxa "indicate" each river? Species Indicator Analyses ####
 
 # note: if issues, another package may be masking the function unique() ???
 # if so, restart R and run this script only

@@ -1,10 +1,12 @@
-#### Comparing molecular 16s data among rivers
+#### Comparing molecular predicted functional profiles data among rivers
 ### Jordan Zabrecky
 ## last edited: 05.07.2026
 
 # This code compares normalized select orthologs/functions predicted via PICRUSt2-SC,
 # from NT, TM, and TAC samples across rivers to answer Q1.
 # Data is analyzed using Kruskal-Wallis Tests and visualizations
+
+# MAKE SURE FUNCTIONAL GROUPINGS ARE GROUPED FIRST :)
 
 #### (1) Loading libraries & data ####
 

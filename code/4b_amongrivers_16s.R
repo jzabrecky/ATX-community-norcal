@@ -7,10 +7,6 @@
 # Data is analyzed using NMDS and PERMANOVA. We also averaged across all samples
 # from a river and created bar plots to visually compare average samples at each river
 
-# IDENTIFY OUTLIER SAMPLE - I THINK IT CREATES ISSUES IN ATX?!??
-
-# okay need to confirm that the relative abundances sum to 100
-
 #### (1) Loading libraries & data ####
 
 ## (a) load in data and libraries)
