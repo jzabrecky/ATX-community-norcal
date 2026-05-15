@@ -8,6 +8,7 @@
 # THINGS TO CONSIDER: 
 # - removing Russian outlier sample
 # - separating classes for certain types then the rest as phylums?
+# - change NMDS axes!
 
 #### (1) Loading libraries & data ####
 

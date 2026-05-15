@@ -2,7 +2,7 @@
 ### Jordan Zabrecky
 ## last edited: 03.20.2026
 
-# Do different data transformations changes our results?
+# Do different data transformations changes our assemblage results?
 # This script explores: (1) using un-transformed relative abundances
 # (2) squareroot transformed relative abundances (Hellinger-transformation)
 # (3) and Hellinger-transformed data with rare taxa removed

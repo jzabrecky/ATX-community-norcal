@@ -318,6 +318,6 @@ for(s in c("SFE-M", "RUS")) {
 }
 
 # save PERMANOVA results
-write.csv(p_table[-1,], "./data/PERMANOVA_results/Q3_microscopy.csv", row.names = FALSE)
+write.csv(p_table[-1,], "./data/PERMANOVA_results/Q3_molecular.csv", row.names = FALSE)
 
 # Thoughts/Summary:
