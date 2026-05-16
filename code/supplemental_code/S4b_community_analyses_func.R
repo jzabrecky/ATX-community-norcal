@@ -52,7 +52,7 @@ getNMDSdata <- function(data, start_col, end_col = NA, ASV = FALSE) {
   nmds = metaMDS(as.matrix(data[,start_col:end_col]),
                  distance = "bray",
                  trymax = 500,
-                 autotransform = TRUE)
+                 autotransform = FALSE)
   # bind x & y positions to site information
   nmds_final = cbind(as.data.frame(scores(nmds, "sites")), 
                      data %>% select(any_of(c("site_reach", "site", "field_date", 

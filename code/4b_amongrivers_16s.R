@@ -1,6 +1,6 @@
 #### Comparing molecular 16s data among rivers
 ### Jordan Zabrecky
-## last edited: 05.07.2026
+## last edited: 05.15.2026
 
 # This code compares normalized 16s relative data from NT, TM, and TAC samples
 # across rivers to answer Q1. First data is transformed (sqrt).
@@ -46,6 +46,9 @@ data <- lapply(data_long, function(x) {
 
 # set start col for community matrix
 start_col <- 6  
+
+# save untransformed data for calculating diversity
+data_wide_untransformed <- data
 
 # see our exploration with data transformation in another script, "S4a_testing_data_transformations.R"
 # decided on square-root transformation on the relative abundances (Hellinger transformation)
@@ -184,7 +187,7 @@ for(i in 1:length(barplot_phylum_plots)) {
 #### (4) Alpha Diversity Metrics ####
 
 # calculate diversity for each dataframe
-diversity <- lapply(data, function(x) {
+diversity <- lapply(data_wide_untransformed, function(x) {
   x = x %>% 
     mutate(shannon_diversity = calc_diversity(x, start_col),
            species_num = calc_speciesnum(x, start_col),
@@ -232,9 +235,9 @@ means_medians <- lapply(diversity, function(x) x %>%
 view(means_medians$tac)
 
 # save diversity calculations (RUN ONCE)
-lapply(names(diversity), function(x) write.csv(diversity[[x]], 
-                                               paste("./data/molecular/shannon_diversity/", x, "_diversity.csv", sep = ""),
-                                               row.names = FALSE))
+#lapply(names(diversity), function(x) write.csv(diversity[[x]], 
+#                                               paste("./data/molecular/shannon_diversity/", x, "_diversity.csv", sep = ""),
+#                                               row.names = FALSE))
 
 # also save test results
 write.csv(p_table[-1,], "./data/kruskal_wallis_results/Q1_diversity.csv",

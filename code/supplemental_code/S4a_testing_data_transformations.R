@@ -1,6 +1,6 @@
 #### Playing with different data transformations used in community ecology
 ### Jordan Zabrecky
-## last edited: 03.20.2026
+## last edited: 05.15.2026
 
 # Do different data transformations changes our assemblage results?
 # This script explores: (1) using un-transformed relative abundances
@@ -11,8 +11,8 @@
 # with the targeted taxa remove, and, in the case of Anabaena samples (TAC), 
 # how removing green algae--typically the substrate--alters results
 
-# We look predominantly at PERMANOVAs and Species Indicator Analysis Results
-# and then visually assess potential differences in NMDS
+# We look predominantly at PERMANOVAs and then visually assess potential differences in NMDS
+# and differences in Shannon Diversity
 
 #### (1) Loading libraries & data ####
 
@@ -20,7 +20,7 @@
 set.seed(2025)
 
 # libraries
-lapply(c("tidyverse", "plyr", "vegan", "cowplot", "indicspecies"), require, character.only = T)
+lapply(c("tidyverse", "plyr", "vegan", "cowplot"), require, character.only = T)
 
 # microscopy data
 files <- list.files(path = "./data/morphological/", pattern = ".csv")
@@ -32,7 +32,7 @@ data_wide <- lapply(files, function(x) read.csv(paste("./data/morphological/", x
 names(data_wide) <- files
 
 # microbial data
-files_16s <- list.files(path = "./data/molecular/", pattern = "normalized")
+files_16s <- list.files(path = "./data/molecular/", pattern = "rarefied_95_copynum_normalized")
 data_long_16s <- lapply(files_16s, function(x) read.csv(paste("./data/molecular/", x, sep = "")) %>% 
                       mutate(field_date = mdy(field_date),
                              month = month(field_date)) %>% # add month tag
@@ -130,7 +130,7 @@ rare_taxa <- function(data, max_percent) {
 
 # apply function
 algal_raretaxa <- lapply(algal_hellinger, function(x) rare_taxa(x, max_percent = 1)) # 1%
-microbial_rareasvs <- lapply(microbial_hellinger, function(x) rare_taxa(x, max_percent = 0.1))
+microbial_rareasvs <- lapply(microbial_hellinger, function(x) rare_taxa(x, max_percent = 0.5))
 
 # create new list starting from hellinger-transformed data
 algal_raretaxaremoved <- algal_hellinger
@@ -197,13 +197,6 @@ for(i in 1:length(microbial_untransformed)) {
 view(Q1_microbial_permanovas)
 # significant for all regardless of tranformation
 
-#### (4) Q1: Species Indicator Analysis ####
-
-# & species indicator test
-
-
-#### (4) PERMANOVA & Species Indicator Q2 test ####
-
 #### (5) Visualize NMDS ####
 
 # run function to get data to make NMDS plots
@@ -243,3 +236,77 @@ for(i in 1:length(microbial_untransformed)) {
 # rare taxa removed has SLIGHTLY lower stree (0.01-0.02), but probably just should
 # use Hellinger because it's less arbitrary than a rare taxa cut-off
 # also NOTE: one outlier for NT Russian
+
+#### (6) Microbial Diversity ####
+
+# as diversity should likely only be calculated on raw abundances, lets' have one where rare asvs
+# are removed but the data is not hellinger transformed
+microbial_rareasvs_unstransformed <- lapply(microbial_untransformed, function(x) rare_taxa(x, max_percent = 0.5))
+microbial_raresavsremoved_untransformed <- microbial_untransformed
+
+# remove rare taxa from dataframe
+for(i in 1:length(microbial_raresavsremoved_untransformed)) {
+  microbial_raresavsremoved_untransformed[[i]] <- microbial_raresavsremoved_untransformed[[i]] %>% 
+    select(!c(microbial_rareasvs_unstransformed[[i]]))
+}
+
+# function to calculate diversity
+calc_diversity <- function(data, start_col) {
+  final = data %>% 
+    mutate(shannon_diversity = diversity(.[,start_col:ncol(.)])) %>% 
+    select(field_date, site_reach, site, shannon_diversity)
+}
+
+# calculate diversity for each group
+diversity <- list()
+diversity$untransformed <- lapply(microbial_untransformed, function(x) calc_diversity(x, start_col))
+diversity$untransformed_raretaxaremoved <- lapply(microbial_raresavsremoved_untransformed, function(x) calc_diversity(x, start_col))
+diversity$hellinger <- lapply(microbial_hellinger, function(x) calc_diversity(x, start_col))
+diversity$hellinger_raretaxaremoved <- lapply(microbial_raresavsremoved, function(x) calc_diversity(x, start_col))
+
+# plotting
+for(i in 1:length(diversity$untransformed)) {
+  boxplots <- list()
+  for(j in 1:length(diversity)) {
+    boxplots[[j]] = ggplot(data = diversity[[j]][[i]], aes(x = site, y = shannon_diversity, 
+                                                           fill = site)) +
+      geom_boxplot() +
+      labs(title = paste(names(microbial_untransformed)[i], names(diversity)[j], sep = " "))
+  }
+  print(plot_grid(boxplots[[1]], boxplots[[2]], boxplots[[3]], boxplots[[4]], ncol = 2))
+}
+
+# see if anova versus kruskal wallis test
+shapiro.test(diversity$untransformed$`16s_nochimera_rarefied_95_copynum_normalized_TM_nomicro.csv`$shannon_diversity)
+shapiro.test(diversity$untransformed$`16s_nochimera_rarefied_95_copynum_normalized_TAC_noanacyl.csv`$shannon_diversity) # this is normal
+shapiro.test(diversity$untransformed$`16s_nochimera_rarefied_95_copynum_normalized_NT`$shannon_diversity) # this is also normal
+# separated site out- still not 
+shapiro.test((diversity$untransformed$`16s_nochimera_rarefied_95_copynum_normalized_TM_nomicro.csv` %>% filter(site == "SFE-M"))$shannon_diversity) # not normal
+shapiro.test((diversity$untransformed$`16s_nochimera_rarefied_95_copynum_normalized_NT` %>% filter(site == "SFE-M"))$shannon_diversity) # normal
+# okay so anova would probably be fine for anabaena & non-target, BUT to be consistent maybe just want to do kruskal-wallis
+
+# kruskal wallis test
+Q1_diversity_kruskalwallis <- data.frame(data = NA,
+                                      transformation = NA,
+                                      significant = NA)
+
+# run kruskal wallis for Q1 diversity
+for(i in 1:length(microbial_untransformed)) {
+  # make a temporary dataframe for all PERMANOVAs at index i
+  temp = data.frame(data = c(names(microbial_untransformed)[i], names(microbial_raresavsremoved_untransformed)[i],
+                             names(microbial_hellinger)[i], names(microbial_raresavsremoved)[i]),
+                    transformation = c("none", "raretaxa_removed", "hellinger", "hellinger_raretaxa_removed"),
+                    significant = c((kruskal.test(shannon_diversity ~ site, 
+                                                  data = diversity$untransformed[[i]]))$p.value,
+                                    (kruskal.test(shannon_diversity ~ site, 
+                                                 data = diversity$untransformed_raretaxaremoved[[i]]))$p.value,
+                                    (kruskal.test(shannon_diversity ~ site, 
+                                                 data = diversity$hellinger[[i]]))$p.value,
+                                    (kruskal.test(shannon_diversity ~ site, 
+                                                 data = diversity$hellinger_raretaxaremoved[[i]]))$p.value))
+  
+  # add to existing dataframe
+  Q1_diversity_kruskalwallis <- rbind(Q1_diversity_kruskalwallis, temp)
+}
+view(Q1_diversity_kruskalwallis)
+# results are same regardless of transformation!
