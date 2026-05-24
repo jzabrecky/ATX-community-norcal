@@ -1,6 +1,6 @@
 #### Playing with different data transformations used in community ecology
 ### Jordan Zabrecky
-## last edited: 05.15.2026
+## last edited: 05.26.2026
 
 # Do different data transformations changes our assemblage results?
 # This script explores: (1) using un-transformed relative abundances
@@ -15,9 +15,6 @@
 # and differences in Shannon Diversity
 
 #### (1) Loading libraries & data ####
-
-# set seed for reproducibility
-set.seed(2025)
 
 # libraries
 lapply(c("tidyverse", "plyr", "vegan", "cowplot"), require, character.only = T)
@@ -165,8 +162,9 @@ Q1_microbial_permanovas <- data.frame(data = NA,
                                   transformation = NA,
                                   significant = NA)
 
-# run PERMANOVAs for Q1
+# run PERMANOVAs for Q1 (algal)
 for(i in 1:length(algal_untransformed)) {
+  set.seed(1)
   # make a temporary dataframe for all PERMANOVAs at index i
   temp = data.frame(data = c(names(algal_untransformed)[i], names(algal_hellinger)[i],
                              names(algal_raretaxaremoved)[i]),
@@ -181,8 +179,10 @@ for(i in 1:length(algal_untransformed)) {
 view(Q1_algal_permanovas)
 # RESULTS: what is significant stays significant and is not stays not regardless of 
 # transformation or what is removed (target taxa)
-# run PERMANOVAs for Q1
+
+# run PERMANOVAs for Q1 (microbial)
 for(i in 1:length(microbial_untransformed)) {
+  set.seed(1)
   # make a temporary dataframe for all PERMANOVAs at index i
   temp = data.frame(data = c(names(microbial_untransformed)[i], names(microbial_hellinger)[i],
                              names(microbial_raresavsremoved)[i]),
@@ -217,6 +217,7 @@ for(i in 1:length(algal_untransformed)) {
 # RESULTS: generally the same across transformations
 
 # run function to get data to make NMDS plots
+set.seed(1)
 microbial_NMDS_list <- list()
 microbial_NMDS_list$`untransformed` <- lapply(microbial_untransformed, function(x) getNMDSdata(x, start_col, ASV = TRUE))
 microbial_NMDS_list$`hellinger` <- lapply(microbial_hellinger, function(x) getNMDSdata(x, start_col, ASV = TRUE))
@@ -292,6 +293,7 @@ Q1_diversity_kruskalwallis <- data.frame(data = NA,
 
 # run kruskal wallis for Q1 diversity
 for(i in 1:length(microbial_untransformed)) {
+  set.seed(1)
   # make a temporary dataframe for all PERMANOVAs at index i
   temp = data.frame(data = c(names(microbial_untransformed)[i], names(microbial_raresavsremoved_untransformed)[i],
                              names(microbial_hellinger)[i], names(microbial_raresavsremoved)[i]),

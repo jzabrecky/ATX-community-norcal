@@ -1,8 +1,10 @@
 #### Script of functions used in NMDS (and related) analyses
 ### Jordan Zabrecky
-## last edited: 04.20.2026
+## last edited: 05.24.2026
 
-# This script hosts functions used to create NMDS plots
+# This script hosts functions used to create relative abundance bar plots &
+# NMDS plots, run PERMANOVAs, and add "event_no" to sampling date which refers 
+# to the visit number to the site
 
 #### (1) Loading libraries & set plot theme ####
 

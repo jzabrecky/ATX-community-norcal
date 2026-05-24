@@ -1,4 +1,4 @@
-#### Functions for doing lm's and plotting!
+#### Functions for creating linear models and plotting!
 ### Jordan Zabrecky
 ## 05.11.2026
 
