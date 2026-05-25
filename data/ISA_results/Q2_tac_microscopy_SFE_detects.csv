@@ -1,0 +1,13 @@
+"","s.n","s.y","index","stat","p.value"
+"anabaena_and_cylindrospermum",1,0,1,0.0382708928153241,0.891
+"chroococcus",1,0,1,0.301511344577764,0.37
+"e_diatoms",0,1,2,0.305038215624534,0.263
+"green_algae",0,1,2,0.409560037788269,0.125
+"leptolyngbya_and_geitlerinema",0,1,2,0.550841472491243,0.036
+"miscellaneous_oscillatoriales",0,1,2,0.229415733870562,1
+"non_e_diatoms",1,0,1,0.328888781455032,0.224
+"nostoc",1,0,1,0.793942224183888,0.001
+"oscillatoria",0,1,2,0.229415733870562,1
+"other_coccoids",0,1,2,0.608641804453466,0.007
+"phormidium_unknown",NA,NA,NA,NA,NA
+"scytonema",1,0,1,0.301511344577764,0.376

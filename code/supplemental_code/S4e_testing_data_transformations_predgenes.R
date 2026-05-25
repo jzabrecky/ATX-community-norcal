@@ -96,6 +96,29 @@ data_hellinger <- lapply(data, function(x) {
   return(x)
 })
 
+# quick, look at histograms
+# viewing plots against each other
+for(i in 1:length(data_sqrttrans)) {
+  plots <- list()
+  plots[[1]] = ggplot((data[[i]] %>% select(!c(atx_detected, atx_group)) %>% 
+                       pivot_longer(cols = c((start_col - 2):(ncol(data[[i]]) - 2)), names_to = "ortholog", values_to = "pred_gene_count")),
+                       aes(pred_gene_count)) + geom_histogram() +
+    ggtitle(paste(names(data)[i], "no transform", sep = " "))
+  plots[[2]] = ggplot((data_sqrttrans[[i]] %>% select(!c(atx_detected, atx_group)) %>% 
+                         pivot_longer(cols = c((start_col - 2):(ncol(data[[i]]) - 2)), names_to = "ortholog", values_to = "pred_gene_count")),
+                      aes(pred_gene_count)) + geom_histogram() +
+    ggtitle(paste(names(data)[i], "sqrt-transformed", sep = " "))
+  plots[[3]] = ggplot((data_relativized[[i]] %>% select(!c(atx_detected, atx_group)) %>% 
+                         pivot_longer(cols = c((start_col - 2):(ncol(data[[i]]) - 2)), names_to = "ortholog", values_to = "pred_gene_count")),
+                      aes(pred_gene_count)) + geom_histogram() +
+    ggtitle(paste(names(data)[i], "relativized", sep = " "))
+  plots[[4]] = ggplot((data_hellinger[[i]] %>% select(!c(atx_detected, atx_group)) %>% 
+                         pivot_longer(cols = c((start_col - 2):(ncol(data[[i]]) - 2)), names_to = "ortholog", values_to = "pred_gene_count")),
+                      aes(pred_gene_count)) + geom_histogram() +
+    ggtitle(paste(names(data)[i], "hellinger", sep = " "))
+  print(plot_grid(plots[[1]], plots[[2]], plots[[3]], plots[[4]], ncol = 2))
+}
+
 #### (3) Q1 PERMANOVAs ####
 
 # create summary table

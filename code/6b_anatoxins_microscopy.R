@@ -1,6 +1,6 @@
 #### Comparing microscopy data with regard to anatoxin concentrations
 ### Jordan Zabrecky
-## last edited: 05.11.2026
+## last edited: 05.24.2026
 
 # This script examines how communities as identified by microscopy
 # change with increasing anatoxin concentrations with PERMANOVA, NMDS,
@@ -86,7 +86,7 @@ NMDS_plots_eel <- lapply(NMDS_list_eel, function(x) makeNMDSplot(x, TRUE, TRUE,
                                                          color = "atx_group", shape = "atx_group"))
 
 lapply(NMDS_plots_eel, print)
-# seems like difference between detected and non-detected, but not for variability
+# seems like difference between detected and non-detected, but less for variability
 
 ## (b) Russian River
 set.seed(1)
@@ -172,69 +172,128 @@ for(s in c("SFE-M", "RUS")) {
 # Differences in groups for SFE-M and TAC RUS (but barely)
 # the second point is interesting
 
+# How about if we remove non-detects from the group?
+set.seed(1)
+for(s in c("SFE-M", "RUS")) {
+  for(i in sample_types) {
+    if(s == "RUS" & i == "TM") {
+    } else {
+      permanova = runPERMANOVA(data = data_river[[i]][[s]] %>% filter(atx_detected == "y"), start_col = start_col, 
+                               group = (data_river[[i]][[s]] %>% filter(atx_detected == "y"))$`atx_group`)
+      
+      p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
+                                           sample_type = i,
+                                           river = s,
+                                           atx = "atx_group_no_nondetect",
+                                           p_value = permanova$`Pr(>F)`[1],
+                                           F_stat = permanova$`F`[1]))
+      
+      permdisp = betadisper(vegdist((data_river[[i]][[s]] %>% filter(atx_detected == "y"))[,start_col:ncol(data_river[[i]][[s]])], 
+                                    method = "bray"), (data_river[[i]][[s]] %>% filter(atx_detected == "y"))$atx_group)
+      test = adonis2(dist(permdisp$distances) ~ (data_river[[i]][[s]] %>% filter(atx_detected == "y"))$atx_group)
+      
+      p_table <- rbind(p_table, data.frame(test = "PERMDISP",
+                                           sample_type = i,
+                                           river = s,
+                                           atx = "atx_group_no_nondetect",
+                                           p_value = test$`Pr(>F)`[1],
+                                           F_stat = test$`F`[1]))
+    }
+  }
+}
+# no significant differences with non_detects removed
+
 # save PERMANOVA results
-write.csv(p_table[-1,], "./data/PERMANOVA_results/Q3_microscopy.csv", row.names = FALSE)
+write.csv(p_table[-1,], "./data/PERMANOVA_results/Q2_microscopy.csv", row.names = FALSE)
 
 #### (6) What taxa may be indicative of ATX groups? ####
 
 # just going to do each separately
 
 ## (a) SFE NT
+
+# detected vs non-detected
 set.seed(1)
 eel_nt_test_det <- multipatt(data_river$NT$`SFE-M`[,start_col:ncol(data_river$NT$`SFE-M`)], 
                      data_river$NT$`SFE-M`$atx_detected, func = "r.g", control = how(nperm = 999))
 summary(eel_nt_test_det)
-eel_nt_test_group <- multipatt(data_river$NT$`SFE-M`[,start_col:ncol(data_river$NT$`SFE-M`)], 
-                             data_river$NT$`SFE-M`$atx_group, func = "r.g", control = how(nperm = 999))
-summary(eel_nt_test_group)
-write.csv(eel_nt_test_group$sign, "./data/ISA_results/Q3_nt_microscopy_SFE.csv")
 # detected: rophalodia, epithemia, anabaena
-# high & medium: epithemia, anabaena
-# high & medium & low: rophalodia
+write.csv(eel_nt_test_group$sign, "./data/ISA_results/Q2_nt_microscopy_SFE_detects.csv")
+
+# atx groups (when detected)
+eel_nt_test_group <- multipatt((data_river$NT$`SFE-M` %>% filter(atx_detected == "y"))[,start_col:ncol(data_river$NT$`SFE-M`)], 
+                               (data_river$NT$`SFE-M` %>% filter(atx_detected == "y"))$atx_group, func = "r.g", control = how(nperm = 999))
+summary(eel_nt_test_group)
+write.csv(eel_nt_test_group$sign, "./data/ISA_results/Q2_nt_microscopy_SFE_atx_groups.csv")
+# high & medium: epithemia
 
 ## (b) SFE TM
+
+# detected versus non-detected
 set.seed(1)
 eel_tm_test_det <- multipatt(data_river$TM$`SFE-M`[,start_col:ncol(data_river$TM$`SFE-M`)], 
                              data_river$TM$`SFE-M`$atx_detected, func = "r.g", control = how(nperm = 999))
 summary(eel_tm_test_det)
-eel_tm_test_group <- multipatt(data_river$TM$`SFE-M`[,start_col:ncol(data_river$TM$`SFE-M`)], 
-                               data_river$TM$`SFE-M`$atx_group, func = "r.g", control = how(nperm = 999))
-summary(eel_tm_test_group)
-write.csv(eel_tm_test_group$sign, "./data/ISA_results/Q3_tm_microscopy_SFE.csv")
 # detected: other coccoids & geitlerinema; not detected: nostoc
-# none: nostoc, medium: other coccoids
+write.csv(eel_tm_test_det$sign, "./data/ISA_results/Q2_tm_microscopy_SFE_detects.csv")
+
+# atx groups (when detected)
+eel_tm_test_group <- multipatt((data_river$TM$`SFE-M` %>% filter(atx_detected == "y"))[,start_col:ncol(data_river$TM$`SFE-M`)], 
+                                (data_river$TM$`SFE-M` %>% filter(atx_detected == "y"))$atx_group, func = "r.g", control = how(nperm = 999))
+summary(eel_tm_test_group)
+write.csv(eel_tm_test_group$sign, "./data/ISA_results/Q2_tm_microscopy_SFE_atx_groups.csv")
+# low & medium: green_algae
 
 ## (c) SFE TAC
+
+# detected versus non-detected
 set.seed(1)
 eel_tac_test_det <- multipatt(data_river$TAC$`SFE-M`[,start_col:ncol(data_river$TAC$`SFE-M`)], 
                              data_river$TAC$`SFE-M`$atx_detected, func = "r.g", control = how(nperm = 999))
 summary(eel_tac_test_det)
-eel_tac_test_group <- multipatt(data_river$TAC$`SFE-M`[,start_col:ncol(data_river$TAC$`SFE-M`)], 
-                               data_river$TAC$`SFE-M`$atx_group, func = "r.g", control = how(nperm = 999))
+# nostoc in low detection
+write.csv(eel_tm_test_det$sign, "./data/ISA_results/Q2_tac_microscopy_SFE_detects.csv")
+
+# atx groups (when detected)
+eel_tac_test_group <- multipatt((data_river$TAC$`SFE-M` %>% filter(atx_detected == "y"))[,start_col:ncol(data_river$TAC$`SFE-M`)], 
+                                (data_river$TAC$`SFE-M` %>% filter(atx_detected == "y"))$atx_group, func = "r.g", control = how(nperm = 999))
 summary(eel_tac_test_group)
-write.csv(eel_tac_test_group$sign, "./data/ISA_results/Q3_tac_microscopy_SFE.csv")
-# not detected: nostoc
+write.csv(eel_tac_test_group$sign, "./data/ISA_results/Q2_tac_microscopy_SFE_atx_groups.csv")
 # low & medium: nodularia
 
 ## (d) RUS NT
+
+# detected versus non-detected
 set.seed(1)
 rus_nt_test_det <- multipatt(data_river$NT$`RUS`[,start_col:ncol(data_river$NT$`RUS`)], 
                               data_river$NT$`RUS`$atx_detected, func = "r.g", control = how(nperm = 999))
 summary(rus_nt_test_det)
-rus_nt_test_group <- multipatt(data_river$NT$`RUS`[,start_col:ncol(data_river$NT$`RUS`)], 
-                                data_river$NT$`RUS`$atx_group, func = "r.g", control = how(nperm = 999))
-summary(rus_nt_test_group)
-write.csv(rus_nt_test_group$sign, "./data/ISA_results/Q3_nt_microscopy_RUS.csv")
 # detected: phormidium_unknown, oscillatoria; not-detected: scenedesmus
-# high: miscellaneous oscillatoriales
+write.csv(rus_nt_test_det$sign, "./data/ISA_results/Q2_nt_microscopy_RUS_detects.csv")
+
+# atx groups (when detected)
+rus_nt_test_group <- multipatt((data_river$NT$`RUS` %>% filter(atx_detected == "y"))[,start_col:ncol(data_river$NT$`RUS`)], 
+                                (data_river$NT$`RUS` %>% filter(atx_detected == "y"))$atx_group, func = "r.g", control = how(nperm = 999))
+summary(rus_nt_test_group)
+write.csv(rus_nt_test_group$sign, "./data/ISA_results/Q2_nt_microscopy_RUS_atx_group.csv")
+# detected: phormidium_unknown, oscillatoria; not-detected: scenedesmus
+# high: calotrhix
+# medium: cladophora
+# high & low: oedogonium
 
 ## (e) RUS TAC
+
+# detects versus non-detects
 set.seed(1)
 rus_tac_test_det <- multipatt(data_river$TAC$`RUS`[,start_col:ncol(data_river$TAC$`RUS`)], 
                               data_river$TAC$`RUS`$atx_detected, func = "r.g", control = how(nperm = 999))
 summary(rus_tac_test_det)
-rus_tac_test_group <- multipatt(data_river$TAC$`RUS`[,start_col:ncol(data_river$TAC$`RUS`)], 
-                                data_river$TAC$`RUS`$atx_group, func = "r.g", control = how(nperm = 999))
+# nothing!
+write.csv(rus_tac_test_det$sign, "./data/ISA_results/Q2_tac_microscopy_RUS_detects.csv")
+
+# atx groups (when detected)
+rus_tac_test_group <- multipatt((data_river$TAC$`RUS` %>% filter(atx_detected == "y"))[,start_col:ncol(data_river$TAC$`RUS`)], 
+                                (data_river$TAC$`RUS` %>% filter(atx_detected == "y"))$atx_group, func = "r.g", control = how(nperm = 999))
 summary(rus_tac_test_group)
 write.csv(rus_tac_test_group$sign, "./data/ISA_results/Q3_tac_microscopy_RUS.csv")
-# miscellaneous oscillatoriales for high; nothing for detected versus not detected
+# nothing!

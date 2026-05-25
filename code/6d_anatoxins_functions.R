@@ -3,8 +3,11 @@
 ## last edited: 05.11.2026
 
 # This code compares normalized select orthologs/functions predicted via PICRUSt2-SC,
-# from NT, TM, and TAC samples with varying anatoxin concentrations for Q3.
-# Data is analyzed using Kruskal-Wallis Tests and visualizations
+# from NT, TM, and TAC samples with varying anatoxin concentrations for Q2.
+# Data is analyzed using Kruskal-Wallis Tests, linear models, visualizations 
+# for selected genes and PERMANOVA & NMDS for the full predicted functional profile
+
+## SEE HOW TARGET GENES DIFFER BETWEEN DETECTS AND NON-DETECTS :)
 
 #### (1) Load libraries & data ####
 
@@ -29,11 +32,12 @@ data_select <- lapply(data_select, function(x) x %>%
                         ungroup() %>% 
                         mutate(log_predicted_gene_abundance = log(predicted_gene_abundance)))
 
-# load data for all orthologs
-nt <- read.csv("./data/molecular/PICRUSt2_predicted_KO_all_all.csv") %>% 
-  filter(sample_type == "NT")
-tm <- read.csv("./data/molecular/PICRUSt2_predicted_KO_all_tm_nomicro.csv")
-tac <- read.csv("./data/molecular/PICRUSt2_predicted_KO_all_tac_noanacyl.csv")
+# as decided in the supplemental script, "S4e_testing_data_sqrtformations_predgenes.R",
+# we will square-root the predicted gene abundances to minimize impact of high gene counts
+# so load in from transformed folder
+nt <- read.csv("./data/molecular/transformed/PICRUSt2_predicted_KO_all_nt_sqrttransformed.csv")
+tac <- read.csv("./data/molecular/transformed/PICRUSt2_predicted_KO_all_tac_noanacyl_sqrttransformed.csv")
+tm <- read.csv("./data/molecular/transformed/PICRUSt2_predicted_KO_all_tm_nomicro_sqrttransformed.csv")
 
 # put all dataframes into a list
 data_all <- list(nt, tm, tac)
@@ -47,7 +51,7 @@ atx <- split(atx, atx$sample_type)
 
 # join in w/ functional data
 data_all <- lapply(names(data_all), function(x) left_join(data_all[[x]] %>% 
-                                                            mutate(field_date = mdy(field_date)),
+                                                            mutate(field_date = ymd(field_date)),
                                                           atx[[x]] %>% 
                                                             mutate(field_date = ymd(field_date)),
                                                           by = c("sample_type", "site_reach", "site",
@@ -65,7 +69,20 @@ names(data_select) <- c("NT", "TM", "TAC")
 source("./code/supplemental_code/S4b_community_analyses_func.R")
 source("./code/supplemental_code/S4d_linear_analyses.R")
 
+# set start col for predicted function matrix
+start_col = 5
+# note: atx data added to end, so will have to use end_col arguments
+
 #### (2) Kruskal Wallis Tests ####
+
+# make box plots!!!
+boxplots <- lapply(data_select, function(x) {
+  plot = ggplot(x, aes(x = site, y = predicted_gene_abundance, fill = site)) +
+    geom_boxplot() +
+    facet_wrap(~functional_grouping, scales = "free")
+  print(plot)
+  return(plot)
+})
 
 # make empty results table
 kruskal_test_results = data.frame(function_groups = NA,
@@ -73,6 +90,10 @@ kruskal_test_results = data.frame(function_groups = NA,
                                   site = NA,
                                   test = NA,
                                   kruskal_test = NA)
+
+# empty list for boxplots
+boxplots_detected <- list()
+boxplots_group <- list()
 
 # run tests
 for(i in c("NT", "TAC", "TM")) {
@@ -86,8 +107,9 @@ for(i in c("NT", "TAC", "TM")) {
                                            sample_type = i,
                                            site = s,
                                            test = "detected",
-                                           kruskal_test = kruskal.test(atx_detected~predicted_gene_abundance, 
-                                                                        data = (data_select[[i]] %>% filter(functional_grouping == f)))$p.value))
+                                           kruskal_test = kruskal.test(atx_detected~predicted_gene_abundance,   
+                                                                       data = (data_select[[i]] %>% filter(functional_grouping == f & site == s)))$p.value))
+       
         # atx groupings
         kruskal_test_results =  rbind(kruskal_test_results,
                                       data.frame(function_groups = f,
@@ -95,18 +117,43 @@ for(i in c("NT", "TAC", "TM")) {
                                            site = s,
                                            test = "atx_groups",
                                            kruskal_test = kruskal.test(atx_group~predicted_gene_abundance, 
-                                                                       data = (data_select[[i]] %>% filter(functional_grouping == f)))$p.value))
+                                                                       data = (data_select[[i]] %>% filter(functional_grouping == f & site == s)))$p.value))
       }
+      
+      # make boxplots
+      boxplots_detected[[i]][[s]] <- ggplot(data_select[[i]] %>% filter(site == s) %>% na.omit(), 
+                                             aes(x = atx_detected, y = predicted_gene_abundance, fill = atx_detected)) +
+        geom_boxplot() +
+        geom_jitter() +
+        facet_wrap(~functional_grouping, scales = "free") +
+        ggtitle(paste(s, i))
+      
+      boxplots_group[[i]][[s]] <- ggplot(data_select[[i]] %>% filter(site == s) %>% na.omit(), 
+                                            aes(x = atx_group, y = predicted_gene_abundance, fill = atx_group)) +
+        geom_boxplot() +
+        geom_jitter() +
+        facet_wrap(~functional_grouping, scales = "free") +
+        ggtitle(paste(s, i))
+      
+      # display boxplots
+      print(boxplots_detected[[i]][[s]])
+      print(boxplots_group[[i]][[s]])
     }
   }
 }
 
-view(kruskal_test_results)
-# nitrification significantly different for detected versus non-detected in SFE-M TM but nothing else
+view(kruskal_test_results) # nothing significant
+
+# real quick to make sure my code worked
+test <- kruskal.test(atx_detected~predicted_gene_abundance, 
+             data = data_select$NT %>% filter(functional_grouping == "cobalamin_B12" & site == "SFE-M"))
+test # p-value is 0.4544 which matches table
 
 # save results
 write.csv(kruskal_test_results,
-          "./data/kruskal_wallis_results/Q3_selectfunctions.csv", row.names = FALSE)
+          "./data/kruskal_wallis_results/Q2_selectfunctions.csv", row.names = FALSE)
+
+# curious which is more interesting; this or LM
 
 #### (3) Linear Models ####
 
@@ -162,273 +209,146 @@ lapply(names(predfunctions_rus_tac), function(x) print(predfunctions_rus_tac[[x]
 
 #### (4) NMDS plots ####
 
-# will try two versions of data: (1) hellinger transform and (2) total predicted abundances
-# for both all orthologs and our selected functional groups
-
-## (a) entire functional profile (hellinger transformed)
-
-# pivot wider & Hellinger-transform
-data_all_wide_hellinger <- lapply(data_all, function(x){
-  
-  # pivot wider and then use decostand to relative
-  y <- x %>% 
-    # need to group same ko id's in same sample
-    group_by(site, site_reach, ko_id, field_date, sample_type, atx_detected, atx_group) %>% 
-    dplyr::summarize(total_abundance = sum(predicted_gene_abundance)) %>% 
-    pivot_wider(names_from = "ko_id", values_from = "total_abundance", values_fill = 0)
-  y[,7:ncol(y)] <- decostand(y[,7:ncol(y)], method = "hellinger")
-  
-  return(y)
-})
+# as decided in the supplemental script, "S4e_testing_data_sqrtformations_predgenes.R",
+# we will square-root the predicted gene abundances to minimize impact of high gene counts
 
 # get NMDS for each dataframe (sqrt-transformed!)
-NMDS_list_all_hel <- list()
+NMDS_list <- list()
 set.seed(1)
 for(i in c("NT", "TAC", "TM")) {
   for(s in c("SFE-M", "RUS")) {
     if(s == "RUS" & i == "TM") {
     } else {
       name = paste(s, i, sep = " ")
-      NMDS_list_all_hel[[name]] <- getNMDSdata(data_all_wide_hellinger[[i]] %>% 
-                                                   filter(site == s), 7, ASV = TRUE)
+      NMDS_list[[name]] <- getNMDSdata(data_all[[i]] %>% 
+                                                   filter(site == s), start_col,
+                                       # need to set end_col as we have atx data at end
+                                       end_col = (ncol(data_all[[i]] %>% 
+                                                        filter(site == s)) - 4), ASV = TRUE)
     }
   }
 }
-NMDS_plots_all_hel <- lapply(NMDS_list_all_hel, function(x)
+NMDS_plots <- lapply(NMDS_list, function(x)
                              makeNMDSplot(x, FALSE, FALSE, color = "atx_detected", shape = "atx_detected"))
-lapply(NMDS_plots_all_hel, print)
+lapply(NMDS_plots, print)
 # NT RUS is problematic again! just going to ignore it for now!
-
-## (b) entire functional profile (total abundances)
-
-# pivot wider
-data_all_wide <- lapply(data_all, function(x){
-  
-  # pivot wider and then use decostand to relative
-  y <- x %>% 
-    # need to group same ko id's in same sample
-    group_by(site, site_reach, ko_id, field_date, sample_type, atx_detected, atx_group) %>% 
-    dplyr::summarize(total_abundance = sum(predicted_gene_abundance)) %>% 
-    pivot_wider(names_from = "ko_id", values_from = "total_abundance", values_fill = 0)
-  
-  return(y)
-})
-
-# get NMDS for each dataframe
-NMDS_list_all_wide <- list()
-set.seed(1)
-for(i in c("NT", "TAC", "TM")) {
-  for(s in c("SFE-M", "RUS")) {
-    if(s == "RUS" & i == "TM") {
-    } else {
-      name = paste(s, i, sep = " ")
-      NMDS_list_all_wide[[name]] <- getNMDSdata(data_all_wide_hellinger[[i]] %>% 
-                                                 filter(site == s), 7, ASV = TRUE)
-    }
-  }
-}
-NMDS_plots_all_wide <- lapply(NMDS_list_all_wide, function(x)
-  makeNMDSplot(x, FALSE, FALSE, color = "atx_group", shape = "atx_group"))
-lapply(NMDS_plots_all_wide, print)
-
-## (c) select functions (hellinger transformed)
-
-# pivot wider & Hellinger-transform
-data_select_wide_hellinger <- lapply(data_select, function(x){
-  
-  # pivot wider and then use decostand to relative
-  y <- x %>% 
-    select(field_date, site, site_reach, functional_grouping, predicted_gene_abundance,
-           atx_detected, atx_group) %>% 
-    # need to group same ko id's in same sample
-    pivot_wider(names_from = "functional_grouping", values_from = "predicted_gene_abundance", values_fill = 0)
-  y[,6:ncol(y)] <- decostand(y[,6:ncol(y)], method = "hellinger")
-  
-  return(y)
-})
-
-# get NMDS for each dataframe (hellinger transformed!)
-set.seed(1)
-NMDS_list_select_hel <- list()
-set.seed(1)
-for(i in c("NT", "TAC", "TM")) {
-  for(s in c("SFE-M", "RUS")) {
-    if(s == "RUS" & i == "TM") {
-    } else {
-      name = paste(s, i, sep = " ")
-      NMDS_list_select_hel[[name]] <- getNMDSdata(data_all_wide_hellinger[[i]] %>% 
-                                                  filter(site == s), 7, ASV = TRUE)
-    }
-  }
-}
-NMDS_plots_select_hel <- lapply(NMDS_list_select_hel, function(x)
-  makeNMDSplot(x, FALSE, FALSE, color = "atx_group", shape = "atx_group"))
-lapply(NMDS_plots_select_hel, print)
-
-## (d) select functions (total abundances!)
-
-# pivot wider
-data_select_wide <- lapply(data_select, function(x){
-  
-  # pivot wider and then use decostand to relative
-  y <- x %>% 
-    select(field_date, site, site_reach, functional_grouping, predicted_gene_abundance,
-           atx_detected, atx_group) %>% 
-    pivot_wider(names_from = "functional_grouping", values_from = "predicted_gene_abundance", values_fill = 0)
-  
-  return(y)
-})
-
-# get NMDS for each dataframe (raw abundances!)
-NMDS_list_select_wide <- list()
-set.seed(1)
-for(i in c("NT", "TAC", "TM")) {
-  for(s in c("SFE-M", "RUS")) {
-    if(s == "RUS" & i == "TM") {
-    } else {
-      name = paste(s, i, sep = " ")
-      NMDS_list_select_wide[[name]] <- getNMDSdata(data_all_wide_hellinger[[i]] %>% 
-                                                    filter(site == s), 7, ASV = TRUE)
-    }
-  }
-}
-NMDS_plots_select_wide <- lapply(NMDS_list_select_wide, function(x)
-  makeNMDSplot(x, FALSE, FALSE, color = "atx_group", shape = "atx_group"))
-lapply(NMDS_plots_select_wide, print)
 
 #### (5) PERMANOVA ####
 
-# run PERMANOVAs (there is probably a more efficient set-up!
-permanovas_all_hell_det <- list()
-permanovas_all_total_det <- list()
-permanovas_select_hell_det <- list()
-permanovas_select_total_det <- list()
-permanovas_all_hell_group <- list()
-permanovas_all_total_group <- list()
-permanovas_select_hell_group <- list()
-permanovas_select_total_group <- list()
+# create table to save results
+p_table <-  data.frame(test = NA,
+                       sample_type = NA,
+                       river = NA,
+                       atx = NA,
+                       p_value = NA,
+                       F_stat = NA)
+
+## (a) Detected versus no Detected anatoxins?
+
 set.seed(1)
-for(i in c("NT", "TAC", "TM")) {
-  for(s in c("SFE-M", "RUS")) {
+for(s in c("SFE-M", "RUS")) {
+  for(i in c("NT", "TM", "TAC")) {
     if(s == "RUS" & i == "TM") {
     } else {
-      name = paste(s, i, sep = " ")
-      permanovas_all_hell_det[[name]] <- runPERMANOVA(data = data_all_wide_hellinger[[i]] %>% filter(site == s), 
-                                              start_col = 7, group = (data_all_wide_hellinger[[i]] %>% 
-                                                filter(site == s))$`atx_detected`, na.action = "na.omit")
-      permanovas_all_total_det[[name]] <- runPERMANOVA(data = data_all_wide[[i]] %>% filter(site == s), 
-                                                      start_col = 7, group = (data_all_wide[[i]] %>% 
-                                                        filter(site == s))$`atx_detected`, na.action = "na.omit")
-      permanovas_select_hell_det[[name]] <- runPERMANOVA(data = data_select_wide_hellinger[[i]] %>% filter(site == s), 
-                                                      start_col = 7, group = (data_select_wide_hellinger[[i]] %>% 
-                                                        filter(site == s))$`atx_detected`, na.action = "na.omit")
-      permanovas_select_total_det[[name]] <- runPERMANOVA(data = data_select_wide[[i]] %>% filter(site == s), 
-                                                      start_col = 7, group = (data_select_wide[[i]] %>% 
-                                                        filter(site == s))$`atx_detected`, na.action = "na.omit")
-      permanovas_all_hell_group[[name]] <- runPERMANOVA(data = data_all_wide_hellinger[[i]] %>% filter(site == s), 
-                                                      start_col = 7, group = (data_all_wide_hellinger[[i]] %>% 
-                                                        filter(site == s))$`atx_group`, na.action = "na.omit")
-      permanovas_all_total_group[[name]] <- runPERMANOVA(data = data_all_wide[[i]] %>% filter(site == s), 
-                                                       start_col = 7, group = (data_all_wide[[i]] %>% 
-                                                         filter(site == s))$`atx_group`, na.action = "na.omit")
-      permanovas_select_hell_group[[name]] <- runPERMANOVA(data = data_select_wide_hellinger[[i]] %>% filter(site == s), 
-                                                         start_col = 7, group = (data_select_wide_hellinger[[i]] %>% 
-                                                           filter(site == s))$`atx_group`, na.action = "na.omit")
-      permanovas_select_total_group[[name]] <- runPERMANOVA(data = data_select_wide[[i]] %>% filter(site == s), 
-                                                          start_col = 7, group = (data_select_wide[[i]] %>% 
-                                                            filter(site == s))$`atx_group`, na.action = "na.omit")
+      # remove rows with no atx information & set end_col
+      data = data_all[[i]] %>% filter(site == s) %>% na.omit()
+      end_col = (ncol(data_all[[i]] %>% filter(site == s)) - 4)
       
+      permanova = runPERMANOVA(data = data, start_col, 
+                               end_col = end_col,
+                               group = data$atx_detected)
+      
+      p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
+                                           sample_type = i,
+                                           river = s,
+                                           atx = "detected",
+                                           p_value = permanova$`Pr(>F)`[1],
+                                           F_stat = permanova$`F`[1]))
+      
+      permdisp = betadisper(vegdist(data[,start_col:end_col], 
+                                    method = "bray"), data$atx_detected)
+      test = adonis2(dist(permdisp$distances) ~ (data$atx_detected))
+      
+      p_table <- rbind(p_table, data.frame(test = "PERMDISP",
+                                           sample_type = i,
+                                           river = s,
+                                           atx = "detected",
+                                           p_value = test$`Pr(>F)`[1],
+                                           F_stat = test$`F`[1]))
+    }
+  }
+}
+# Difference with South Fork Eel NT but nothing else!
+
+# ATX groups (including non-detects!)
+set.seed(1)
+for(s in c("SFE-M", "RUS")) {
+  for(i in c("NT", "TM", "TAC")) {
+    if(s == "RUS" & i == "TM") {
+    } else {
+      # remove rows with no atx information & set end_col
+      data = data_all[[i]] %>% filter(site == s) %>% na.omit()
+      end_col = (ncol(data_all[[i]] %>% filter(site == s)) - 4)
+      
+      permanova = runPERMANOVA(data = data, start_col, 
+                               end_col = end_col,
+                               group = data$atx_group)
+      
+      p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
+                                           sample_type = i,
+                                           river = s,
+                                           atx = "atx_group",
+                                           p_value = permanova$`Pr(>F)`[1],
+                                           F_stat = permanova$`F`[1]))
+      
+      permdisp = betadisper(vegdist(data[,start_col:end_col], 
+                                    method = "bray"), data$atx_group)
+      test = adonis2(dist(permdisp$distances) ~ (data$atx_group))
+      
+      p_table <- rbind(p_table, data.frame(test = "PERMDISP",
+                                           sample_type = i,
+                                           river = s,
+                                           atx = "atx_group",
+                                           p_value = test$`Pr(>F)`[1],
+                                           F_stat = test$`F`[1]))
     }
   }
 }
 
-# empty table for permanova outputs
-p_table <- data.frame(test = NA,
-                      group = NA,
-                      sample_type = NA,
-                      all_or_select = NA,
-                      data_transformation = NA,
-                      p_value = NA,
-                      F_stat = NA)
-
-# print and add test results to table
-for(i in 1:length(permanovas_all_hell_group)) {
-  
-  # save stats to table
-  ## detected versus non-detected first
-  # permanovs for all hellinger transformed
-  p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
-                                       group = "detected",
-                                       sample_type = names(permanovas_all_hell_det[i]),
-                                       all_or_select = "all",
-                                       data_transformation = "hellinger",
-                                       p_value = permanovas_all_hell_det[[i]]$`Pr(>F)`[1],
-                                       F_stat = permanovas_all_hell_det[[i]]$`F`[1]))
-  
-  # permanovas for square-rooted total abundances
-  p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
-                                       group = "detected",
-                                       sample_type = names(permanovas_all_total_det[i]),
-                                       all_or_select = "all",
-                                       data_transformation = "total_abundances",
-                                       p_value = permanovas_all_total_det[[i]]$`Pr(>F)`[1],
-                                       F_stat = permanovas_all_total_det[[i]]$`F`[1]))
-  
-  # permanovas for select hellinger transformed
-  p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
-                                       group = "detected",
-                                       sample_type = names(permanovas_select_hell_det[i]),
-                                       all_or_select = "select",
-                                       data_transformation = "hellinger",
-                                       p_value = permanovas_select_hell_det[[i]]$`Pr(>F)`[1],
-                                       F_stat = permanovas_select_hell_det[[i]]$`F`[1]))
-  
-  # permanovas for square-rooted total abundances
-  p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
-                                       group = "detected",
-                                       sample_type = names(permanovas_select_total_det[i]),
-                                       all_or_select = "select",
-                                       data_transformation = "total_abundaces",
-                                       p_value = permanovas_select_total_det[[i]]$`Pr(>F)`[1],
-                                       F_stat = permanovas_select_total_det[[i]]$`F`[1]))
-  
-  ## atx groupings 
-  p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
-                                       group = "group",
-                                       sample_type = names(permanovas_all_hell_group[i]),
-                                       all_or_select = "all",
-                                       data_transformation = "hellinger",
-                                       p_value = permanovas_all_hell_group[[i]]$`Pr(>F)`[1],
-                                       F_stat = permanovas_all_hell_group[[i]]$`F`[1]))
-  
-  # permanovas for square-rooted total abundances
-  p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
-                                       group = "group",
-                                       sample_type = names(permanovas_all_total_group[i]),
-                                       all_or_select = "all",
-                                       data_transformation = "total_abundances",
-                                       p_value = permanovas_all_total_group[[i]]$`Pr(>F)`[1],
-                                       F_stat = permanovas_all_total_group[[i]]$`F`[1]))
-  
-  # permanovas for select hellinger transformed
-  p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
-                                       group = "group",
-                                       sample_type = names(permanovas_select_hell_group[i]),
-                                       all_or_select = "select",
-                                       data_transformation = "hellinger",
-                                       p_value = permanovas_select_hell_group[[i]]$`Pr(>F)`[1],
-                                       F_stat = permanovas_select_hell_group[[i]]$`F`[1]))
-  
-  # permanovas for square-rooted total abundances
-  p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
-                                       group = "group",
-                                       sample_type = names(permanovas_select_total_group[i]),
-                                       all_or_select = "select",
-                                       data_transformation = "total_abundaces",
-                                       p_value = permanovas_select_total_group[[i]]$`Pr(>F)`[1],
-                                       F_stat = permanovas_select_total_group[[i]]$`F`[1]))
+# ATX groups (including non-detects!)
+set.seed(1)
+for(s in c("SFE-M", "RUS")) {
+  for(i in c("NT", "TM", "TAC")) {
+    if(s == "RUS" & i == "TM") {
+    } else {
+      # remove rows with no atx information & set end_col
+      data = data_all[[i]] %>% filter(site == s & atx_detected == "y") %>% na.omit()
+      end_col = (ncol(data_all[[i]] %>% filter(site == s)) - 4)
+      
+      permanova = runPERMANOVA(data = data, start_col, 
+                               end_col = end_col,
+                               group = data$atx_group)
+      
+      p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
+                                           sample_type = i,
+                                           river = s,
+                                           atx = "atx_group_nonondetects",
+                                           p_value = permanova$`Pr(>F)`[1],
+                                           F_stat = permanova$`F`[1]))
+      
+      permdisp = betadisper(vegdist(data[,start_col:end_col], 
+                                    method = "bray"), data$atx_group)
+      test = adonis2(dist(permdisp$distances) ~ (data$atx_group))
+      
+      p_table <- rbind(p_table, data.frame(test = "PERMDISP",
+                                           sample_type = i,
+                                           river = s,
+                                           atx = "atx_group_nonondetects",
+                                           p_value = test$`Pr(>F)`[1],
+                                           F_stat = test$`F`[1]))
+    }
+  }
 }
-view(p_table)
-# Okay in order: 
-# differences only for SFE NT w/ Hellinger transformation! between detected and grouping
-# no predicted functional differences for mats!
+
+# save PERMANOVA results
+write.csv(p_table[-1,], "./data/PERMANOVA_results/Q2_predfunc.csv", row.names = FALSE)

@@ -1,6 +1,6 @@
 #### Comparing 16s molecular data with regard to anatoxin concentrations
 ### Jordan Zabrecky
-## last edited: 05.11.2026
+## last edited: 05.24.2026
 
 # This script examines how communities as identified by microscopy
 # change with increasing anatoxin concentrations with PERMANOVA
@@ -163,8 +163,8 @@ hist(diversity$NT$shannon_diversity)
 diversity_sfe_nt <- linear_model(data = diversity$NT %>% filter(site == "SFE-M"),
                                  x = "log_ATX_all_ug_org_mat", y = "shannon_diversity",
                                  rsquared = TRUE)
-diversity_sfe_nt$plot # 0.26
-summary(diversity_sfe_nt$model) # * light relationship
+diversity_sfe_nt$plot # 0.32
+summary(diversity_sfe_nt$model) # relationship!
 
 ## (b) SFE-M TM
 diversity_sfe_tm <- linear_model(data = diversity$TM %>% filter(site == "SFE-M"),
@@ -194,16 +194,16 @@ diversity_rus_tac <- linear_model(data = diversity$TAC %>% filter(site == "RUS")
 diversity_rus_tac$plot # 0.13
 summary(diversity_rus_tac$model) # no relationship
 
-# not really noticing anything here
+# higher anatoxins when diversity is overall higher in the non-target samples!
 
 #### (4) NMDS ####
 
 ## (a) South Fork Eel River
 set.seed(1)
-NMDS_list_eel <- lapply(c("NT", "TM"), function(x) getNMDSdata(data[[x]] %>% 
+NMDS_list_eel <- lapply(c("NT", "TM", "TAC"), function(x) getNMDSdata(data[[x]] %>% 
                                                                 filter(site == "SFE-M"), 
                                                                        ASV = TRUE, start_col))
-names(NMDS_list_eel) <- c("NT", "TM")
+names(NMDS_list_eel) <- c("NT", "TM", "TAC")
 
 # making plots
 NMDS_plots_eel <- lapply(NMDS_list_eel, function(x) makeNMDSplot(x, FALSE, FALSE, 
@@ -246,7 +246,7 @@ rus_nt_NMDS_plot
 
 #### (5) PERMANOVA ####
 
-# separate out data by river - THIS SEEMS TO BE ADDING NAs
+# separate out data by river
 
 # create table to save results
 p_table <-  data.frame(test = NA,
@@ -288,6 +288,7 @@ for(s in c("SFE-M", "RUS")) {
 }
 # Difference with South Fork Eel but not for Russian River
 
+# ATX groups (including non-detects!)
 set.seed(1)
 for(s in c("SFE-M", "RUS")) {
   for(i in c("NT", "TM", "TAC")) {
@@ -317,7 +318,35 @@ for(s in c("SFE-M", "RUS")) {
   }
 }
 
-# save PERMANOVA results
-write.csv(p_table[-1,], "./data/PERMANOVA_results/Q3_molecular.csv", row.names = FALSE)
+# ATX groups (including non-detects!)
+set.seed(1)
+for(s in c("SFE-M", "RUS")) {
+  for(i in c("NT", "TM", "TAC")) {
+    if(s == "RUS" & i == "TM") {
+    } else {
+      permanova = runPERMANOVA(data = data[[i]] %>% filter(site == s & atx_detected == "y"), start_col = start_col, 
+                               group = (data[[i]] %>% filter(site == s & atx_detected == "y"))$`atx_group`)
+      
+      p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
+                                           sample_type = i,
+                                           river = s,
+                                           atx = "atx_group_no_nondetects",
+                                           p_value = permanova$`Pr(>F)`[1],
+                                           F_stat = permanova$`F`[1]))
+      
+      permdisp = betadisper(vegdist((data[[i]] %>% filter(site == s & atx_detected == "y"))[,start_col:ncol(data[[i]] %>% filter(site == s))], 
+                                    method = "bray"), (data[[i]] %>% filter(site == s & atx_detected == "y"))$atx_group)
+      test = adonis2(dist(permdisp$distances) ~ (data[[i]] %>% filter(site == s & atx_detected == "y"))$atx_group)
+      
+      p_table <- rbind(p_table, data.frame(test = "PERMDISP",
+                                           sample_type = i,
+                                           river = s,
+                                           atx = "atx_group_no_nondetects",
+                                           p_value = test$`Pr(>F)`[1],
+                                           F_stat = test$`F`[1]))
+    }
+  }
+}
 
-# Thoughts/Summary:
+# save PERMANOVA results
+write.csv(p_table[-1,], "./data/PERMANOVA_results/Q2_molecular.csv", row.names = FALSE)
