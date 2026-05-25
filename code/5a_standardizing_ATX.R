@@ -1,9 +1,9 @@
 #### Making anatoxin categories for analyses
 ### Jordan Zabrecky
-## last edited: 05.08.2026
+## last edited: 05.24.2026
 
 # This script makes anatoxin concentrations groupings (e.g., high versus low) 
-# to use in Q3 analyses
+# to use in Q2 analyses
 
 #### (1) Loading libraries & data ####
 
@@ -47,8 +47,7 @@ ggplot(data = atx_long %>% na.omit() %>% filter(ATX_all_ug_org_mat > 0) %>% filt
 # get summary (with zeros removed)
 summary(atx_long %>% na.omit() %>% filter(ATX_all_ug_org_mat > 0) %>% filter(!c(taxa_ATX == "NT_ATX_all_ug_orgmat_g")))
 # makes sense to do <50% quantile, =< 1.98
-# 50-75% quantile =< 5.5 and > 1.98
-# 75-100% quantile > 5.5
+# & >50% quantile
 
 #### (3) Log-Transforming ATX ####
 
@@ -70,21 +69,22 @@ hist(atx_long$ATX_all_ug_org_mat)
 
 # save median and 3rd quantile
 med <- median((atx_long %>% na.omit() %>% filter(ATX_all_ug_org_mat > 0))$ATX_all_ug_org_mat)
-third_q <- quantile((atx_long %>% na.omit() %>% filter(ATX_all_ug_org_mat > 0))$ATX_all_ug_org_mat)[4]
 
 # add in categorical grouping
 atx_long <- atx_long %>% 
   mutate(atx_detected = case_when(ATX_all_ug_org_mat > 0 ~ "y",
                                   TRUE ~ "n"),
          atx_group = case_when(ATX_all_ug_org_mat <= med & ATX_all_ug_org_mat > 0 ~ "low",
-                               ATX_all_ug_org_mat <= third_q & ATX_all_ug_org_mat > med ~ "medium",
-                               ATX_all_ug_org_mat > third_q ~ "high",
+                               ATX_all_ug_org_mat >= med ~ "high",
                                TRUE ~ "none")) %>% 
   mutate(sample_type = case_when(taxa_ATX == "TM_ATX_all_ug_orgmat_g" ~ "TM",
                                  taxa_ATX == "TAC_ATX_all_ug_orgmat_g"  ~ "TAC",
                                  taxa_ATX == "NT_ATX_all_ug_orgmat_g" ~ "NT")) %>% 
   select(field_date, site, site_reach, sample_type, ATX_all_ug_org_mat, log_ATX_all_ug_org_mat,
          atx_detected, atx_group)
+
+# need to do median for eachg group
+# LEFT OFF HERE
 
 #### (3) Saving CSV ####
 
