@@ -35,12 +35,8 @@ data_select <- lapply(data_select, function(x) x %>%
 # as decided in the supplemental script, "S4e_testing_data_sqrtformations_predgenes.R",
 # we will square-root the predicted gene abundances to minimize impact of high gene counts
 # so load in from transformed folder
-nt <- read.csv("./data/molecular/transformed/PICRUSt2_predicted_KO_all_nt_sqrttransformed.csv")
-tac <- read.csv("./data/molecular/transformed/PICRUSt2_predicted_KO_all_tac_noanacyl_sqrttransformed.csv")
-tm <- read.csv("./data/molecular/transformed/PICRUSt2_predicted_KO_all_tm_nomicro_sqrttransformed.csv")
-
-# put all dataframes into a list
-data_all <- list(nt, tm, tac)
+data_all <- lapply(list.files(path = "./data/molecular/transformed/", pattern = "KO_all"),
+                     function(x) read.csv(paste("./data/molecular/transformed/", x, sep = "")))
 names(data_all) <- c("NT", "TM", "TAC")
 
 # read in toxin data
@@ -67,7 +63,7 @@ names(data_select) <- c("NT", "TM", "TAC")
 
 # lastly, source other scripts for functions
 source("./code/supplemental_code/S4b_community_analyses_func.R")
-source("./code/supplemental_code/S4d_linear_analyses.R")
+source("./code/supplemental_code/S5c_linear_analyses.R")
 
 # set start col for predicted function matrix
 start_col = 5

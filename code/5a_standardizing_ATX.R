@@ -1,9 +1,9 @@
 #### Making anatoxin categories for analyses
 ### Jordan Zabrecky
-## last edited: 05.24.2026
+## last edited: 05.27.2026
 
 # This script makes anatoxin concentrations groupings (e.g., high versus low) 
-# to use in Q2 analyses
+# to use in Q2 analyses based on each sample type & river
 
 #### (1) Loading libraries & data ####
 
@@ -25,29 +25,28 @@ atx <- atx %>%
                                            is.na(TAC_ATX_all_ug_orgmat_g) ~ TM_ATX_all_ug_orgmat_g,
                                            TRUE ~ (TM_ATX_all_ug_orgmat_g + TAC_ATX_all_ug_orgmat_g) / 2))
 
-# ATX in long format
+# pivot to long format
 atx_long <- atx %>% 
   pivot_longer(c("TM_ATX_all_ug_orgmat_g", "TAC_ATX_all_ug_orgmat_g", "NT_ATX_all_ug_orgmat_g"), 
                values_to = "ATX_all_ug_org_mat",
-                    names_to = "taxa_ATX") %>% 
-  na.omit()
+               names_to = "taxa_ATX") %>% 
+  mutate(sample_type = case_when(taxa_ATX == "TM_ATX_all_ug_orgmat_g" ~ "TM",
+                                 taxa_ATX == "TAC_ATX_all_ug_orgmat_g" ~ "TAC", 
+                                 taxa_ATX == "NT_ATX_all_ug_orgmat_g" ~ "NT")) %>% 
+  na.omit() %>% 
+  select(!taxa_ATX)
 
 # see distribution of all
-ggplot(data = atx_long %>% na.omit() %>% filter(!c(taxa_ATX == "NT_ATX_all_ug_orgmat_g")),
-       aes(y = ATX_all_ug_org_mat)) +
+ggplot(data = atx_long %>% na.omit() %>% filter(!c(sample_type == "NT")),
+       aes(y = ATX_all_ug_org_mat, x = site)) +
   geom_boxplot() +
   scale_y_continuous(trans="pseudo_log")
 
 # see distribution of all (with zeros removed)
-ggplot(data = atx_long %>% na.omit() %>% filter(ATX_all_ug_org_mat > 0) %>% filter(!c(taxa_ATX == "NT_ATX_all_ug_orgmat_g")), 
-       aes(y = ATX_all_ug_org_mat)) +
+ggplot(data = atx_long %>% na.omit() %>% filter(ATX_all_ug_org_mat > 0) %>% filter(!c(sample_type == "NT")), 
+       aes(y = ATX_all_ug_org_mat, x = site)) +
   geom_boxplot() +
   scale_y_continuous(trans="pseudo_log")
-
-# get summary (with zeros removed)
-summary(atx_long %>% na.omit() %>% filter(ATX_all_ug_org_mat > 0) %>% filter(!c(taxa_ATX == "NT_ATX_all_ug_orgmat_g")))
-# makes sense to do <50% quantile, =< 1.98
-# & >50% quantile
 
 #### (3) Log-Transforming ATX ####
 
@@ -67,24 +66,24 @@ hist(atx_long$ATX_all_ug_org_mat)
 
 #### (4) Adding ATX categories to data ####
 
-# save median and 3rd quantile
-med <- median((atx_long %>% na.omit() %>% filter(ATX_all_ug_org_mat > 0))$ATX_all_ug_org_mat)
+# makes sense to just decide into upper ("high") and lower values ("low") with our sample sizes
+# get medians for each sample type and river
+medians <- atx_long %>% 
+  # remove samples with no detections
+  filter(ATX_all_ug_org_mat > 0) %>% 
+  # calculate median for each sample type on each river
+  group_by(site, sample_type) %>% 
+  dplyr::summarize(med = median(ATX_all_ug_org_mat),
+                   total_samples = length(ATX_all_ug_org_mat))
 
 # add in categorical grouping
-atx_long <- atx_long %>% 
+atx_long <- left_join(atx_long, medians, by = c("site", "sample_type")) %>% 
   mutate(atx_detected = case_when(ATX_all_ug_org_mat > 0 ~ "y",
                                   TRUE ~ "n"),
          atx_group = case_when(ATX_all_ug_org_mat <= med & ATX_all_ug_org_mat > 0 ~ "low",
                                ATX_all_ug_org_mat >= med ~ "high",
                                TRUE ~ "none")) %>% 
-  mutate(sample_type = case_when(taxa_ATX == "TM_ATX_all_ug_orgmat_g" ~ "TM",
-                                 taxa_ATX == "TAC_ATX_all_ug_orgmat_g"  ~ "TAC",
-                                 taxa_ATX == "NT_ATX_all_ug_orgmat_g" ~ "NT")) %>% 
-  select(field_date, site, site_reach, sample_type, ATX_all_ug_org_mat, log_ATX_all_ug_org_mat,
-         atx_detected, atx_group)
-
-# need to do median for eachg group
-# LEFT OFF HERE
+  select(field_date, site, site_reach, sample_type, ATX_all_ug_org_mat, atx_group, atx_detected)
 
 #### (3) Saving CSV ####
 

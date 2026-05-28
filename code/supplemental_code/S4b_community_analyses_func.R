@@ -1,9 +1,9 @@
 #### Script of functions used in NMDS (and related) analyses
 ### Jordan Zabrecky
-## last edited: 05.24.2026
+## last edited: 05.27.2026
 
 # This script hosts functions used to create relative abundance bar plots &
-# NMDS plots, run PERMANOVAs, and add "event_no" to sampling date which refers 
+# NMDS and PCoA plots, run PERMANOVAs, and add "event_no" to sampling date which refers 
 # to the visit number to the site
 
 #### (1) Loading libraries & set plot theme ####
@@ -144,7 +144,75 @@ makeNMDSplot <- function(data, loading, significant, color, shape) {
   return(plot)
 }
 
-## (d) runPERMANOVA
+## (d) getPCoAdata
+# creates PCoA data point coordinates and loadings
+# @param data is relative abundance data in wide format with environmental/sampling data on left
+# @param start_col is index of column for which the abundance data starts
+# @param end_col is index of column for which the abundance data ends (default is end of dataframe)
+getPCoAdata <- function(data, start_col, end_col = NA) {
+  
+  # if end_col not given, assume end of the dataframe
+  if(is.na(end_col)) {
+    end_col = ncol(data)
+  }
+  
+  # get bray-curtis dissimilarity
+  bray_dis = vegdist(data[,start_col:end_col], method = "bray")
+  
+  # run PCoA (use eigenvalues to calculate % explained, and add makes sure our values are all >0)
+  pcoa = cmdscale(bray_dis, k = 2, eig = TRUE, add = TRUE)
+  
+  # add colnames to points for easier plotting
+  colnames(pcoa$points) = c("pcoa1", "pcoa2")
+  
+  # get percent variation explained for each axis
+  per_expl = (100 * pcoa$eig / sum(pcoa$eig))[1:2]
+  
+  # bind x & y positions to site information
+  pcoa_final = cbind(as.data.frame(pcoa$points, "sites"), 
+                     data %>% select(any_of(c("pcoa1", "pcoa2", "site_reach", "site", "field_date", 
+                                              "sample_type", "atx_detected", "atx_group")))) %>% 
+    mutate(field_date = ymd(field_date),
+           year = year(field_date),
+           month = as.character(month(field_date)))
+  
+  # return list with (1) PCoA plotting data (2) % explained for each axis
+  list <- list(pcoa_final, per_expl)
+  names(list) <- c("pcoa", "per_expl")
+  return(list)
+}
+
+## (e) makePCoAplot
+makePCoAplot <- function(data, color, shape) {
+  
+  # separating out data to be able to easily call each
+  pcoa_data = data$pcoa
+  pcoa_per_expl = data$per_expl
+  
+  # make plot
+  plot = ggplot(pcoa_data, aes(x = pcoa1, y = pcoa2)) +
+    geom_point(aes(color = .data[[color]], shape = .data[[shape]]), size = 2) +
+    stat_ellipse(aes(color = .data[[color]]), type = "t", linetype = 2, linewidth = 0.5) +
+    labs(x = paste("PCoA1 (", round(pcoa_per_expl[1], 2), "%)", sep = ""),
+         y =  paste("PCoA2 (", round(pcoa_per_expl[2], 2), "%)", sep = ""),)
+  
+  # add in site color if color argument is "site"
+  if(color == "site") {
+    plot = plot + scale_color_manual(values = c("SAL" = "#62a7f8",
+                                                "SFE-M" = "#416f16",
+                                                "RUS" = "#bdb000"))
+  }
+  # add in same shape if shape argument is "site"
+  if(shape == "site") {
+    plot = plot + scale_shape_manual(values = c("SAL" = 17,
+                                                "SFE-M" = 15,
+                                                "RUS" = 16))
+  }
+
+  return(plot)
+}
+
+## (f) runPERMANOVA
 # runs PERMANOVA test on inputted data
 # @param data is relative abundance data in wide format with environmental/sampling data on left
 # @param start_col is index of column for which the abundance data starts 
@@ -174,7 +242,7 @@ runPERMANOVA <- function(data, start_col, end_col = NA, group, strata = NA,
   return(results)
 }
 
-## (e) add_event_no
+## (g) add_event_no
 # add event number for 2022 data
 # @param data is wide dataframe with field_date as a column
 add_event_no <- function(data) {

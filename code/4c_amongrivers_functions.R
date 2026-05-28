@@ -96,7 +96,8 @@ data_sqrt <- lapply(data_all, function(x){
     group_by(site, site_reach, ko_id, field_date, sample_type) %>% 
     dplyr::summarize(total_abundance = sum(predicted_gene_abundance)) %>% 
     pivot_wider(names_from = "ko_id", values_from = "total_abundance", values_fill = 0) %>% 
-    mutate(field_date = mdy(field_date))
+    mutate(field_date = mdy(field_date)) %>% 
+    ungroup()
   y[,5:ncol(y)] <- sqrt(y[,5:ncol(y)])
   
   return(y)
@@ -120,6 +121,9 @@ NMDS_plots <- lapply(NMDS_list, function(x) makeNMDSplot(x, FALSE, FALSE,
                                                          color = "site", shape = "month"))
 
 lapply(NMDS_plots, print)
+# Russian outlier issue
+test = data_sqrt$nt %>% filter(!(site_reach == "RUS-1S" & field_date == "2022-07-20"))
+getNMDSdata(test, 5, ASV = TRUE)
 
 #### (5) PERMANOVA ####
 

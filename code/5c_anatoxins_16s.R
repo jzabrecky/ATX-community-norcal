@@ -13,7 +13,7 @@
 lapply(c("tidyverse", "plyr", "vegan", "cowplot"), require, character.only = T)
 
 # read in files (data transformed in previous script, "4b_amongrivers_16s.R")
-data <- lapply(list.files(path = "./data/molecular/transformed/", pattern = ".csv"),
+data <- lapply(list.files(path = "./data/molecular/transformed/", pattern = "16s_nochimera"),
                function(x) read.csv(paste("./data/molecular/transformed/", x, sep = "")))
 names(data) <- c("NT", "TAC", "TM")
 
@@ -154,7 +154,7 @@ for(i in 1:length(barplot_phylum_plots)) {
 #### (3) Alpha Diversity ####
 
 # load script for linear models
-source("./code/supplemental_code/S4d_linear_analyses.R")
+source("./code/supplemental_code/S5c_linear_analyses.R")
 
 # diversity probably does not need to be log-transformed!
 hist(diversity$NT$shannon_diversity)
