@@ -1,13 +1,11 @@
 #### Comparing molecular predicted functional profiles with varying ATX concentrations
 ### Jordan Zabrecky
-## last edited: 05.11.2026
+## last edited: 06.01.2026
 
 # This code compares normalized select orthologs/functions predicted via PICRUSt2-SC,
 # from NT, TM, and TAC samples with varying anatoxin concentrations for Q2.
 # Data is analyzed using Kruskal-Wallis Tests, linear models, visualizations 
-# for selected genes and PERMANOVA & NMDS for the full predicted functional profile
-
-## SEE HOW TARGET GENES DIFFER BETWEEN DETECTS AND NON-DETECTS :)
+# for selected genes and PERMANOVA & PCoA for the full predicted functional profile
 
 #### (1) Load libraries & data ####
 
@@ -37,7 +35,7 @@ data_select <- lapply(data_select, function(x) x %>%
 # so load in from transformed folder
 data_all <- lapply(list.files(path = "./data/molecular/transformed/", pattern = "KO_all"),
                      function(x) read.csv(paste("./data/molecular/transformed/", x, sep = "")))
-names(data_all) <- c("NT", "TM", "TAC")
+names(data_all) <- c("NT", "TAC", "TM")
 
 # read in toxin data
 atx <- read.csv("./data/field_and_lab/atx_w_categorical_groupings.csv")
@@ -46,28 +44,29 @@ atx <- read.csv("./data/field_and_lab/atx_w_categorical_groupings.csv")
 atx <- split(atx, atx$sample_type)
 
 # join in w/ functional data
-data_all <- lapply(names(data_all), function(x) left_join(data_all[[x]] %>% 
+data_all <- lapply(names(data_all), function(x) left_join(atx[[x]] %>% 
                                                             mutate(field_date = ymd(field_date)),
-                                                          atx[[x]] %>% 
+                                                          data_all[[x]] %>% 
                                                             mutate(field_date = ymd(field_date)),
                                                           by = c("sample_type", "site_reach", "site",
-                                                                 "field_date")))
-data_select <- lapply(names(data_select), function(x) left_join(data_select[[x]] %>% 
+                                                                 "field_date")) %>% na.omit())
+data_select <- lapply(names(data_select), function(x) left_join(atx[[x]] %>% 
+                                                                  mutate(field_date = ymd(field_date)),
+                                                            data_select[[x]] %>% 
                                                                   mutate(field_date = mdy(field_date)),
                                                                 atx[[x]] %>% 
                                                             mutate(field_date = ymd(field_date)),
                                                           by = c("sample_type", "site_reach", "site",
-                                                                 "field_date")))
-names(data_all) <- c("NT", "TM", "TAC")
-names(data_select) <- c("NT", "TM", "TAC")
+                                                                 "field_date")) %>% na.omit())
+names(data_all) <- c("NT", "TAC", "TM")
+names(data_select) <- c("NT", "TAC", "TM")
 
 # lastly, source other scripts for functions
 source("./code/supplemental_code/S4b_community_analyses_func.R")
 source("./code/supplemental_code/S5c_linear_analyses.R")
 
 # set start col for predicted function matrix
-start_col = 5
-# note: atx data added to end, so will have to use end_col arguments
+start_col = 9
 
 #### (2) Kruskal Wallis Tests ####
 
@@ -149,12 +148,12 @@ test # p-value is 0.4544 which matches table
 write.csv(kruskal_test_results,
           "./data/kruskal_wallis_results/Q2_selectfunctions.csv", row.names = FALSE)
 
-# curious which is more interesting; this or LM
+# curious which is more interesting; this or LM, probably LM :)
 
 #### (3) Linear Models ####
 
 ## (a) SFE-M NT
-predfunctions_sfe_nt <- lapply(unique(data_select$TM$functional_grouping), function(f) {
+predfunctions_sfe_nt <- lapply(unique(data_select$NT$functional_grouping), function(f) {
   return(linear_model(data = data_select$NT %>% filter(site == "SFE-M") %>% 
                         filter(functional_grouping == f),  x = "log_ATX_all_ug_org_mat", y = "log_predicted_gene_abundance",
                       rsquared = TRUE))
@@ -203,31 +202,28 @@ names(predfunctions_rus_tac) <- unique(data_select$TM$functional_grouping)
 lapply(names(predfunctions_rus_tac), function(x) print(predfunctions_rus_tac[[x]]$plot + ggtitle(x)))
 # nothing!
 
-#### (4) NMDS plots ####
+#### (4) PCoA plots ####
 
 # as decided in the supplemental script, "S4e_testing_data_sqrtformations_predgenes.R",
 # we will square-root the predicted gene abundances to minimize impact of high gene counts
 
-# get NMDS for each dataframe (sqrt-transformed!)
-NMDS_list <- list()
+# get PCoA for each dataframe (sqrt-transformed!)
+PCoA_list <- list()
 set.seed(1)
 for(i in c("NT", "TAC", "TM")) {
   for(s in c("SFE-M", "RUS")) {
     if(s == "RUS" & i == "TM") {
     } else {
       name = paste(s, i, sep = " ")
-      NMDS_list[[name]] <- getNMDSdata(data_all[[i]] %>% 
-                                                   filter(site == s), start_col,
-                                       # need to set end_col as we have atx data at end
-                                       end_col = (ncol(data_all[[i]] %>% 
-                                                        filter(site == s)) - 4), ASV = TRUE)
+      PCoA_list[[name]] <- getPCoAdata((data_all[[i]] %>% 
+                                                   filter(site == s)), start_col)
     }
   }
 }
-NMDS_plots <- lapply(NMDS_list, function(x)
-                             makeNMDSplot(x, FALSE, FALSE, color = "atx_detected", shape = "atx_detected"))
-lapply(NMDS_plots, print)
-# NT RUS is problematic again! just going to ignore it for now!
+PCoA_plots <- lapply(names(PCoA_list), function(x)
+                             makePCoAplot(PCoA_list[[x]],color = "atx_detected", shape = "atx_detected") +
+                       ggtitle(x))
+lapply(PCoA_plots, print)
 
 #### (5) PERMANOVA ####
 

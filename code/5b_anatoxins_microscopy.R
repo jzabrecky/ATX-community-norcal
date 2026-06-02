@@ -1,9 +1,9 @@
 #### Comparing microscopy data with regard to anatoxin concentrations
 ### Jordan Zabrecky
-## last edited: 05.24.2026
+## last edited: 06.01.2026
 
 # This script examines how communities as identified by microscopy
-# change with increasing anatoxin concentrations with PERMANOVA, NMDS,
+# change with increasing anatoxin concentrations with PERMANOVA, PCoA,
 # and ISA. Note that as only one Salmon sample contained detectable 
 # anatoxin, we omit the Salmon River samples from this analyses
 
@@ -73,30 +73,26 @@ for(i in 1:length(barplot_taxa_plots)) {
 # feel like the one main noticeable thing is Nostoc in none samples for target
 # would not think this is causation but rather a function of time/succession!
 
-#### (4) NMDS Plots ####
+#### (4) PCoA Plots ####
 
-# get NMDS for each dataframe (sqrt-transformed!)
+# get PCoA for each dataframe (sqrt-transformed!)
 
 ## (a) South Fork Eel River
 set.seed(1)
-NMDS_list_eel <- lapply(sample_types, function(x) getNMDSdata(data_river[[x]]$`SFE-M`, start_col))
+PCoA_list_eel <- lapply(sample_types, function(x) getPCoAdata(data_river[[x]]$`SFE-M`, start_col))
 
 # making plots
-NMDS_plots_eel <- lapply(NMDS_list_eel, function(x) makeNMDSplot(x, TRUE, TRUE, 
-                                                         color = "atx_group", shape = "atx_group"))
-
-lapply(NMDS_plots_eel, print)
+PCoA_plots_eel <- lapply(PCoA_list_eel, function(x) makePCoAplot(x, color = "atx_group", shape = "atx_group"))
+lapply(PCoA_plots_eel, print)
 # seems like difference between detected and non-detected, but less for variability
 
 ## (b) Russian River
 set.seed(1)
-NMDS_list_rus <- lapply(c("TAC", "NT"), function(x) getNMDSdata(data_river[[x]]$`RUS`, start_col))
+PCoA_list_rus <- lapply(c("TAC", "NT"), function(x) getPCoAdata(data_river[[x]]$`RUS`, start_col))
 
 # making plots
-NMDS_plots_rus <- lapply(NMDS_list_rus, function(x) makeNMDSplot(x, TRUE, TRUE, 
-                                                                 color = "atx_group", shape = "atx_group"))
-
-lapply(NMDS_plots_rus, print)
+PCoA_plots_rus <- lapply(PCoA_list_rus, function(x) makePCoAplot(x, color = "atx_group", shape = "atx_group"))
+lapply(PCoA_plots_rus, print)
 # less of a difference observable here
 
 #### (5) Do communities differ with varying ATX concentrations? (PERMANOVA) ####
@@ -202,6 +198,8 @@ for(s in c("SFE-M", "RUS")) {
   }
 }
 # no significant differences with non_detects removed
+# also seems like there are not enough samples for the Russian River so we will skip that
+# for the analyses
 
 # save PERMANOVA results
 write.csv(p_table[-1,], "./data/PERMANOVA_results/Q2_microscopy.csv", row.names = FALSE)
@@ -242,7 +240,7 @@ eel_tm_test_group <- multipatt((data_river$TM$`SFE-M` %>% filter(atx_detected ==
                                 (data_river$TM$`SFE-M` %>% filter(atx_detected == "y"))$atx_group, func = "r.g", control = how(nperm = 999))
 summary(eel_tm_test_group)
 write.csv(eel_tm_test_group$sign, "./data/ISA_results/Q2_tm_microscopy_SFE_atx_groups.csv")
-# low & medium: green_algae
+# nothing!
 
 ## (c) SFE TAC
 
@@ -276,10 +274,7 @@ rus_nt_test_group <- multipatt((data_river$NT$`RUS` %>% filter(atx_detected == "
                                 (data_river$NT$`RUS` %>% filter(atx_detected == "y"))$atx_group, func = "r.g", control = how(nperm = 999))
 summary(rus_nt_test_group)
 write.csv(rus_nt_test_group$sign, "./data/ISA_results/Q2_nt_microscopy_RUS_atx_group.csv")
-# detected: phormidium_unknown, oscillatoria; not-detected: scenedesmus
-# high: calotrhix
-# medium: cladophora
-# high & low: oedogonium
+# low: non_e_r_diatoms
 
 ## (e) RUS TAC
 
@@ -297,3 +292,6 @@ rus_tac_test_group <- multipatt((data_river$TAC$`RUS` %>% filter(atx_detected ==
 summary(rus_tac_test_group)
 write.csv(rus_tac_test_group$sign, "./data/ISA_results/Q3_tac_microscopy_RUS.csv")
 # nothing!
+
+# probably dropping low versus high for Russian samples due to lower sample sizes but
+# saving results just in case

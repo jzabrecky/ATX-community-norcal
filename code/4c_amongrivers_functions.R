@@ -1,10 +1,10 @@
 #### Comparing predicted functional profiles data among rivers
 ### Jordan Zabrecky
-## last edited: 05.24.2026
+## last edited: 06.01.2026
 
 # This code compares both the full predicted function and select orthologs/functions 
 # obtained from PICRUSt2 for NT, TM, and TAC samples across rivers to answer Q1.
-# Data is analyzed using PERMANOVA and NMDS (for full predicted function) 
+# Data is analyzed using PERMANOVA and PCoA (for full predicted function) 
 # and Kruskal-Wallis Tests and boxplot visualizations (for select genes)
 
 #### (1) Loading libraries & data ####
@@ -34,6 +34,13 @@ names(data_select) <- c("nt", "tm", "tac")
 
 # souce functions for analyses
 source("./code/supplemental_code/S4b_community_analyses_func.R")
+
+# need to group different orthologs in same functional group for selected genes
+data_select <- lapply(data_select, function(x) {
+  y = x %>% 
+    dplyr::group_by(site, site_reach, field_date, sample_type, functional_grouping) %>% 
+    dplyr::summarize(predicted_gene_abundance = sum(predicted_gene_abundance))
+})
 
 #### (2) Plotting Select Genes #####
 
@@ -67,14 +74,14 @@ kruskal_test_results <- lapply(data_select, function(x) {
 })
 
 lapply(kruskal_test_results, function(x) x[which(x$kruskal_test < 0.05),])
-# nitrification significantly different for non-target but nothing else
-view(kruskal_test_results)
+view(kruskal_test_results) # nothing signficiantly differed
 
-# perform Dunn's Test as a follow-up to the Kruskal-Wallis Test
-dunn.test(x = (data_select$nt %>% filter(functional_grouping == "nitrification"))$predicted_gene_abundance,
-          g = (data_select$nt %>% filter(functional_grouping == "nitrification"))$site,
-          method = "bonferroni")
-# difference exists between SFE-M and RUS and SAL, but not between RUS and SAL
+# want to double-check numbers: comparing nitrogen fixation for NT
+kruskal.test(site~predicted_gene_abundance, data = data_select$nt %>% filter(functional_grouping == "nitrogen_fixation"))
+# 0.4726 which is same as in table
+# is phosphatase also the same???
+kruskal.test(site~predicted_gene_abundance, data = data_select$nt %>% filter(functional_grouping == "phosphatase_transporters"))
+# yes, weird
 
 # save results
 lapply(names(kruskal_test_results), function(x) {
@@ -82,7 +89,7 @@ lapply(names(kruskal_test_results), function(x) {
             row.names = FALSE)
 })
 
-#### (4) NMDS Plots ####
+#### (4) PCoA Plots ####
 
 # as decided in the supplemental script, "S4e_testing_data_sqrtformations_predgenes.R",
 # we will square-root the predicted gene abundances to minimize impact of high gene counts
@@ -104,26 +111,28 @@ data_sqrt <- lapply(data_all, function(x){
 })
 
 # RUN ONCE: save these in the transformed folder to use in future script
-write.csv(data_sqrt$nt, "./data/molecular/transformed/PICRUSt2_predicted_KO_all_nt_sqrttransformed.csv",
-          row.names = FALSE)
-write.csv(data_sqrt$tm, "./data/molecular/transformed/PICRUSt2_predicted_KO_all_tm_nomicro_sqrttransformed.csv",
-          row.names = FALSE)
-write.csv(data_sqrt$tac, "./data/molecular/transformed/PICRUSt2_predicted_KO_all_tac_noanacyl_sqrttransformed.csv",
-          row.names = FALSE)
+#write.csv(data_sqrt$nt, "./data/molecular/transformed/PICRUSt2_predicted_KO_all_nt_sqrttransformed.csv",
+#          row.names = FALSE)
+#write.csv(data_sqrt$tm, "./data/molecular/transformed/PICRUSt2_predicted_KO_all_tm_nomicro_sqrttransformed.csv",
+#          row.names = FALSE)
+#write.csv(data_sqrt$tac, "./data/molecular/transformed/PICRUSt2_predicted_KO_all_tac_noanacyl_sqrttransformed.csv",
+#          row.names = FALSE)
 
 
-# get NMDS for each dataframe 
+# get PCoA for each dataframe 
 set.seed(1)
-NMDS_list <- lapply(data_sqrt, function(x) getNMDSdata(x, 5, ASV = TRUE))
+PCoA_list <- lapply(data_sqrt, function(x) getPCoAdata(x, 5))
 
 # making plots
-NMDS_plots <- lapply(NMDS_list, function(x) makeNMDSplot(x, FALSE, FALSE, 
-                                                         color = "site", shape = "month"))
+PCoA_plots <- lapply(PCoA_list, function(x) makePCoAplot(x, color = "site", shape = "month"))
+lapply(PCoA_plots, print)
+# TAC Russian Outlier in July
 
-lapply(NMDS_plots, print)
-# Russian outlier issue
-test = data_sqrt$nt %>% filter(!(site_reach == "RUS-1S" & field_date == "2022-07-20"))
-getNMDSdata(test, 5, ASV = TRUE)
+# tac outlier remover
+tac_no_rus_outlier <- data_sqrt$tac %>% filter(!c(site_reach == "RUS-2" & field_date == "2022-07-20"))
+tac_no_rus_out_list <- getPCoAdata(tac_no_rus_outlier, 5)
+tac_no_rus_out_plot <- makePCoAplot(tac_no_rus_out_list, color = "site", shape = "month")
+tac_no_rus_out_plot
 
 #### (5) PERMANOVA ####
 
@@ -152,6 +161,10 @@ for(i in 1:length(permanovas)) {
 }
 # significant difference for NT but not TAC nor TM
 
+# check results with outlier removed
+runPERMANOVA(data = tac_no_rus_outlier, start_col = 5, group = tac_no_rus_outlier$`site`)
+# still not significant!
+
 # check dispersion to see if that influences results
 for(i in 1:length(data_sqrt)) {
   set.seed(1)
@@ -170,6 +183,8 @@ for(i in 1:length(data_sqrt)) {
                                        F_stat = anova$`F value`[1]))
 }
 # only TAC had significant dispersion but its PERMANOVA was not significant, so no issues!
+
+# compare PERMANOVA with outlier for TAC Russian Removed
 
 # save results
 write.csv(p_table[-1,], "./data/PERMANOVA_results/Q1_predfunction.csv", row.names = FALSE)

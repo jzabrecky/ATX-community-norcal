@@ -1,6 +1,6 @@
 #### Making anatoxin categories for analyses
 ### Jordan Zabrecky
-## last edited: 05.27.2026
+## last edited: 06.01.2026
 
 # This script makes anatoxin concentrations groupings (e.g., high versus low) 
 # to use in Q2 analyses based on each sample type & river
@@ -81,9 +81,9 @@ atx_long <- left_join(atx_long, medians, by = c("site", "sample_type")) %>%
   mutate(atx_detected = case_when(ATX_all_ug_org_mat > 0 ~ "y",
                                   TRUE ~ "n"),
          atx_group = case_when(ATX_all_ug_org_mat <= med & ATX_all_ug_org_mat > 0 ~ "low",
-                               ATX_all_ug_org_mat >= med ~ "high",
+                               ATX_all_ug_org_mat > med ~ "high",
                                TRUE ~ "none")) %>% 
-  select(field_date, site, site_reach, sample_type, ATX_all_ug_org_mat, atx_group, atx_detected)
+  select(field_date, site, site_reach, sample_type, ATX_all_ug_org_mat, log_ATX_all_ug_org_mat, atx_group, atx_detected)
 
 #### (3) Saving CSV ####
 

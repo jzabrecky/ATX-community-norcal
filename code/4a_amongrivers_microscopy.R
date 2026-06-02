@@ -1,10 +1,10 @@
 #### Comparing morphologically-identified assemblages among rivers
 ### Jordan Zabrecky
-## last edited: 05.05.2026
+## last edited: 06.01.2026
 
 # This code compares microscopy data from NT, TM, and TAC samples
 # across rivers to answer Q1. First data is transformed (sqrt).
-# Data is analyzed using NMDS, PERMANOVA, and ISA. We also averaged across all samples
+# Data is analyzed using PCoA, PERMANOVA, and ISA. We also averaged across all samples
 # from a river and created bar plots to visually compare average samples at each river
 
 #### (1) Loading libraries & data ####
@@ -117,17 +117,15 @@ summaries_taxa <- lapply(data_longer, function(x) summarize_site(x, "taxa"))
 lapply(summaries_taxa, function(x) head(x))
 # similar top groupings as above
 
-#### (5) NMDS Plots ####
+#### (5) PCoA Plots ####
 
-# get NMDS for each dataframe (sqrt-transformed!)
+# get PCoA for each dataframe (sqrt-transformed!)
 set.seed(1)
-NMDS_list <- lapply(data, function(x) getNMDSdata(x, start_col))
+PCoA_list <- lapply(data, function(x) getPCoAdata(x, start_col))
 
 # making plots
-NMDS_plots <- lapply(NMDS_list, function(x) makeNMDSplot(x, TRUE, TRUE, 
-                                                         color = "site", shape = "month"))
-
-lapply(NMDS_plots, print)
+PCoA_plots <- lapply(PCoA_list, function(x) makePCoAplot(x, color = "site", shape = "month"))
+lapply(PCoA_plots, print)
 # RESULT: TM and NT groups are visually distinct among rivers, but not for TAC
 
 #### (6) Q: Are communities from each river significantly different? (PERMANOVA) ####
@@ -181,8 +179,8 @@ for(i in 1:length(data)) {
 # TAC not significantly different, but TM and NT are
 # however, based on https://www.youtube.com/watch?v=oLf0EpMJ4yA
 # and his paper https://www.nature.com/articles/ismej20085
-# this may not affect results of adonis2, especially if NMDS shows that groups are very far apart
-# which we do see in our NMDS plots (With the exception maybe of the NT plot, but the centroids
+# this may not affect results of adonis2, especially if PCoA shows that groups are very far apart
+# which we do see in our PCoA plots (With the exception maybe of the NT plot, but the centroids
 # for those groups are different)
 
 # save tests
@@ -250,20 +248,20 @@ mean(tac_w_target$green_algae) # 24.98%
 sd(tac_w_target$green_algae) # 17.4%
 
 ## (3) If we group broader for NT samples, what is most abundant for each river? 
-# five groups: diatom, spirogyra, cladophora, diazotrophic cyanos, non-diazo filamentous cyanos,
-# other green algae, coccoidal cyanobacteria
-# join diatoms, spirogyra, cladophora, diazotrophic cyanobacteria, filamentous cyanobacteria (non-diaztotrophic),
-# other green algae... so five griyo
+# six groups: diatom (w/ & w/out endosymbionts) spirogyra, cladophora, diazotrophic cyanos, 
+# non-diazo filamentous cyanos, other green algae, coccoidal cyanobacteria
 even_broader_NT <- data_longer$nt %>% 
   mutate(even_broader = case_when(broader == "Cladophora" ~ "Cladophora",
                                   broader == "Spirogyra" ~ "Spirogyra",
-                                  broader == "Epithemia or Rhopalodia" ~ "Diatoms",
-                                  broader == "Diatoms Other than Epithemia or Rhopalodia" ~ "Diatoms",
+                                  #broader == "Epithemia or Rhopalodia" ~ "Diatoms",
+                                  # going to actually separate the diatoms like with 
+                                  broader == "Diatoms Other than Epithemia or Rhopalodia" ~ "Non N-fixing Diatoms",
                                   broader == "Nostoc" ~ "Diazotrophic Cyanobacteria",
                                   broader == "Anabaena or Cylindrospermum" ~ "Diazotrophic Cyanobacteria",
                                   broader == "Other N-fixing Cyanobacteria" ~ "Diazotrophic Cyanobacteria",
                                   broader == "Unicellular Cyanobacteria" ~ "Coccoidal Cyanobacteria",
                                   broader == "Microcoleus" ~ "Non-Diazotrophic Filamentous Cyanobacteria",
+                                  broader == "Other Filamentous Cyanobacteria" ~ "Non-Diazotrophic Filamentous Cyanobacteria",
                                   broader == "Other Green Algae" ~ "Other Green Algae",
                                  TRUE ~ broader)) %>% 
   # merge groups for total in each broader group (i.e., reduce rows)

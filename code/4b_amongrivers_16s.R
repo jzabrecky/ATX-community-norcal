@@ -1,10 +1,10 @@
 #### Comparing molecular 16s data among rivers
 ### Jordan Zabrecky
-## last edited: 05.15.2026
+## last edited: 06.01.2026
 
 # This code compares normalized 16s relative data from NT, TM, and TAC samples
 # across rivers to answer Q1. First data is transformed (sqrt).
-# Data is analyzed using NMDS and PERMANOVA. We also averaged across all samples
+# Data is analyzed using PCoA and PERMANOVA. We also averaged across all samples
 # from a river and created bar plots to visually compare average samples at each river
 
 #### (1) Loading libraries & data ####
@@ -243,31 +243,27 @@ view(means_medians$tac)
 write.csv(p_table[-1,], "./data/kruskal_wallis_results/Q1_diversity.csv",
           row.names = FALSE)
 
-#### (5) NMDS Plots ####
+#### (5) PCoA Plots ####
 
 ## (a) ASV-based (main focus)
 
-# get NMDS for each dataframe (sqrt-transformed!)
+# get PCoA for each dataframe (sqrt-transformed!)
 set.seed(1) # set seed for reproducibility
-NMDS_list <- lapply(data, function(x) getNMDSdata(x, start_col, ASV = TRUE))
+PCoA_list <- lapply(data, function(x) getPCoAdata(x, start_col))
 
 # making plots
-NMDS_plots <- lapply(NMDS_list, function(x) makeNMDSplot(x, FALSE, FALSE, 
-                                                         color = "site", shape = "month"))
-
-lapply(NMDS_plots, print)
+PCoA_plots <- lapply(PCoA_list, function(x) makePCoAplot(x, color = "site", shape = "month"))
+lapply(PCoA_plots, print)
 # RESULT: TM and NT groups are visually distinct among rivers, but not for TAC
 
 ## (b) class-based
-# get NMDS for each dataframe (sqrt-transformed!)
+# get PCoA for each dataframe (sqrt-transformed!)
 set.seed(1) # set seed for reproducibility
-NMDS_list_class <- lapply(data_wide_class, function(x) getNMDSdata(x, start_col, ASV = TRUE))
+PCoA_list_class <- lapply(data_wide_class, function(x) getPCoAdata(x, start_col))
 
 # making plots
-NMDS_plots_class <- lapply(NMDS_list_class, function(x) makeNMDSplot(x, FALSE, FALSE, 
-                                                         color = "site", shape = "month"))
-
-lapply(NMDS_plots_class, print)
+PCoA_plots_class <- lapply(PCoA_list_class, function(x) makePCoAplot(x, color = "site", shape = "month"))
+lapply(PCoA_plots_class, print)
 # RESULT: NT definitely plots closer, TM still different seeming, maybe TAC slightly further which is weird
 
 #### (6) Q: Are communities from each river significantly different? (PERMANOVA) ####

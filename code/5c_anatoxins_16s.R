@@ -1,10 +1,10 @@
 #### Comparing 16s molecular data with regard to anatoxin concentrations
 ### Jordan Zabrecky
-## last edited: 05.24.2026
+## last edited: 06.01.2026
 
 # This script examines how communities as identified by microscopy
 # change with increasing anatoxin concentrations with PERMANOVA
-# and NMDS. Note that as only one Salmon sample contained detectable 
+# and PCoA. Note that as only one Salmon sample contained detectable 
 # anatoxin, we omit the Salmon River samples from this analyses
 
 #### (1) Loading libraries & data ####
@@ -196,53 +196,29 @@ summary(diversity_rus_tac$model) # no relationship
 
 # higher anatoxins when diversity is overall higher in the non-target samples!
 
-#### (4) NMDS ####
+#### (4) PCoA ####
 
 ## (a) South Fork Eel River
 set.seed(1)
-NMDS_list_eel <- lapply(c("NT", "TM", "TAC"), function(x) getNMDSdata(data[[x]] %>% 
-                                                                filter(site == "SFE-M"), 
-                                                                       ASV = TRUE, start_col))
-names(NMDS_list_eel) <- c("NT", "TM", "TAC")
+PCoA_list_eel <- lapply(c("NT", "TM", "TAC"), function(x) getPCoAdata(data[[x]] %>% 
+                                                                filter(site == "SFE-M"), start_col))
+names(PCoA_list_eel) <- c("NT", "TM", "TAC")
 
 # making plots
-NMDS_plots_eel <- lapply(NMDS_list_eel, function(x) makeNMDSplot(x, FALSE, FALSE, 
-                                                                 color = "atx_group", shape = "atx_group"))
-
-lapply(NMDS_plots_eel, print)
+PCoA_plots_eel <- lapply(PCoA_list_eel, function(x) makePCoAplot(x, color = "atx_group", shape = "atx_group"))
+lapply(PCoA_plots_eel, print)
 # seems like difference between detected and non-detected, but not for variability
-
-# seems like one of our SFE TAC samples is an outlier influencing NMDS
-sfe_tac <- data$TAC %>% filter(!c(atx_group == "none" & field_date == as.Date("2022-09-17"))) %>% 
-  filter(site == "SFE-M")
-sfe_tac_NMDS_list <- getNMDSdata(sfe_tac, ASV = TRUE, start_col)
-sfe_tac_NMDS_plot <- makeNMDSplot(sfe_tac_NMDS_list, FALSE, FALSE, 
-                                  color = "atx_group", shape = "atx_group")
-sfe_tac_NMDS_plot # distinct
+# TAC outlier annoying me but it is what it is
 
 ## (b) Russian River
 set.seed(1)
-NMDS_list_rus <- lapply(c("TAC"), function(x) getNMDSdata(data[[x]] %>% 
-                                                                  filter(site == "RUS"), start_col, ASV = TRUE))
+PCoA_list_rus <- lapply(c("NT", "TAC"), function(x) getPCoAdata(data[[x]] %>% 
+                                                                  filter(site == "RUS"), start_col))
 
 # making plots
-NMDS_plots_rus <- lapply(NMDS_list_rus, function(x) makeNMDSplot(x, FALSE, FALSE, 
-                                                                 color = "atx_group", shape = "atx_group"))
-
-lapply(NMDS_plots_rus, print)
+PCoA_plots_rus <- lapply(PCoA_list_rus, function(x) makePCoAplot(x, color = "atx_group", shape = "atx_group"))
+lapply(PCoA_plots_rus, print)
 # no difference here for TAC
-
-# seems like one of our RUS NT samples is an outlier influencing NMDS
-# had to remove three points !!!
-rus_nt <- data$NT %>% filter(site == "RUS") %>% 
-  filter(!c(atx_group == "low" & site_reach == "RUS-1S" & field_date == as.Date("2022-09-01"))) %>% 
-  filter(!c(atx_group == "none" & site_reach == "RUS-2" & field_date == as.Date("2022-08-17"))) %>% 
-  filter(!c(atx_group == "none" & site_reach == "RUS-2" & field_date == as.Date("2022-09-15")))
-rus_nt_NMDS_list <- getNMDSdata(rus_nt, ASV = TRUE, start_col)
-rus_nt_NMDS_plot <- makeNMDSplot(rus_nt_NMDS_list, FALSE, FALSE, 
-                                  color = "atx_group", shape = "site_reach")
-rus_nt_NMDS_plot
-# feel meh about this
 
 #### (5) PERMANOVA ####
 
@@ -350,3 +326,4 @@ for(s in c("SFE-M", "RUS")) {
 
 # save PERMANOVA results
 write.csv(p_table[-1,], "./data/PERMANOVA_results/Q2_molecular.csv", row.names = FALSE)
+# again, too small of sample size for RUS (high versus low), but will save results anyways
