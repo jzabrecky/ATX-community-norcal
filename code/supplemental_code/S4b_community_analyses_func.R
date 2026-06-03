@@ -115,9 +115,9 @@ makeNMDSplot <- function(data, loading, significant, color, shape) {
   
   # add in site color if color argument is "site"
   if(color == "site") {
-    plot = plot + scale_color_manual(values = c("SAL" = "#62a7f8",
+    plot = plot + scale_color_manual(values = c("SAL" = "#81bbfc",
                                                 "SFE-M" = "#416f16",
-                                                "RUS" = "#bdb000"))
+                                                "RUS" = "#ab9f00"))
   }
   # add in same shape if shape argument is "site"
   if(shape == "site") {
@@ -198,9 +198,9 @@ makePCoAplot <- function(data, color, shape) {
   
   # add in site color if color argument is "site"
   if(color == "site") {
-    plot = plot + scale_color_manual(values = c("SAL" = "#62a7f8",
+    plot = plot + scale_color_manual(values = c("SAL" = "#81bbfc",
                                                 "SFE-M" = "#416f16",
-                                                "RUS" = "#bdb000"))
+                                                "RUS" = "#ab9f00"))
   }
   # add in same shape if shape argument is "site"
   if(shape == "site") {

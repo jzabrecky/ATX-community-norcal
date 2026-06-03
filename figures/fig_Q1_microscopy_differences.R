@@ -1,14 +1,14 @@
 #### Main figure to show differences in morphologically-identified assemblages among rivers
 ### Jordan Zabrecky
-## last edited: 03.20.2026
+## last edited: 06.02.2026
 
 # This script creates a main figure to show differences in morphologically-identified
-# assemblages for all sample types including an (NMDS) and relative abundance barplots
+# assemblages for all sample types including an (PCoA) and relative abundance barplots
 
 # One figure is made for NT samples showing (a) relative abundance plots and (b) NMDS
 # Another figure is made for TM and TAC samples showing (a) relative abundance plots WITH
 # target taxa included, (b) relative abundance WITHOUT target taxa included (and green
-# algae in the case of Anabaena), and (c) NMDS plots
+# algae in the case of Anabaena), and (c) PCoA plots
 
 #### (1) Loading libraries & data ####
 
@@ -44,17 +44,14 @@ end_color <- "lightgray"
 # creating string vector to iterate through sample types
 sample_types = c("nt", "tac", "tm")
 
-## (a) NMDS
+## (a) PCoA
 
 fig_a <- list()
 for(i in sample_types) {
-  fig_a[[i]] = makeNMDSplot(NMDS_list[[i]], FALSE, FALSE,
-                            color = "site", shape = "site") +
+  fig_a[[i]] = makePCoAplot(PCoA_list[[i]], color = "site", shape = "month") +
     theme(legend.position = "none")
 }
 lapply(fig_a, print)
-
-# add site labels (to not be abbreviations)
 
 ## (b) algal taxa bar plot
 
@@ -74,23 +71,33 @@ lapply(fig_a, print)
 # grey: other
 figure_data <- lapply(data_longer, function(x) {
   y = x %>% 
-    # move Nostoc to other N-fixing cyanobacteria
+    # move categories & add in italics, then factor
     mutate(figure_groups = case_when(broader == "Nostoc" ~ "Other N-fixing Cyanobacteria",
-                                     taxa == "geitlerinema" ~ "Geitlerinema",
+                                     taxa == "leptolyngbya_and_geitlerinema" ~ "*Leptolyngbya* / *Geitlerinema*",
                                      broader == "Unknown" ~ "Other",
                                      broader == "Misc. Other" ~ "Other",
-                                     taxa == "rhopalodia" ~ "Rhopalodia",
-                                     taxa == "epithemia" ~ "Epithemia",
+                                     taxa == "rhopalodia" ~ "*Rhopalodia*",
+                                     taxa == "epithemia" ~ "*Epithemia*",
+                                     taxa == "e_diatoms" ~ "*Epithemia*",
+                                     taxa == "non_e_r_diatoms" ~ "Diatoms (other than *Epithemia* or *Rhopalodia*)",
+                                     taxa == "non_e_diatoms" ~ "Diatoms Other than Epithemia",
+                                     taxa == "cladophora" ~ "*Cladophora*",
+                                     taxa == "spirogyra" ~ "*Spirogyra*",
+                                     taxa == "anabaena_and_cylindrospermum" ~ "*Anabaena* / *Cylindrospermum*",
+                                     taxa == "microcoleus" ~ "*Microcoleus*",
                                      TRUE ~ broader),
+           site_labels = case_when(site == "SFE-M" ~ "South Fork<br>Eel River",
+                                   site == "SAL" ~ "Salmon<br>River",
+                                   site == "RUS" ~ "Russian<br>River"),
            figure_groups_factored = factor(figure_groups, 
-                                           levels = c("Diatoms Other than Epithemia or Rhopalodia", 
-                                                      "Diatoms Other than Epithemia", "Epithemia",
-                                                      "Rhopalodia", "Other N-fixing Cyanobacteria",
+                                           levels = c("Diatoms (other than *Epithemia* or *Rhopalodia*)", 
+                                                      "Diatoms Other than Epithemia", "*Epithemia*",
+                                                      "*Rhopalodia*", "Other N-fixing Cyanobacteria",
                                                       "Other Filamentous Cyanobacteria",
-                                                      "Unicellular Cyanobacteria", "Cladophora", 
-                                                      "Spirogyra", "Other Green Algae", "Green Algae",
-                                                      "Anabaena or Cylindrospermum", "Microcoleus",
-                                                      "Geitlerinema", "Unknown", "Other"))) 
+                                                      "Unicellular Cyanobacteria", "*Cladophora*", 
+                                                      "*Spirogyra*", "Other Green Algae", "Green Algae",
+                                                      "*Anabaena* / *Cylindrospermum*", "*Microcoleus*",
+                                                      "*Leptolyngbya* / *Geitlerinema*", "Unknown", "Other"))) 
   # return new dataframe
   return(y)
 })
@@ -98,34 +105,17 @@ figure_data <- lapply(data_longer, function(x) {
 # empty list
 fig_b <- list()
 
-# set attributes based on sample type
+# set color list based on sample type
 colors <- list(c(1:12), c(1:2, 4:6, 11:12), c(1:2, 4:6, 8, 10, 12)) # list for number of fill colors to end before "other" category
-labels <- list(c("Diatoms (other than *Epithemia* or *Rhopalodia*)", "*Epithemia*",
-               "*Rhopalodia*", "Other N-Fixing Cyanobacteria", "Other Filamentous Cyanobacteria",
-               "Unicellular Cyanobacteria", "*Cladophora*", "*Spirogyra*", "Other Green Algae",
-               "*Anabaena* and *Cylindrospermum*", "*Microcoleus*", "*Geitlerinema*", "Other"),
-               c("Diatoms (other than *Epithemia*)", "*Epithemia*", "Other N-Fixing Cyanobacteria",
-                 "Other Filamentous Cyanobacteria", "Unicellular Cyanobacteria", "*Microcoleus*", 
-                 "*Geitlerinema*", "Other"),
-               c("Diatoms (other than *Epithemia*)", "*Epithemia*", "Other N-Fixing Cyanobacteria",
-                 "Other Filamentous Cyanobacteria", "Unicellular Cyanobacteria", "Green Algae",
-                 "*Anabaena* and*Cylindrospermum*", "*Geitlerinema*"))
-site_labels <- list(c("Russian<br>River", "Salmon<br>River", "South Fork<br>Eel River"),
-                    c("Russian<br>River", "Salmon<br>River", "South Fork<br>Eel River"),
-                    c("Salmon<br>River", "South Fork<br>Eel River"))
 names(colors) <- sample_types
-names(labels) <- sample_types
-names(site_labels) <- sample_types
 
 # make plots
 for(i in sample_types) {
  fig_b[[i]] <- barplot(data = figure_data[[i]],
-                       x = "site", y  = "percent", fill = "figure_groups_factored") +
-   scale_fill_discrete("Taxa Group", palette = c(palette[colors[[i]]], end_color), 
-                       labels = labels[[i]]) +
+                       x = "site_labels", y  = "percent", fill = "figure_groups_factored") +
+   scale_fill_discrete("Taxa Group", palette = paste(c(palette[colors[[i]]], end_color))) +
    labs(x = NULL, y = "Relative Abundance") +
-   scale_x_discrete(labels = site_labels[[i]]) +
-   theme(axis.text.x = element_markdown(size = 7))
+   theme(axis.text.x = element_markdown(size = 7, color = "#333333"))
 }
 lapply(fig_b, print)
 
@@ -139,23 +129,33 @@ target_w_target_taxa <- lapply(list(tm_w_m, tac_w_ac_g), function(x) {
   
   # add groupings to match barplots
   y = y %>% 
-    # move Nostoc to other N-fixing cyanobacteria
+    # same as above
     mutate(figure_groups = case_when(broader == "Nostoc" ~ "Other N-fixing Cyanobacteria",
-                                     taxa == "geitlerinema" ~ "Geitlerinema",
+                                     taxa == "leptolyngbya_and_geitlerinema" ~ "*Leptolyngbya* / *Geitlerinema*",
                                      broader == "Unknown" ~ "Other",
                                      broader == "Misc. Other" ~ "Other",
-                                     taxa == "rhopalodia" ~ "Rhopalodia",
-                                     taxa == "epithemia" ~ "Epithemia",
+                                     taxa == "rhopalodia" ~ "*Rhopalodia*",
+                                     taxa == "epithemia" ~ "*Epithemia*",
+                                     taxa == "e_diatoms" ~ "*Epithemia*",
+                                     taxa == "non_e_r_diatoms" ~ "Diatoms (other than *Epithemia* or *Rhopalodia*)",
+                                     taxa == "non_e_diatoms" ~ "Diatoms Other than Epithemia",
+                                     taxa == "cladophora" ~ "*Cladophora*",
+                                     taxa == "spirogyra" ~ "*Spirogyra*",
+                                     taxa == "anabaena_and_cylindrospermum" ~ "*Anabaena* / *Cylindrospermum*",
+                                     taxa == "microcoleus" ~ "*Microcoleus*",
                                      TRUE ~ broader),
+           site_labels = case_when(site == "SFE-M" ~ "South Fork<br>Eel River",
+                                   site == "SAL" ~ "Salmon<br>River",
+                                   site == "RUS" ~ "Russian<br>River"),
            figure_groups_factored = factor(figure_groups, 
-                                           levels = c("Diatoms Other than Epithemia or Rhopalodia", 
-                                                      "Diatoms Other than Epithemia", "Epithemia",
-                                                      "Rhopalodia", "Other N-fixing Cyanobacteria",
+                                           levels = c("Diatoms (other than *Epithemia* or *Rhopalodia*)", 
+                                                      "Diatoms Other than Epithemia", "*Epithemia*",
+                                                      "*Rhopalodia*", "Other N-fixing Cyanobacteria",
                                                       "Other Filamentous Cyanobacteria",
-                                                      "Unicellular Cyanobacteria", "Cladophora", 
-                                                      "Spirogyra", "Other Green Algae", "Green Algae",
-                                                      "Anabaena or Cylindrospermum", "Microcoleus",
-                                                      "Geitlerinema", "Unknown", "Other"))) 
+                                                      "Unicellular Cyanobacteria", "*Cladophora*", 
+                                                      "*Spirogyra*", "Other Green Algae", "Green Algae",
+                                                      "*Anabaena* / *Cylindrospermum*", "*Microcoleus*",
+                                                      "*Leptolyngbya* / *Geitlerinema*", "Unknown", "Other"))) 
   # return new dataframe
   return(y)
 })
@@ -165,24 +165,16 @@ names(target_w_target_taxa) <- c("tm", "tac")
 fig_c <- list()
 
 # tm
-fig_c[["tm"]] <- barplot(data = target_w_target_taxa$tm,  x = "site", y  = "percent", fill = "figure_groups_factored") +
-  scale_fill_discrete("Taxa Group", palette = c(palette[c(1:2, 4:6, 8, 10:12)], end_color), 
-                      labels = c("Diatoms (other than *Epithemia*)", "*Epithemia*", "Other N-Fixing Cyanobacteria",
-                                 "Other Filamentous Cyanobacteria", "Unicellular Cyanobacteria", "Green Algae",
-                                 "*Microcoleus*", "*Anabaena* and*Cylindrospermum*", "*Geitlerinema*")) +
+fig_c[["tm"]] <- barplot(data = target_w_target_taxa$tm,  x = "site_labels", y  = "percent", fill = "figure_groups_factored") +
+  scale_fill_discrete("Taxa Group", palette = c(palette[c(1:2, 4:6, 8, 10:12)], end_color)) +
   labs(x = NULL, y = "Relative Abundance") +
-  scale_x_discrete(labels = c("Salmon<br>River", "South Fork<br>Eel River")) +
-  theme(axis.text.x = element_markdown(size = 7))
+  theme(axis.text.x = element_markdown(size = 7, color = "#333333"))
 
 # tac
-fig_c[["tac"]] <- barplot(data = target_w_target_taxa$tac,  x = "site", y  = "percent", fill = "figure_groups_factored") +
-  scale_fill_discrete("Taxa Group", palette = c(palette[c(1:2, 4:6, 8, 10:12)], end_color), 
-                      labels = c("Diatoms (other than *Epithemia*)", "*Epithemia*", "Other N-Fixing Cyanobacteria",
-                                 "Other Filamentous Cyanobacteria", "Unicellular Cyanobacteria", "Green Algae",
-                                 "*Microcoleus*", "*Anabaena* and*Cylindrospermum*", "*Geitlerinema*", "Other")) +
+fig_c[["tac"]] <- barplot(data = target_w_target_taxa$tac,  x = "site_labels", y  = "percent", fill = "figure_groups_factored") +
+  scale_fill_discrete("Taxa Group", palette = c(palette[c(1:2, 4:6, 8, 10:12)], end_color)) +
   labs(x = NULL, y = "Relative Abundance") +
-  scale_x_discrete(labels = c("Russian<br>River", "Salmon<br>River", "South Fork<br>Eel River")) +
-  theme(axis.text.x = element_markdown(size = 7))
+  theme(axis.text.x = element_markdown(size = 7, color = "#333333"))
 
 # show plots
 lapply(fig_c, print)
@@ -193,12 +185,12 @@ lapply(fig_c, print)
 
 # put figure together
 nt_figure <- plot_grid(fig_b$nt + theme(legend.position = "none") + labs(y = "Relative Abundance"),
-                       fig_a$nt + labs(x = "NMDS1", y = "NMDS2"), align = "hv", ncol = 1)
+                       fig_a$nt, align = "hv", ncol = 1)
 nt_figure
 
 # save
 ggsave("./figures/tiff_files/Q1_nt_microscopy_figure.tiff", dpi = 600, 
-       width=8.5, height=12, unit="cm")
+       width=8.5, height=11, unit="cm")
 
 ## (b) T figure
 
@@ -207,14 +199,13 @@ t_figure <- plot_grid(fig_c$tm + theme(legend.position = "none") + labs(y = NULL
                       fig_c$tac + theme(legend.position = "none") + labs(y = NULL),
                       fig_b$tm + theme(legend.position = "none") + labs(y = NULL),
                       fig_b$tac+ theme(legend.position = "none") + labs(x = NULL, y = NULL),
-                      fig_a$tm + labs(y = NULL, x = NULL), 
-                      fig_a$tac + labs(y = NULL, x = NULL),
+                      fig_a$tm, fig_a$tac,
                       align = "hv", ncol = 2)
 t_figure
 
 # save
 ggsave("./figures/tiff_files/Q1_t_microscopy_figure.tiff", dpi = 600, 
-       width=17.6, height=18, unit="cm")
+       width=14, height=18, unit="cm")
 
 ## (c) legends (will add in manually in inkscape)
 
@@ -239,7 +230,8 @@ fig_b$tm
 # putting legend stuff together
 figure_legend <- plot_grid(fig_a$nt + scale_shape_discrete(labels = c("Russian  River", "Salmon  River", "South  Fork  Eel  River")) +
                              scale_color_discrete(labels = c("Russian  River", "Salmon  River", "South  Fork  Eel  River"),
-                                                  palette = c("#bdb000", "#62a7f8", "#416f16")) +
+                                                  palette = c("#ab9f00", "#81bbfc", "#416f16")) +
+                             scale_shape_discrete(labels = c("June", "July", "August", "September")) +
                              theme(legend.position = "bottom", legend.title = element_blank()),
                            fig_b$nt + theme(legend.position = "bottom", legend.title = element_blank()) +
                              theme(legend.key.size = unit(0.3, 'cm'),
@@ -255,3 +247,15 @@ figure_legend
 # save
 ggsave("./figures/tiff_files/Q1_microscopy_legend.tiff", dpi = 600,
        width=18, height=13, unit="cm")
+
+# option 2 with vertical text
+figure_legend2 <- plot_grid(fig_a$nt + scale_shape_discrete(labels = c("Russian  River", "Salmon  River", "South  Fork  Eel  River")) +
+                             scale_color_discrete(labels = c("Russian  River", "Salmon  River", "South  Fork  Eel  River"),
+                                                  palette = c("#ab9f00", "#81bbfc", "#416f16")) +
+                             scale_shape_discrete(labels = c("June", "July", "August", "September")) +
+                             theme(legend.position = "right", legend.title = element_blank()),
+                           targetlegend_plot + theme(legend.position = "right"), ncol = 1)
+figure_legend2
+
+ggsave("./figures/tiff_files/Q1_microscopy_legend2.tiff", dpi = 600,
+       width=18, height=20, unit="cm")
