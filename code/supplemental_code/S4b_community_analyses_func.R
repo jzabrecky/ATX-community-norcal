@@ -1,6 +1,6 @@
 #### Script of functions used in NMDS (and related) analyses
 ### Jordan Zabrecky
-## last edited: 05.27.2026
+## last edited: 06.05.2026
 
 # This script hosts functions used to create relative abundance bar plots &
 # NMDS and PCoA plots, run PERMANOVAs, and add "event_no" to sampling date which refers 
@@ -183,7 +183,12 @@ getPCoAdata <- function(data, start_col, end_col = NA) {
 }
 
 ## (e) makePCoAplot
-makePCoAplot <- function(data, color, shape) {
+# makes PCoA plot
+# @param data is list output from function "getPCoAdata"
+# @shape graph aesthetic for column that defines shape of point
+# @color graph aesthetic for column that defines point color and ellipses drawn
+# @stat_ellipse is TRUE/FALSE which dictates if ellipses are drawn or not
+makePCoAplot <- function(data, color, shape, stat_ellipse = TRUE) {
   
   # separating out data to be able to easily call each
   pcoa_data = data$pcoa
@@ -192,9 +197,13 @@ makePCoAplot <- function(data, color, shape) {
   # make plot
   plot = ggplot(pcoa_data, aes(x = pcoa1, y = pcoa2)) +
     geom_point(aes(color = .data[[color]], shape = .data[[shape]]), size = 2) +
-    stat_ellipse(aes(color = .data[[color]]), type = "t", linetype = 2, linewidth = 0.5) +
     labs(x = paste("PCoA1 (", round(pcoa_per_expl[1], 2), "%)", sep = ""),
          y =  paste("PCoA2 (", round(pcoa_per_expl[2], 2), "%)", sep = ""),)
+  
+  if(stat_ellipse == TRUE) {
+    plot = plot + 
+      stat_ellipse(aes(color = .data[[color]]), type = "t", linetype = 2, linewidth = 0.5)
+  }
   
   # add in site color if color argument is "site"
   if(color == "site") {
@@ -208,7 +217,23 @@ makePCoAplot <- function(data, color, shape) {
                                                 "SFE-M" = 15,
                                                 "RUS" = 16))
   }
-
+  
+  # add in atx color if color argument is "atx_group"
+  if(color == "atx_group") {
+    plot = plot + scale_color_manual(values = c("none" = "#949494", 
+                                                "low" = "#93d152",
+                                                "high" = "#3e700a",
+                                                "y" = "#3c8a36",
+                                                "n" = "#949494"))
+  }
+  
+  # add in shape if argument is "atx_group"
+  if(shape == "atx_group") {
+    plot = plot + scale_shape_manual(values = c("none" = 4,
+                                                "low" = 17,
+                                                "high" = 16))
+  }
+      
   return(plot)
 }
 

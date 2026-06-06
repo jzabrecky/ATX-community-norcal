@@ -19,8 +19,8 @@ tm <- read.csv("./data/molecular/PICRUSt2_predicted_KO_select_tm_nomicro.csv")
 tac <- read.csv("./data/molecular/PICRUSt2_predicted_KO_select_tac_noanacyl.csv")
 
 # put all dataframes into a list
-data_select <- list(nt, tm, tac)
-names(data_select) <- c("NT", "TM", "TAC")
+data_select <- list(nt, tac, tm)
+names(data_select) <- c("NT", "TAC", "TM")
 
 # need to log predicted genes!
 data_select <- lapply(data_select, function(x) x %>% 
@@ -137,18 +137,18 @@ for(i in c("NT", "TAC", "TM")) {
   }
 }
 
-view(kruskal_test_results) # nothing significant
+view(kruskal_test_results) # nothing significant - feel like we don't have enough points to compare
 
 # real quick to make sure my code worked
 test <- kruskal.test(atx_detected~predicted_gene_abundance, 
              data = data_select$NT %>% filter(functional_grouping == "cobalamin_B12" & site == "SFE-M"))
-test # p-value is 0.4544 which matches table
+test # p-value is 0.4544 which matches table, yes- probably just don't have enough points
 
 # save results
 write.csv(kruskal_test_results,
           "./data/kruskal_wallis_results/Q2_selectfunctions.csv", row.names = FALSE)
 
-# curious which is more interesting; this or LM, probably LM :)
+# lm is the better option!
 
 #### (3) Linear Models ####
 
