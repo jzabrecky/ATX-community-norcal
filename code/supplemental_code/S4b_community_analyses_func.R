@@ -1,6 +1,6 @@
 #### Script of functions used in NMDS (and related) analyses
 ### Jordan Zabrecky
-## last edited: 06.05.2026
+## last edited: 06.09.2026
 
 # This script hosts functions used to create relative abundance bar plots &
 # NMDS and PCoA plots, run PERMANOVAs, and add "event_no" to sampling date which refers 
@@ -171,10 +171,16 @@ getPCoAdata <- function(data, start_col, end_col = NA) {
   # bind x & y positions to site information
   pcoa_final = cbind(as.data.frame(pcoa$points, "sites"), 
                      data %>% select(any_of(c("pcoa1", "pcoa2", "site_reach", "site", "field_date", 
-                                              "sample_type", "atx_detected", "atx_group")))) %>% 
+                                              "sample_type", "atx_detected", "atx_group", 
+                                              "ATX_all_ug_org_mat")))) %>% 
     mutate(field_date = ymd(field_date),
            year = year(field_date),
-           month = as.character(month(field_date)))
+           month = as.character(month(field_date))) %>% 
+    # add ATX interval groupings 
+    mutate(atx_group_interval = case_when(ATX_all_ug_org_mat > 10 ~ "greater than 10",
+                                  ATX_all_ug_org_mat >= 1 & ATX_all_ug_org_mat <= 10 ~ "between 1 and 10",
+                                  ATX_all_ug_org_mat > 0  & ATX_all_ug_org_mat < 1 ~ "less than 1",
+                                  ATX_all_ug_org_mat == 0 ~ "none"))
   
   # return list with (1) PCoA plotting data (2) % explained for each axis
   list <- list(pcoa_final, per_expl)
@@ -223,8 +229,18 @@ makePCoAplot <- function(data, color, shape, stat_ellipse = TRUE) {
     plot = plot + scale_color_manual(values = c("none" = "#949494", 
                                                 "low" = "#93d152",
                                                 "high" = "#3e700a",
-                                                "y" = "#3c8a36",
-                                                "n" = "#949494"))
+                                                "n" = "#949494",
+                                                "y" = "#74B030"))
+  }
+  
+  # add in atx color if color argument is "atx_group_interval"
+  if(color == "atx_group_interval") {
+    plot = plot + scale_color_manual(values = c("none" = "#949494", 
+                                                "less than 1" = "#BAE094",
+                                                "between 1 and 10" = "#72A644",
+                                                "greater than 10" = "#315E07",
+                                                "n" = "#949494",
+                                                "y" = "#74B030"))
   }
   
   # add in shape if argument is "atx_group"

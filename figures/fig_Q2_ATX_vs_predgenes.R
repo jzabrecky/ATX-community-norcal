@@ -1,6 +1,6 @@
 #### Main figure comparing ATX concentrations to predicted gene counts of selected orthologs
 ### Jordan Zabrecky
-## 06.05.2026
+## 06.10.2026
 
 # This script creates a main figure comparing ATX concentrations versus predicted
 # gene counts of selected orthologs for South Fork Eel samples. Version with 
@@ -80,11 +80,10 @@ subplot1_1 <- ggplot(data = all %>% filter(sample_type == "NT" & site == "SFE-M"
   facet_grid(target_nontarget~functional_grouping, scales = "free") + 
   geom_richtext(
     data = model_info %>% filter(sample_type == "NT" & site == "SFE-M"),
-    mapping = aes(x = x_min + ((x_max - x_min) * .4), y = -5.75, label = label), size= 2,
+    mapping = aes(x = x_min + ((x_max - x_min) * .44), y = -4.8, label = label), size= 2.4,
     fill = NA, label.color = NA, text.color = "#8c4d06") +
   geom_point(color = "#c26f11", size = 2, alpha = 0.5, shape = 15) +
-  scale_x_continuous(breaks = breaks_pretty(n = 3), transform = "exp") +
-  scale_y_continuous(transform = "exp") +
+  scale_x_continuous(breaks = breaks_pretty(n = 3)) +
   theme(strip.background = element_blank(), legend.position = "bottom")
 subplot1_1
 
@@ -95,7 +94,7 @@ subplot1_2 <- ggplot(data = all %>% filter(sample_type == "TAC" & site == "SFE-M
   geom_point(shape = 16, color = "#3f9633", size = 2, alpha = 0.5) +
   geom_richtext(
     data = model_info %>% filter(sample_type == "TAC" & site == "SFE-M"),
-    mapping = aes(x = x_min + ((x_max - x_min) * .38), y = -5.5, label = label), size= 2,
+    mapping = aes(x = x_min + ((x_max - x_min) * .42), y = -5.5, label = label), size= 2.4,
     fill = NA, label.color = NA, text.color = "#247319") +
   scale_x_continuous(breaks = breaks_pretty(n = 3)) +
   ylim(-6, 6) + 
@@ -110,7 +109,7 @@ subplot1_3 <- ggplot(data = all %>% filter(sample_type == "TM" & site == "SFE-M"
   geom_point(shape = 17, color = "#6d4275", size = 2, alpha = 0.5) +
   geom_richtext(
     data = model_info %>% filter(sample_type == "TM" & site == "SFE-M"),
-    mapping = aes(x = x_min + ((x_max - x_min) * .38), y = -6, label = label), size= 2,
+    mapping = aes(x = x_min + ((x_max - x_min) * .42), y = -6, label = label), size= 2.4,
     fill = NA, label.color = NA, text.color = "#48234f") +
   scale_x_continuous(breaks = breaks_pretty(n = 3)) +
   theme(strip.background = element_blank(), legend.position = "bottom")
