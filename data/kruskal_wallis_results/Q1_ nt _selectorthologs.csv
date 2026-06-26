@@ -1,7 +1,7 @@
 "function_groups","kruskal_test"
-"cobalamin_B12",0.472562298528094
-"nitrification",0.3221824055813
-"nitrogen_fixation",0.472562298528094
-"phosphatase_transporters",0.472562298528094
-"pyridoxal",0.472562298528094
-"thiamine",0.472562298528094
+"cobalamin_B12",0.00216557263329095
+"nitrification",0.000452570731575145
+"nitrogen_fixation",0.723831147126982
+"phosphatase_transporters",0.00482828464724986
+"pyridoxal",0.000871683858149997
+"thiamine",0.0485454356505713

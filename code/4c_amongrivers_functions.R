@@ -1,6 +1,6 @@
 #### Comparing predicted functional profiles data among rivers
 ### Jordan Zabrecky
-## last edited: 06.01.2026
+## last edited: 06.25.2026
 
 # This code compares both the full predicted function and select orthologs/functions 
 # obtained from PICRUSt2 for NT, TM, and TAC samples across rivers to answer Q1.
@@ -10,7 +10,7 @@
 #### (1) Loading libraries & data ####
 
 # load libraries
-lapply(c("tidyverse", "plyr", "vegan", "indicspecies", "dunn.test"), require, character.only = T)
+lapply(c("tidyverse", "plyr", "vegan", "indicspecies", "FSA"), require, character.only = T)
 
 # load data for all orthologs
 nt <- read.csv("./data/molecular/PICRUSt2_predicted_KO_all_all.csv") %>% 
@@ -67,27 +67,50 @@ kruskal_test_results <- lapply(data_select, function(x) {
   
   for(i in function_groups) {
     results = rbind(results, data.frame(function_groups = i,
-                                        kruskal_test = (kruskal.test(site~predicted_gene_abundance, data = (x %>% filter(functional_grouping == i))))$p.value))
+                                        kruskal_test = (kruskal.test(predicted_gene_abundance~site, data = (x %>% filter(functional_grouping == i))))$p.value))
   }
   
   return(results[-1,])
 })
 
 lapply(kruskal_test_results, function(x) x[which(x$kruskal_test < 0.05),])
-view(kruskal_test_results) # nothing signficiantly differed
-
-# want to double-check numbers: comparing nitrogen fixation for NT
-kruskal.test(site~predicted_gene_abundance, data = data_select$nt %>% filter(functional_grouping == "nitrogen_fixation"))
-# 0.4726 which is same as in table
-# is phosphatase also the same???
-kruskal.test(site~predicted_gene_abundance, data = data_select$nt %>% filter(functional_grouping == "phosphatase_transporters"))
-# yes, weird
+view(kruskal_test_results) # everything for NT except for nitrogen fixation
+# nothing for TM and cobalamin, nitrogen fixation, and phosphatase transporters for TAC
 
 # save results
 lapply(names(kruskal_test_results), function(x) {
   write.csv(kruskal_test_results[[x]], paste("./data/kruskal_wallis_results/Q1_", x, "_selectorthologs.csv"),
             row.names = FALSE)
 })
+
+# follow-up dunn's test
+# NT samples
+dunnTest(predicted_gene_abundance ~ site,
+         data=data_select$nt %>% filter(functional_grouping == "nitrification"),
+         method="bonferroni") # SFE significantly different (lower)
+dunnTest(predicted_gene_abundance ~ site,
+         data=data_select$nt %>% filter(functional_grouping == "phosphatase_transporters"),
+         method="bonferroni") # RUS significantly different (lower)
+dunnTest(predicted_gene_abundance ~ site,
+         data=data_select$nt %>% filter(functional_grouping == "cobalamin_B12"),
+         method="bonferroni") # RUS significantly different (lower)
+dunnTest(predicted_gene_abundance ~ site,
+         data=data_select$nt %>% filter(functional_grouping == "pyridoxal"),
+         method="bonferroni") # RUS significantly different (lower)
+dunnTest(predicted_gene_abundance ~ site,
+         data=data_select$nt %>% filter(functional_grouping == "thiamine"),
+         method="bonferroni") # RUS significantly different (lower)
+
+# TAC -- will have to think about interpretation of this with Salmon River single sample
+dunnTest(predicted_gene_abundance ~ site,
+         data=data_select$tac %>% filter(functional_grouping == "nitrogen_fixation"),
+         method="bonferroni") # RUS significantly different (lower)
+dunnTest(predicted_gene_abundance ~ site,
+         data=data_select$tac %>% filter(functional_grouping == "cobalamin_B12"),
+         method="bonferroni") # RUS significantly different (lower)
+dunnTest(predicted_gene_abundance ~ site,
+         data=data_select$tac %>% filter(functional_grouping == "phosphatase_transporters"),
+         method="bonferroni") # RUS significantly different (lower)
 
 #### (4) PCoA Plots ####
 

@@ -22,7 +22,7 @@ tac <- read.csv("./data/molecular/PICRUSt2_predicted_KO_select_tac_noanacyl.csv"
 data_select <- list(nt, tac, tm)
 names(data_select) <- c("NT", "TAC", "TM")
 
-# need to log predicted genes!
+# need to log predicted genes for linear models!
 data_select <- lapply(data_select, function(x) x %>% 
                         group_by(field_date, site, site_reach, sample_type, functional_grouping) %>% 
                         # need to also group as multiple KOs are listed for each functional group
@@ -102,7 +102,7 @@ for(i in c("NT", "TAC", "TM")) {
                                            sample_type = i,
                                            site = s,
                                            test = "detected",
-                                           kruskal_test = kruskal.test(atx_detected~predicted_gene_abundance,   
+                                           kruskal_test = kruskal.test(predicted_gene_abundance~atx_detected,   
                                                                        data = (data_select[[i]] %>% filter(functional_grouping == f & site == s)))$p.value))
        
         # atx groupings
@@ -111,7 +111,7 @@ for(i in c("NT", "TAC", "TM")) {
                                            sample_type = i,
                                            site = s,
                                            test = "atx_groups",
-                                           kruskal_test = kruskal.test(atx_group~predicted_gene_abundance, 
+                                           kruskal_test = kruskal.test(predicted_gene_abundance~atx_group, 
                                                                        data = (data_select[[i]] %>% filter(functional_grouping == f & site == s)))$p.value))
       }
       
@@ -137,12 +137,7 @@ for(i in c("NT", "TAC", "TM")) {
   }
 }
 
-view(kruskal_test_results) # nothing significant - feel like we don't have enough points to compare
-
-# real quick to make sure my code worked
-test <- kruskal.test(atx_detected~predicted_gene_abundance, 
-             data = data_select$NT %>% filter(functional_grouping == "cobalamin_B12" & site == "SFE-M"))
-test # p-value is 0.4544 which matches table, yes- probably just don't have enough points
+view(kruskal_test_results)
 
 # save results
 write.csv(kruskal_test_results,

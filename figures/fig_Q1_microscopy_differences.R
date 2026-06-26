@@ -30,7 +30,7 @@ lapply(c("cowplot", "ggtext"), require, character.only = T)
 theme_set(theme_bw() + theme(strip.background = element_blank(),
                              plot.title = element_text(hjust = 0.5), legend.text = element_markdown(),
                              text = element_text(size = 8), strip.text = element_text(size = 8),
-                             panel.grid.major = element_blank(), panel.grid.minor = element_blank(),))
+                             panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
 
 # custom palette
 palette <- c("#FBF6B0", "#C5BD53", "#777122", "#C2DFFF", "#5E9DE0", "#205288", 
