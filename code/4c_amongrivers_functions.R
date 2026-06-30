@@ -1,6 +1,6 @@
 #### Comparing predicted functional profiles data among rivers
 ### Jordan Zabrecky
-## last edited: 06.25.2026
+## last edited: 06.26.2026
 
 # This code compares both the full predicted function and select orthologs/functions 
 # obtained from PICRUSt2 for NT, TM, and TAC samples across rivers to answer Q1.
@@ -59,6 +59,9 @@ boxplots <- lapply(data_select, function(x) {
 shapiro.test((data_select$nt %>% filter(functional_grouping == "nitrogen_fixation" & site == "SFE-M"))$predicted_gene_abundance)
 # not normal
 
+# also want to 
+data_select[["tac_nosal"]] <- data_select$tac %>% filter(site != "SAL")
+
 # run tests
 kruskal_test_results <- lapply(data_select, function(x) {
   function_groups = unique(x$functional_grouping)
@@ -75,11 +78,11 @@ kruskal_test_results <- lapply(data_select, function(x) {
 
 lapply(kruskal_test_results, function(x) x[which(x$kruskal_test < 0.05),])
 view(kruskal_test_results) # everything for NT except for nitrogen fixation
-# nothing for TM and cobalamin, nitrogen fixation, and phosphatase transporters for TAC
+# nothing for TM and nitrification, n-fix, & phosphatase for TAC (excl salmon)
 
 # save results
 lapply(names(kruskal_test_results), function(x) {
-  write.csv(kruskal_test_results[[x]], paste("./data/kruskal_wallis_results/Q1_", x, "_selectorthologs.csv"),
+  write.csv(kruskal_test_results[[x]], paste("./data/kruskal_wallis_results/Q1_", x, "_selectorthologs.csv", sep = ""),
             row.names = FALSE)
 })
 
@@ -99,17 +102,6 @@ dunnTest(predicted_gene_abundance ~ site,
          method="bonferroni") # RUS significantly different (lower)
 dunnTest(predicted_gene_abundance ~ site,
          data=data_select$nt %>% filter(functional_grouping == "thiamine"),
-         method="bonferroni") # RUS significantly different (lower)
-
-# TAC -- will have to think about interpretation of this with Salmon River single sample
-dunnTest(predicted_gene_abundance ~ site,
-         data=data_select$tac %>% filter(functional_grouping == "nitrogen_fixation"),
-         method="bonferroni") # RUS significantly different (lower)
-dunnTest(predicted_gene_abundance ~ site,
-         data=data_select$tac %>% filter(functional_grouping == "cobalamin_B12"),
-         method="bonferroni") # RUS significantly different (lower)
-dunnTest(predicted_gene_abundance ~ site,
-         data=data_select$tac %>% filter(functional_grouping == "phosphatase_transporters"),
          method="bonferroni") # RUS significantly different (lower)
 
 #### (4) PCoA Plots ####

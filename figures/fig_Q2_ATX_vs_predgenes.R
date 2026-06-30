@@ -1,6 +1,6 @@
 #### Main figure comparing ATX concentrations to predicted gene counts of selected orthologs
 ### Jordan Zabrecky
-## 06.10.2026
+## 06.29.2026
 
 # This script creates a main figure comparing ATX concentrations versus predicted
 # gene counts of selected orthologs for South Fork Eel samples. Version with 
@@ -97,7 +97,6 @@ subplot1_2 <- ggplot(data = all %>% filter(sample_type == "TAC" & site == "SFE-M
     mapping = aes(x = x_min + ((x_max - x_min) * .42), y = -5.5, label = label), size= 2.4,
     fill = NA, label.color = NA, text.color = "#247319") +
   scale_x_continuous(breaks = breaks_pretty(n = 3)) +
-  ylim(-6, 6) + 
   scale_y_continuous(breaks = breaks_pretty(n = 4), limit = c(-6, 6)) + 
   theme(strip.background = element_blank(), legend.position = "bottom")
 subplot1_2
@@ -115,8 +114,8 @@ subplot1_3 <- ggplot(data = all %>% filter(sample_type == "TM" & site == "SFE-M"
   theme(strip.background = element_blank(), legend.position = "bottom")
 subplot1_3
 
-plot_opt2 <- plot_grid(subplot1_1, subplot1_2, subplot1_3, align = "hv", ncol = 1)
-plot_opt2
+plot_sfe <- plot_grid(subplot1_1, subplot1_2, subplot1_3, align = "hv", ncol = 1)
+plot_sfe
 
 # save figure
 ggsave("./figures/tiff_files/Q2_atx_v_gene.tiff", dpi = 600,
@@ -124,50 +123,42 @@ ggsave("./figures/tiff_files/Q2_atx_v_gene.tiff", dpi = 600,
 
 #### (3) Making Supplemental Figure (Russian River) ####
 
-# <TO DO WHEN WORKING ON SUPPLEMENTAL FIGURES>
+# having more trouble with text locations for the Russian.... going to place it manually...
 
-## old option ---------
-
-## (b) option 1 (target & non-target separate)
-# (did not finish this option as I prefer second and text will be more annoying to place
-# for target panel & the additional required key may be awkward)
-
-# non-target samples
-subplot1_1 <- ggplot(data = all %>% filter(sample_type == "NT" & site == "SFE-M"), 
+# nontarget
+subplot2_1 <- ggplot(data = all %>% filter(sample_type == "NT" & site == "RUS"), 
                      aes(x = log_predicted_gene_abundance, y = log_ATX_all_ug_org_mat)) +
   geom_smooth(fill = "#f2b979", color = "#c26f11", method = "lm", alpha = 0.25) +
   facet_grid(target_nontarget~functional_grouping, scales = "free") + 
   geom_richtext(
     data = model_info %>% filter(sample_type == "NT" & site == "SFE-M"),
-    mapping = aes(x = x_min + ((x_max - x_min) * .4), y = y_max + 0.5, label = label), size= 2,
-    label.color = NA, text.color = "#8c4d06") +
+    mapping = aes(x = x_min, y = -6, label = label), size= 2.4,
+    fill = NA, label.color = NA, text.color = "#8c4d06") +
   geom_point(color = "#c26f11", size = 2, alpha = 0.5, shape = 15) +
+  scale_x_continuous(breaks = breaks_pretty(n = 3)) +
   theme(strip.background = element_blank(), legend.position = "bottom")
 subplot1_1
 
-# target samples
-# need a combined x & y
-
-subplot1_2 <- ggplot(data = all %>% filter(target_nontarget == "target" & site == "SFE-M"), 
+subplot2_2 <- ggplot(data = all %>% filter(sample_type == "TAC" & site == "RUS"), 
                      aes(x = log_predicted_gene_abundance, y = log_ATX_all_ug_org_mat)) +
-  geom_smooth(aes(color = sample_type, fill = sample_type), method = "lm", alpha = 0.25) +
+  geom_smooth(color = "#3f9633", fill = "#acf0a3", method = "lm", alpha = 0.25) +
   facet_grid(target_nontarget~functional_grouping, scales = "free") + 
-  scale_color_discrete(palette = c("#3f9633", "#6d4275")) +
-  scale_fill_discrete(palette = c("#acf0a3", "#c79bcf")) +
-  scale_shape_manual(values = c(16, 17)) + 
+  geom_point(shape = 16, color = "#3f9633", size = 2, alpha = 0.5) +
   geom_richtext(
-    data = model_info %>% filter(target_nontarget == "target" & site == "SFE-M"),
-    mapping = aes(x = x_min + ((x_max - x_min) * .4), y = y_max + 0.5, label = label, color = sample_type),
-    size= 2,
-    label.color = NA) +
-  geom_point(aes(shape = sample_type, color = sample_type), size = 2, alpha = 0.5) +
+    data = model_info %>% filter(sample_type == "TAC" & site == "SFE-M"),
+    mapping = aes(x = x_min, y = -5.5, label = label), size= 2.4,
+    fill = NA, label.color = NA, text.color = "#247319") +
+  scale_x_continuous(breaks = breaks_pretty(n = 3)) +
+  scale_y_continuous(breaks = breaks_pretty(n = 4), limit = c(-6, 2)) + 
   theme(strip.background = element_blank(), legend.position = "bottom")
 subplot1_2
 
+# can see we have an outlier
+
 # put plot together
-plot_opt1 <- plot_grid(subplot1_1, subplot1_2, align = "hv", ncol = 1)
-plot_opt1
+plot_rus <- plot_grid(subplot2_1, subplot2_2,align = "hv", ncol = 1)
+plot_rus
 
 # save figure
-ggsave("./figures/tiff_files/Q2_atx_v_gene_opt1.tiff", dpi = 600,
-       width=18.3, height=14, unit="cm")
+ggsave("./figures/tiff_files/sfig_rus_atx_v_gene.tiff", dpi = 600,
+       width=18, height=10, unit="cm")
