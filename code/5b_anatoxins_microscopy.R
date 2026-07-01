@@ -216,9 +216,10 @@ eel_nt_test_det <- multipatt(data_river$NT$`SFE-M`[,start_col:ncol(data_river$NT
                      data_river$NT$`SFE-M`$atx_detected, func = "r.g", control = how(nperm = 999))
 summary(eel_nt_test_det)
 # detected: rophalodia, epithemia, anabaena
-write.csv(eel_nt_test_group$sign, "./data/ISA_results/Q2_nt_microscopy_SFE_detects.csv")
+write.csv(eel_nt_test_det$sign, "./data/ISA_results/Q2_nt_microscopy_SFE_detects.csv")
 
 # atx groups (when detected)
+set.seed(1)
 eel_nt_test_group <- multipatt((data_river$NT$`SFE-M` %>% filter(atx_detected == "y"))[,start_col:ncol(data_river$NT$`SFE-M`)], 
                                (data_river$NT$`SFE-M` %>% filter(atx_detected == "y"))$atx_group, func = "r.g", control = how(nperm = 999))
 summary(eel_nt_test_group)
@@ -236,6 +237,7 @@ summary(eel_tm_test_det)
 write.csv(eel_tm_test_det$sign, "./data/ISA_results/Q2_tm_microscopy_SFE_detects.csv")
 
 # atx groups (when detected)
+set.seed(1)
 eel_tm_test_group <- multipatt((data_river$TM$`SFE-M` %>% filter(atx_detected == "y"))[,start_col:ncol(data_river$TM$`SFE-M`)], 
                                 (data_river$TM$`SFE-M` %>% filter(atx_detected == "y"))$atx_group, func = "r.g", control = how(nperm = 999))
 summary(eel_tm_test_group)
@@ -250,9 +252,10 @@ eel_tac_test_det <- multipatt(data_river$TAC$`SFE-M`[,start_col:ncol(data_river$
                              data_river$TAC$`SFE-M`$atx_detected, func = "r.g", control = how(nperm = 999))
 summary(eel_tac_test_det)
 # nostoc in low detection
-write.csv(eel_tm_test_det$sign, "./data/ISA_results/Q2_tac_microscopy_SFE_detects.csv")
+write.csv(eel_tac_test_det$sign, "./data/ISA_results/Q2_tac_microscopy_SFE_detects.csv")
 
 # atx groups (when detected)
+set.seed(1)
 eel_tac_test_group <- multipatt((data_river$TAC$`SFE-M` %>% filter(atx_detected == "y"))[,start_col:ncol(data_river$TAC$`SFE-M`)], 
                                 (data_river$TAC$`SFE-M` %>% filter(atx_detected == "y"))$atx_group, func = "r.g", control = how(nperm = 999))
 summary(eel_tac_test_group)
@@ -270,6 +273,7 @@ summary(rus_nt_test_det)
 write.csv(rus_nt_test_det$sign, "./data/ISA_results/Q2_nt_microscopy_RUS_detects.csv")
 
 # atx groups (when detected)
+set.seed(1)
 rus_nt_test_group <- multipatt((data_river$NT$`RUS` %>% filter(atx_detected == "y"))[,start_col:ncol(data_river$NT$`RUS`)], 
                                 (data_river$NT$`RUS` %>% filter(atx_detected == "y"))$atx_group, func = "r.g", control = how(nperm = 999))
 summary(rus_nt_test_group)
@@ -287,11 +291,11 @@ summary(rus_tac_test_det)
 write.csv(rus_tac_test_det$sign, "./data/ISA_results/Q2_tac_microscopy_RUS_detects.csv")
 
 # atx groups (when detected)
+set.seed(1)
 rus_tac_test_group <- multipatt((data_river$TAC$`RUS` %>% filter(atx_detected == "y"))[,start_col:ncol(data_river$TAC$`RUS`)], 
                                 (data_river$TAC$`RUS` %>% filter(atx_detected == "y"))$atx_group, func = "r.g", control = how(nperm = 999))
 summary(rus_tac_test_group)
-write.csv(rus_tac_test_group$sign, "./data/ISA_results/Q3_tac_microscopy_RUS.csv")
+write.csv(rus_tac_test_group$sign, "./data/ISA_results/Q2_tac_microscopy_RUS_atx_groups.csv")
 # nothing!
 
-# probably dropping low versus high for Russian samples due to lower sample sizes but
-# saving results just in case
+# dropped the low versus high for Russian samples due to lower sample sizes but saving results just in case
