@@ -1,6 +1,6 @@
 #### Supplemental figure of boxplots of predicted gene abundances for select functional groups
 ### Jordan Zabrecky
-## last edited: 06.27.2026
+## last edited: 07.03.2026
 
 # This script creates a supplemental figure showing the range of predicted
 # gene abundances for select genes among rivers
@@ -92,7 +92,7 @@ theme_set(theme_bw() + theme(strip.background = element_blank(),
                              panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
 
 # plot titles
-plot_titles <- list("Non-Target Periphyton Assemblages", "*Microcoleus* Assemblages",
+plot_titles <- list("Reach-Wide Periphyton Assemblages", "*Microcoleus* Assemblages",
                     "*Anabaena* Assemblages")
 names(plot_titles) <- c("nt", "tm", "tac")
 

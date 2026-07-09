@@ -1,6 +1,6 @@
 #### Comparing molecular predicted functional profiles with varying ATX concentrations
 ### Jordan Zabrecky
-## last edited: 06.01.2026
+## last edited: 07.03.2026
 
 # This code compares normalized select orthologs/functions predicted via PICRUSt2-SC,
 # from NT, TM, and TAC samples with varying anatoxin concentrations for Q2.
@@ -143,7 +143,7 @@ view(kruskal_test_results)
 write.csv(kruskal_test_results,
           "./data/kruskal_wallis_results/Q2_selectfunctions.csv", row.names = FALSE)
 
-# lm is the better option!
+# lm is maybe a better option here as they are both on a continuous scale!
 
 #### (3) Linear Models ####
 

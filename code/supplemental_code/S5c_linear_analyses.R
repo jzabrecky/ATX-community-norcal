@@ -1,6 +1,6 @@
 #### Functions for creating linear models and plotting!
 ### Jordan Zabrecky
-## 05.11.2026
+## 07.03.2026
 
 # This script creates functions to make build and plot linear models
 # such as comparing diversity metrics with anatoxins and predicted
@@ -23,7 +23,7 @@ lapply(c("tidyverse", "ggtext"),
 # @rsquared is optional to show r-squared value in upper left corner
 linear_model <- function(data, x, y, rsquared = FALSE) {
   # make linear model
-  model = lm(data[[x]] ~ data[[y]], data = data)
+  model = lm(data[[y]] ~ data[[x]], data = data)
   
   # make plot
   plot = ggplot(data = data, aes(x = .data[[x]], y = .data[[y]])) +

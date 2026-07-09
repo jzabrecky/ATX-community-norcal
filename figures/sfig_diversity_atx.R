@@ -44,6 +44,10 @@ model_info <- data.frame(plot_factor = factor(c("SFE-MNT", "RUSNT", "SFE-MTM", "
                            TRUE ~ paste("*r<sup>2</sup>* = ", r_squared_mod, ", *p* = ", format(round(p_value, 3), nsmall = 2), "**",
                                         sep = "")))
 
+# line for significant models only
+sig_models <- model_info %>% 
+  filter(p_value < 0.05) # SFE-M NT
+
 #### (3) Making Plots ####
 
 # set universal plot theme
@@ -69,9 +73,13 @@ data <- data %>%
   mutate(site_sample_type = paste(site, sample_type, sep = ""),
          plot_factor = factor(site_sample_type, levels = c("SFE-MNT", "RUSNT", "SFE-MTM", "RUSTM", "SFE-MTAC", "RUSTAC")))
 
+# dataset with only significant models
+sig_model_data <- data %>% 
+  filter(sample_type == "NT" & site == "SFE-M")
+
 # make plot
 plot <- ggplot(data = data, aes(y = log_ATX_all_ug_org_mat, x = shannon_diversity)) +
-  geom_smooth(aes(color = sample_type, fill = sample_type), method = "lm", alpha = 0.25) +
+  geom_smooth(data = sig_model_data, aes(color = sample_type, fill = sample_type), method = "lm", alpha = 0.25) +
   geom_point(aes(color = sample_type, shape = sample_type), size = 2, alpha = 0.5) + 
   scale_color_manual(values = c("NT" = "#c26f11",
                                 "TM" = "#6d4275",
