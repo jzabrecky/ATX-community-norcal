@@ -1,6 +1,6 @@
 #### Comparing 16s molecular data with regard to anatoxin concentrations
 ### Jordan Zabrecky
-## last edited: 07.03.2026
+## last edited: 07.11.2026
 
 # This script examines how communities as identified by microscopy
 # change with increasing anatoxin concentrations with PERMANOVA
@@ -161,35 +161,35 @@ hist(diversity$NT$shannon_diversity)
 
 ## (a) SFE-M NT
 diversity_sfe_nt <- linear_model(data = diversity$NT %>% filter(site == "SFE-M"),
-                                 x = "log_ATX_all_ug_org_mat", y = "shannon_diversity",
+                                 x = "shannon_diversity", y = "log_ATX_all_ug_org_mat",
                                  rsquared = TRUE)
 diversity_sfe_nt$plot
 summary(diversity_sfe_nt$model) # relationship!
 
 ## (b) SFE-M TM
 diversity_sfe_tm <- linear_model(data = diversity$TM %>% filter(site == "SFE-M"),
-                                 x = "log_ATX_all_ug_org_mat", y = "shannon_diversity",
+                                 x = "shannon_diversity", y = "log_ATX_all_ug_org_mat",
                                  rsquared = TRUE)
 diversity_sfe_tm$plot 
 summary(diversity_sfe_tm$model) # no relationship
 
 ## (c) SFE-M TAC
 diversity_sfe_tac <- linear_model(data = diversity$TAC %>% filter(site == "SFE-M"),
-                                 x = "log_ATX_all_ug_org_mat", y = "shannon_diversity",
+                                 x = "shannon_diversity", y = "log_ATX_all_ug_org_mat",
                                  rsquared = TRUE)
 diversity_sfe_tac$plot
 summary(diversity_sfe_tac$model) # no relationship
 
 ## (d) RUS NT
 diversity_rus_nt <- linear_model(data = diversity$NT %>% filter(site == "RUS"),
-                                  x = "log_ATX_all_ug_org_mat", y = "shannon_diversity",
+                                  x = "shannon_diversity", y = "log_ATX_all_ug_org_mat",
                                   rsquared = TRUE)
 diversity_rus_nt$plot
 summary(diversity_rus_nt$model) # no relationship
 
-## (d) RUS TAC
+## (e) RUS TAC
 diversity_rus_tac <- linear_model(data = diversity$TAC %>% filter(site == "RUS"),
-                                 x = "log_ATX_all_ug_org_mat", y = "shannon_diversity",
+                                 x = "shannon_diversity", y = "log_ATX_all_ug_org_mat",
                                  rsquared = TRUE)
 diversity_rus_tac$plot # 0.13
 summary(diversity_rus_tac$model) # no relationship

@@ -150,7 +150,7 @@ write.csv(kruskal_test_results,
 ## (a) SFE-M NT
 predfunctions_sfe_nt <- lapply(unique(data_select$NT$functional_grouping), function(f) {
   return(linear_model(data = data_select$NT %>% filter(site == "SFE-M") %>% 
-                        filter(functional_grouping == f),  x = "log_ATX_all_ug_org_mat", y = "log_predicted_gene_abundance",
+                        filter(functional_grouping == f),  y = "log_ATX_all_ug_org_mat", x = "log_predicted_gene_abundance",
                       rsquared = TRUE))
 })
 names(predfunctions_sfe_nt) <- unique(data_select$TM$functional_grouping)
@@ -160,7 +160,7 @@ lapply(names(predfunctions_sfe_nt), function(x) print(predfunctions_sfe_nt[[x]]$
 ## (b) SFE-M TM
 predfunctions_sfe_tm <- lapply(unique(data_select$TM$functional_grouping), function(f) {
   return(linear_model(data = data_select$TM %>% filter(site == "SFE-M") %>% 
-                        filter(functional_grouping == f),  x = "log_ATX_all_ug_org_mat", y = "log_predicted_gene_abundance",
+                        filter(functional_grouping == f),  y = "log_ATX_all_ug_org_mat", x = "log_predicted_gene_abundance",
                       rsquared = TRUE))
 })
 names(predfunctions_sfe_tm) <- unique(data_select$TM$functional_grouping)
@@ -170,7 +170,7 @@ lapply(names(predfunctions_sfe_tm), function(x) print(predfunctions_sfe_tm[[x]]$
 ## (c) SFE-M TAC
 predfunctions_sfe_tac <- lapply(unique(data_select$TM$functional_grouping), function(f) {
   return(linear_model(data = data_select$TAC %>% filter(site == "SFE-M") %>% 
-                        filter(functional_grouping == f),  x = "log_ATX_all_ug_org_mat", y = "log_predicted_gene_abundance",
+                        filter(functional_grouping == f),  y = "log_ATX_all_ug_org_mat", x = "log_predicted_gene_abundance",
                       rsquared = TRUE))
 })
 names(predfunctions_sfe_tac) <- unique(data_select$TM$functional_grouping)
@@ -180,7 +180,7 @@ lapply(names(predfunctions_sfe_tac), function(x) print(predfunctions_sfe_tac[[x]
 ## (d) RUS NT
 predfunctions_rus_nt <- lapply(unique(data_select$TM$functional_grouping), function(f) {
   return(linear_model(data = data_select$NT %>% filter(site == "RUS") %>% 
-                        filter(functional_grouping == f),  x = "log_ATX_all_ug_org_mat", y = "log_predicted_gene_abundance",
+                        filter(functional_grouping == f),  y = "log_ATX_all_ug_org_mat", x = "log_predicted_gene_abundance",
                       rsquared = TRUE))
 })
 names(predfunctions_rus_nt) <- unique(data_select$TM$functional_grouping)
@@ -190,7 +190,7 @@ lapply(names(predfunctions_rus_nt), function(x) print(predfunctions_rus_nt[[x]]$
 ## (e) RUS TAC
 predfunctions_rus_tac <- lapply(unique(data_select$TM$functional_grouping), function(f) {
   return(linear_model(data = data_select$TAC %>% filter(site == "RUS") %>% 
-                        filter(functional_grouping == f),  x = "log_ATX_all_ug_org_mat", y = "log_predicted_gene_abundance",
+                        filter(functional_grouping == f),  y = "log_ATX_all_ug_org_mat", x = "log_predicted_gene_abundance",
                       rsquared = TRUE))
 })
 names(predfunctions_rus_tac) <- unique(data_select$TM$functional_grouping)
