@@ -180,7 +180,7 @@ rus_NT_molec
 rus_TAC_molec <- PCoA_plots_rus_molec$TAC +
   scale_color_discrete(palette = rus_palette) +
   theme(legend.position = "none") + 
-  annotate("text", x = 0.07, y = .85,
+  annotate("text", x = 0.07, y = .88,
            label = paste(p_table$label[which(p_table$sample_type == "TAC" &
                                                p_table$river == "RUS" &
                                                p_table$test == "PERMANOVA" &
@@ -188,7 +188,7 @@ rus_TAC_molec <- PCoA_plots_rus_molec$TAC +
            parse = TRUE, color = "#635c00", size = 7/.pt) +
   stat_ellipse(aes(color = site_reach), type = "t", linetype = 2, linewidth = 0.5) +
   coord_cartesian(ylim = c(min(PCoA_list_rus_molec[[2]]$pcoa$pcoa2) - 0.4,
-                           max(PCoA_list_rus_molec[[2]]$pcoa$pcoa2) + 0.53))
+                           max(PCoA_list_rus_molec[[2]]$pcoa$pcoa2) + 0.56))
 rus_TAC_molec
 
 ## (c) Functional PCoAs!
@@ -253,7 +253,7 @@ rus_NT_func
 rus_TAC_func <- PCoA_plots_rus_func$TAC +
   scale_color_discrete(palette = rus_palette) +
   theme(legend.position = "none") + 
-  annotate("text", x = -.09, y = .51,
+  annotate("text", x = -.1, y = .51,
            label = paste(p_table$label[which(p_table$sample_type == "TAC" &
                                                p_table$river == "RUS" &
                                                p_table$test == "PERMANOVA" &
@@ -266,6 +266,7 @@ rus_TAC_func
 
 ##### (3) Making Main Figure ####
 
+# plot final
 final <- plot_grid(sfe_NT_micro, sfe_TM_micro, sfe_TAC_micro, rus_NT_micro, rus_TAC_micro,
                    sfe_NT_molec, sfe_TM_molec, sfe_TAC_molec, rus_NT_molec, rus_TAC_molec,
                    sfe_NT_func, sfe_TM_func, sfe_TAC_func, rus_NT_func, rus_TAC_func,
@@ -275,3 +276,12 @@ final
 ggsave("./figures/tiff_files/sfig_assemblages_among_reach.tiff", dpi = 500,
        width=17, height=10.5, unit="cm")
 
+# save reach legends
+
+rus_TAC_micro + theme(legend.position = "bottom")
+ggsave("./figures/tiff_files/sfig_assemblages_among_reach_ruslegend.tiff", dpi = 500,
+       width=7, height=3, unit="cm")
+
+sfe_TAC_func + theme(legend.position = "bottom")
+ggsave("./figures/tiff_files/sfig_assemblages_among_reach_sfelegend.tiff", dpi = 500,
+       width=7, height=3, unit="cm")
