@@ -7,6 +7,12 @@
 # Data is analyzed using Kruskal-Wallis Tests, linear models, visualizations 
 # for selected genes and PERMANOVA & PCoA for the full predicted functional profile
 
+# Note (7/11): for assemblage comparisons (PERMANOVA), we verified that there
+# were no significant differences among reaches except for TAC
+# Russian River samples, found on script:
+# "S5d_differences_among_reaches.R"
+# For these, we added a strata argument to permanovas
+
 #### (1) Load libraries & data ####
 
 # libraries
@@ -241,9 +247,16 @@ for(s in c("SFE-M", "RUS")) {
       data = data_all[[i]] %>% filter(site == s) %>% na.omit()
       end_col = (ncol(data_all[[i]] %>% filter(site == s)) - 4)
       
-      permanova = runPERMANOVA(data = data, start_col, 
-                               end_col = end_col,
-                               group = data$atx_detected)
+      if(s == "RUS" & i == "TAC") {
+        permanova = runPERMANOVA(data = data, start_col, 
+                                 end_col = end_col,
+                                 group = data$atx_detected,
+                                 strata = data$site_reach)
+      } else {
+        permanova = runPERMANOVA(data = data, start_col, 
+                                 end_col = end_col,
+                                 group = data$atx_detected)
+      }
       
       p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
                                            sample_type = i,
@@ -277,9 +290,16 @@ for(s in c("SFE-M", "RUS")) {
       data = data_all[[i]] %>% filter(site == s) %>% na.omit()
       end_col = (ncol(data_all[[i]] %>% filter(site == s)) - 4)
       
-      permanova = runPERMANOVA(data = data, start_col, 
-                               end_col = end_col,
-                               group = data$atx_group)
+      if(s == "RUS" & i == "TAC") {
+        permanova = runPERMANOVA(data = data, start_col, 
+                                 end_col = end_col,
+                                 group = data$atx_detected,
+                                 strata = data$site_reach)
+      } else {
+        permanova = runPERMANOVA(data = data, start_col, 
+                                 end_col = end_col,
+                                 group = data$atx_detected)
+      }
       
       p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
                                            sample_type = i,
@@ -312,9 +332,16 @@ for(s in c("SFE-M", "RUS")) {
       data = data_all[[i]] %>% filter(site == s & atx_detected == "y") %>% na.omit()
       end_col = (ncol(data_all[[i]] %>% filter(site == s)) - 4)
       
-      permanova = runPERMANOVA(data = data, start_col, 
-                               end_col = end_col,
-                               group = data$atx_group)
+      if(s == "RUS" & i == "TAC") {
+        permanova = runPERMANOVA(data = data, start_col, 
+                                 end_col = end_col,
+                                 group = data$atx_group,
+                                 strata = data$site_reach)
+      } else {
+        permanova = runPERMANOVA(data = data, start_col, 
+                                 end_col = end_col,
+                                 group = data$atx_group)
+      }
       
       p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
                                            sample_type = i,

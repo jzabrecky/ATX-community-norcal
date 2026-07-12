@@ -1,0 +1,15 @@
+"","s.high","s.low","index","stat","p.value"
+"calothrix",0,1,2,0.377964473009227,1
+"e_diatoms",0,1,2,0.764041596761062,0.063
+"gloeotrichia",NA,NA,NA,NA,NA
+"leptolyngbya_and_geitlerinema",0,1,2,0.428346834627397,0.367
+"microcoleus",0,1,2,0.353674267453835,0.486
+"miscellaneous_oscillatoriales",1,0,1,0.447213595499958,0.409
+"nodularia",NA,NA,NA,NA,NA
+"non_e_diatoms",1,0,1,0.382885172794312,0.498
+"nostoc",0,1,2,0.377964473009227,1
+"oscillatoria",1,0,1,0.673971278072347,0.176
+"other_coccoids",1,0,1,0.110383436600094,0.838
+"phormidium_unknown",1,0,1,0.26348209945842,0.636
+"scytonema",NA,NA,NA,NA,NA
+"unknown",1,0,1,0.158982183956714,0.699

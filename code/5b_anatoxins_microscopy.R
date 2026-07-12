@@ -7,6 +7,10 @@
 # and ISA. Note that as only one Salmon sample contained detectable 
 # anatoxin, we omit the Salmon River samples from this analyses
 
+# Note (7/11): for assemblage comparisons (PERMANOVA), we verified that there
+# were no significant differences among reaches, found on script:
+# "S5d_differences_among_reaches.R"
+
 #### (1) Loading libraries & data ####
 
 # libraries

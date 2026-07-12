@@ -7,6 +7,12 @@
 # and PCoA. Note that as only one Salmon sample contained detectable 
 # anatoxin, we omit the Salmon River samples from this analyses
 
+# Note (7/11): for assemblage comparisons (PERMANOVA), we verified that there
+# were no significant differences among reaches except for NT and TAC
+# Russian River samples, found on script:
+# "S5d_differences_among_reaches.R"
+# For these, we added a strata argument to permanovas
+
 #### (1) Loading libraries & data ####
 
 # libraries
@@ -239,8 +245,14 @@ for(s in c("SFE-M", "RUS")) {
   for(i in c("NT", "TM", "TAC")) {
     if(s == "RUS" & i == "TM") {
     } else {
-      permanova = runPERMANOVA(data = data[[i]] %>% filter(site == s), start_col = start_col, 
-                               group = (data[[i]] %>% filter(site == s))$atx_detected)
+      if(s != "RUS") {
+        permanova = runPERMANOVA(data = data[[i]] %>% filter(site == s), start_col = start_col, 
+                                 group = (data[[i]] %>% filter(site == s))$atx_detected)
+      } else {
+        permanova = runPERMANOVA(data = data[[i]] %>% filter(site == s), start_col = start_col, 
+                                 strata =  (data[[i]] %>% filter(site == s))$site_reach,
+                                 group = (data[[i]] %>% filter(site == s))$atx_detected)
+      }
       
       p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
                                            sample_type = i,
@@ -270,9 +282,15 @@ for(s in c("SFE-M", "RUS")) {
   for(i in c("NT", "TM", "TAC")) {
     if(s == "RUS" & i == "TM") {
     } else {
-      permanova = runPERMANOVA(data = data[[i]] %>% filter(site == s), start_col = start_col, 
-                               group = (data[[i]] %>% filter(site == s))$`atx_group`)
-      
+      if(s != "RUS") {
+        permanova = runPERMANOVA(data = data[[i]] %>% filter(site == s), start_col = start_col, 
+                                 group = (data[[i]] %>% filter(site == s))$atx_group)
+      } else {
+        permanova = runPERMANOVA(data = data[[i]] %>% filter(site == s), start_col = start_col, 
+                                 strata =  (data[[i]] %>% filter(site == s))$site_reach,
+                                 group = (data[[i]] %>% filter(site == s))$atx_group)
+      }
+    
       p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
                                            sample_type = i,
                                            river = s,
@@ -300,9 +318,16 @@ for(s in c("SFE-M", "RUS")) {
   for(i in c("NT", "TM", "TAC")) {
     if(s == "RUS" & i == "TM") {
     } else {
-      permanova = runPERMANOVA(data = data[[i]] %>% filter(site == s & atx_detected == "y"), start_col = start_col, 
-                               group = (data[[i]] %>% filter(site == s & atx_detected == "y"))$`atx_group`)
       
+      if(s != "RUS") {
+        permanova = runPERMANOVA(data = data[[i]] %>% filter(site == s & atx_detected == "y"), start_col = start_col, 
+                                 group = (data[[i]] %>% filter(site == s & atx_detected == "y"))$atx_group)
+      } else {
+        permanova = runPERMANOVA(data = data[[i]] %>% filter(site == s & atx_detected == "y"), start_col = start_col, 
+                                 strata =  (data[[i]] %>% filter(site == s & atx_detected == "y"))$site_reach,
+                                 group = (data[[i]] %>% filter(site == s & atx_detected == "y"))$atx_group)
+      }
+     
       p_table <- rbind(p_table, data.frame(test = "PERMANOVA",
                                            sample_type = i,
                                            river = s,
