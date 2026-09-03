@@ -1,6 +1,6 @@
 #### Barplots for individual samples
 ### Jordan Zabrecky
-## last edited: 07.06.2026
+## last edited: 09.01.2026
 
 # This script creates bar plots for each individual sample rather than aggregating
 # by time, river, etc. One supplemental figure will be created for each
@@ -92,24 +92,24 @@ microscopy$nt <- nontarget_broader(microscopy$nt)
 # factor those groups for desired order
 microscopy <- lapply(microscopy, function(x) {
   x <- x %>% 
-    mutate(figure_groups = case_when(broader == "Nostoc" ~ "Other N-fixing Cyanobacteria",
+    mutate(figure_groups = case_when(broader == "Nostoc" ~ "Other Heterocystous Cyanobacteria",
                                      taxa == "leptolyngbya_and_geitlerinema" ~ "*Leptolyngbya* / *Geitlerinema*",
                                      broader == "Unknown" ~ "Other",
                                      broader == "Misc. Other" ~ "Other",
                                      taxa == "rhopalodia" ~ "*Rhopalodia*",
                                      taxa == "epithemia" ~ "*Epithemia*",
                                      taxa == "e_diatoms" ~ "*Epithemia*",
-                                     taxa == "non_e_r_diatoms" ~ "Diatoms (other than<br>*Epithemia* or *Rhopalodia*)",
-                                     taxa == "non_e_diatoms" ~ "Diatoms Other than *Epithemia*",
+                                     taxa == "non_e_diatoms" ~ "Diatoms (Other than *Epithemia*)",
                                      taxa == "cladophora" ~ "*Cladophora*",
                                      taxa == "spirogyra" ~ "*Spirogyra*",
                                      taxa == "anabaena_and_cylindrospermum" ~ "*Anabaena* / *Cylindrospermum*",
                                      taxa == "microcoleus" ~ "*Microcoleus*",
                                      TRUE ~ broader)) %>% 
+    mutate(figure_groups = case_when(figure_groups == "Other Heterocystous Cyanobacteria" ~ "Other Heterocystous<br>Cyanobacteria",
+                                     TRUE ~ figure_groups)) %>% 
     mutate(figure_groups_factored = factor(figure_groups, 
-                                           levels = c("Diatoms (other than<br>*Epithemia* or *Rhopalodia*)", 
-                                                      "Diatoms Other than *Epithemia*", "*Epithemia*",
-                                                      "*Rhopalodia*", "Other N-fixing Cyanobacteria",
+                                           levels = c("Diatoms (Other than *Epithemia*)", "*Epithemia*",
+                                                      "*Rhopalodia*", "Other Heterocystous<br>Cyanobacteria",
                                                       "Other Filamentous Cyanobacteria",
                                                       "Unicellular Cyanobacteria", "*Cladophora*", 
                                                       "*Spirogyra*", "Other Green Algae", "Green Algae",
@@ -120,7 +120,7 @@ microscopy <- lapply(microscopy, function(x) {
 
 ## (a) NT
 nt_micro <- barplot(data = microscopy$nt,  x = "date_site_reach", y  = "percent", fill = "figure_groups_factored") +
-  scale_fill_discrete("Taxa Group", palette = c(palette, end_color)) +
+  scale_fill_discrete("Taxa Group", palette = c(palette[c(1:2, 4:12)], end_color)) +
   labs(x = NULL, y = "Relative Abundance") +
   facet_wrap(~site_labels, scales = "free") +
   theme(axis.text.x = element_markdown(size = 7, color = "#333333"))

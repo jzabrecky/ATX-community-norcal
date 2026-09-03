@@ -1,6 +1,6 @@
 #### Main figure to show differences in morphologically-identified assemblages among rivers
 ### Jordan Zabrecky
-## last edited: 06.02.2026
+## last edited: 09.01.2026
 
 # This script creates a main figure to show differences in morphologically-identified
 # assemblages for all sample types including an (PCoA) and relative abundance barplots
@@ -72,15 +72,14 @@ lapply(fig_a, print)
 figure_data <- lapply(data_longer, function(x) {
   y = x %>% 
     # move categories & add in italics, then factor
-    mutate(figure_groups = case_when(broader == "Nostoc" ~ "Other N-fixing Cyanobacteria",
+    mutate(figure_groups = case_when(broader == "Nostoc" ~ "Other Heterocystous Cyanobacteria",
                                      taxa == "leptolyngbya_and_geitlerinema" ~ "*Leptolyngbya* / *Geitlerinema*",
                                      broader == "Unknown" ~ "Other",
                                      broader == "Misc. Other" ~ "Other",
                                      taxa == "rhopalodia" ~ "*Rhopalodia*",
                                      taxa == "epithemia" ~ "*Epithemia*",
                                      taxa == "e_diatoms" ~ "*Epithemia*",
-                                     taxa == "non_e_r_diatoms" ~ "Diatoms (other than *Epithemia* or *Rhopalodia*)",
-                                     taxa == "non_e_diatoms" ~ "Diatoms Other than Epithemia",
+                                     taxa == "non_e_diatoms" ~ "Diatoms (Other than *Epithemia*)",
                                      taxa == "cladophora" ~ "*Cladophora*",
                                      taxa == "spirogyra" ~ "*Spirogyra*",
                                      taxa == "anabaena_and_cylindrospermum" ~ "*Anabaena* / *Cylindrospermum*",
@@ -90,9 +89,8 @@ figure_data <- lapply(data_longer, function(x) {
                                    site == "SAL" ~ "Salmon<br>River",
                                    site == "RUS" ~ "Russian<br>River"),
            figure_groups_factored = factor(figure_groups, 
-                                           levels = c("Diatoms (other than *Epithemia* or *Rhopalodia*)", 
-                                                      "Diatoms Other than Epithemia", "*Epithemia*",
-                                                      "*Rhopalodia*", "Other N-fixing Cyanobacteria",
+                                           levels = c("Diatoms (Other than *Epithemia*)", "*Epithemia*",
+                                                      "*Rhopalodia*", "Other Heterocystous Cyanobacteria",
                                                       "Other Filamentous Cyanobacteria",
                                                       "Unicellular Cyanobacteria", "*Cladophora*", 
                                                       "*Spirogyra*", "Other Green Algae", "Green Algae",
@@ -106,7 +104,8 @@ figure_data <- lapply(data_longer, function(x) {
 fig_b <- list()
 
 # set color list based on sample type
-colors <- list(c(1:12), c(1:2, 4:6, 11:12), c(1:2, 4:6, 8, 10, 12)) # list for number of fill colors to end before "other" category
+# (no longer using 3 as rhopalodia has been merged in with epithemia)
+colors <- list(c(1:2, 4:12), c(1:2, 4:6, 11:12), c(1:2, 4:6, 8, 10, 12)) # list for number of fill colors to end before "other" category
 names(colors) <- sample_types
 
 # make plots
@@ -130,15 +129,14 @@ target_w_target_taxa <- lapply(list(tm_w_m, tac_w_ac_g), function(x) {
   # add groupings to match barplots
   y = y %>% 
     # same as above
-    mutate(figure_groups = case_when(broader == "Nostoc" ~ "Other N-fixing Cyanobacteria",
+    mutate(figure_groups = case_when(broader == "Nostoc" ~ "Other Heterocystous Cyanobacteria",
                                      taxa == "leptolyngbya_and_geitlerinema" ~ "*Leptolyngbya* / *Geitlerinema*",
                                      broader == "Unknown" ~ "Other",
                                      broader == "Misc. Other" ~ "Other",
                                      taxa == "rhopalodia" ~ "*Rhopalodia*",
                                      taxa == "epithemia" ~ "*Epithemia*",
                                      taxa == "e_diatoms" ~ "*Epithemia*",
-                                     taxa == "non_e_r_diatoms" ~ "Diatoms (other than *Epithemia* or *Rhopalodia*)",
-                                     taxa == "non_e_diatoms" ~ "Diatoms Other than Epithemia",
+                                     taxa == "non_e_diatoms" ~ "Diatoms (Other than *Epithemia*)",
                                      taxa == "cladophora" ~ "*Cladophora*",
                                      taxa == "spirogyra" ~ "*Spirogyra*",
                                      taxa == "anabaena_and_cylindrospermum" ~ "*Anabaena* / *Cylindrospermum*",
@@ -148,9 +146,8 @@ target_w_target_taxa <- lapply(list(tm_w_m, tac_w_ac_g), function(x) {
                                    site == "SAL" ~ "Salmon<br>River",
                                    site == "RUS" ~ "Russian<br>River"),
            figure_groups_factored = factor(figure_groups, 
-                                           levels = c("Diatoms (other than *Epithemia* or *Rhopalodia*)", 
-                                                      "Diatoms Other than Epithemia", "*Epithemia*",
-                                                      "*Rhopalodia*", "Other N-fixing Cyanobacteria",
+                                           levels = c("Diatoms (Other than *Epithemia*)", "*Epithemia*",
+                                                      "*Rhopalodia*", "Other Heterocystous Cyanobacteria",
                                                       "Other Filamentous Cyanobacteria",
                                                       "Unicellular Cyanobacteria", "*Cladophora*", 
                                                       "*Spirogyra*", "Other Green Algae", "Green Algae",

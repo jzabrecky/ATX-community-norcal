@@ -1,6 +1,6 @@
 #### Processing microscopy data
 ### Jordan Zabrecky
-## last edited 05.05.2026
+## last edited 09.01.2026
 
 # This code processes microscopy data from the EDI data release 
 # (averaging across slides and evaluting rsd), remove non-algal portion of sample,
@@ -59,6 +59,15 @@ target_processed <- rbind(target_processed, target_multislides_wider)
 
 ## (b) non-target samples
 
+# first, put together rophalodia and epithemia 
+# (which are officially one group and should not be separated, Ruck et al. 2016;
+# though this is not universally observed... we will do so as we didn't separate 
+# Rophalodia from target samples)
+nontarget <- nontarget %>% 
+  mutate(epithemia = epithemia + rhopalodia) %>% 
+  select(!rhopalodia) %>% 
+  dplyr::rename(non_e_diatoms = non_e_r_diatoms)
+
 # look at average, sd, & rsd for each taxa across slides
 # no samples here are averaged over as indicated by "Final"
 nontarget_multislides <- nontarget %>% 
@@ -78,7 +87,7 @@ plot(nontarget_multislides$mean, nontarget_multislides$rsd)
 nontarget_multislides_sub <- nontarget_multislides %>% 
   filter(mean > 5)
 view(nontarget_multislides_sub)
-mean(nontarget_multislides_sub$rsd) # 42.8% high but better
+mean(nontarget_multislides_sub$rsd) # 42.4% high but better
 
 # pivot back wider to join with anatoxin and environmental data
 nt_processed <- nontarget_multislides %>% 

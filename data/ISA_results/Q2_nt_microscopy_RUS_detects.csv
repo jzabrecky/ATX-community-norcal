@@ -11,7 +11,7 @@
 "cosmarium",NA,NA,NA,NA,NA
 "desmid",NA,NA,NA,NA,NA
 "desmodesmus_spines",1,0,1,0.221961664745487,0.423
-"epithemia",0,1,2,0.207074533727086,0.485
+"epithemia",0,1,2,0.231786048007628,0.422
 "euglenoid",1,0,1,0.258198889747161,1
 "gloeocystis",0,1,2,0.277350098112615,0.47
 "gloeotrichia",NA,NA,NA,NA,NA
@@ -22,7 +22,7 @@
 "miscellaneous_oscillatoriales",0,1,2,0.189057217222163,0.583
 "mougeotia",0,1,2,0.168454064161837,0.583
 "nodularia",NA,NA,NA,NA,NA
-"non_e_r_diatoms",1,0,1,0.305762598204854,0.282
+"non_e_diatoms",1,0,1,0.305762598204854,0.282
 "nostoc",NA,NA,NA,NA,NA
 "oedogonium",1,0,1,0.00359117392169067,0.986
 "oocystis",0,1,2,0.277350098112615,0.47
@@ -30,7 +30,6 @@
 "other_coccoids",1,0,1,0.160301480713361,0.537
 "pediastrum",0,1,2,0.277350098112615,0.474
 "phormidium_unknown",0,1,2,0.538266282021607,0.008
-"rhopalodia",0,1,2,0.279723917908783,0.315
 "rivularia_or_early_stage_gloeotrichia",NA,NA,NA,NA,NA
 "scenedesmus_no_spines",1,0,1,0.654564126713334,0.003
 "scytonema",NA,NA,NA,NA,NA

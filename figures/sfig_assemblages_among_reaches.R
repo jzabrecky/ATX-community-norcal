@@ -1,6 +1,6 @@
 #### Supplemental figure showing assemblage differences among rivers 
 ### Jordan Zabrecky
-## 07.11.26
+## last edited: 09.01.2026
 
 # This script creates a supplemental figure showing the PCoAs
 # and PERMANOVA results from supplemental script,
@@ -88,7 +88,7 @@ sfe_TAC_micro
 rus_NT_micro <- PCoA_plots_rus$NT +
   scale_color_discrete(palette = rus_palette) +
   theme(legend.position = "none") + 
-  annotate("text", x = 0.02, y = .35,
+  annotate("text", x = -0.02, y = .28,
            label = paste(p_table$label[which(p_table$sample_type == "NT" &
                                                p_table$river == "RUS" &
                                                p_table$test == "PERMANOVA" &

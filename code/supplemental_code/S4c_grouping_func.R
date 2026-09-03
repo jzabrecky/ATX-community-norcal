@@ -1,6 +1,6 @@
 #### Script of functions used to add broader classifications to microscopy data
 ### Jordan Zabrecky
-## last edited: 05.05.2026
+## last edited: 09.01.2026
 
 # This script hosts functions to add broader classifications to microscopy data and
 # automatically add broader classifications to molecular data based on a minimum relative
@@ -18,9 +18,9 @@ library(tidyverse)
 target_broader <- function(data) {
   # add in column for broader classification
   new_data <- data %>% 
-    mutate(broader = case_when(taxa == "lyngbya" | taxa == "nodularia" |  taxa == "calothrix" |
+    mutate(broader = case_when(taxa == "nodularia" |  taxa == "calothrix" |
                                  taxa == "scytonema" | taxa == "gloeotrichia" | taxa == "rivularia_or_early_stage_gloeotrichia" |
-                                 taxa == "tolypothrix" ~ "Other N-fixing Cyanobacteria",
+                                 taxa == "tolypothrix" ~ "Other Heterocystous Cyanobacteria",
                                taxa == "nostoc" ~ "Nostoc",
                                taxa == "chroococcus" | taxa == "other_coccoids" | taxa == "aphanothece"
                                ~ "Unicellular Cyanobacteria",
@@ -28,7 +28,8 @@ target_broader <- function(data) {
                                taxa == "e_diatoms" ~ "Epithemia",
                                taxa == "leptolyngbya_and_geitlerinema" ~ "Geitlerinema/Leptolyngbya",
                                taxa == "green_algae" ~ "Green Algae",
-                               taxa == "oscillatoria" | taxa == "phormidium_unknown" | taxa == "miscellaneous_oscillatoriales"
+                               taxa == "oscillatoria" | taxa == "phormidium_unknown" | taxa == "miscellaneous_oscillatoriales" |
+                                 taxa == "lyngbya"
                                ~ "Other Filamentous Cyanobacteria",
                                taxa == "microcoleus" ~ "Microcoleus",
                                taxa == "non_e_diatoms" ~ "Diatoms Other than Epithemia",
@@ -43,20 +44,20 @@ target_broader <- function(data) {
 nontarget_broader <- function(data) {
   # add in column for broader classification
   new_data <- data %>% 
-    mutate(broader = case_when(taxa == "lyngbya" | taxa == "nodularia" |  taxa == "calothrix" |
+    mutate(broader = case_when(taxa == "nodularia" |  taxa == "calothrix" |
                                  taxa == "scytonema" | taxa == "gloeotrichia" | taxa == "rivularia_or_early_stage_gloeotrichia" |
                                  taxa == "tolypothrix"
-                               ~ "Other N-fixing Cyanobacteria",
+                               ~ "Other Heterocystous Cyanobacteria",
                                taxa == "nostoc" ~ "Nostoc",
                                taxa == "chroococcus" | taxa == "other_coccoids" | taxa == "aphanothece" |
                                  taxa == "microcystis"
                                ~ "Unicellular Cyanobacteria",
                                taxa == "anabaena_and_cylindrospermum" ~ "Anabaena or Cylindrospermum",
-                               taxa == "oscillatoria" | taxa == "phormidium_unknown" |
+                               taxa == "oscillatoria" | taxa == "phormidium_unknown" | taxa == "lyngbya" |
                                 taxa == "miscellaneous_oscillatoriales" | taxa == "leptolyngbya_and_geitlerinema"
                                ~ "Other Filamentous Cyanobacteria",
                                taxa == "microcoleus" ~ "Microcoleus",
-                               taxa == "non_e_r_diatoms" ~ "Diatoms Other than Epithemia or Rhopalodia",
+                               taxa == "non_e_diatoms" ~ "Diatoms Other than Epithemia",
                                taxa == "unknown" | taxa == "chantransia" | taxa == "euglenoid" |
                                  taxa == "unknown_green_algae"
                                ~ "Misc. Other",
@@ -70,7 +71,7 @@ nontarget_broader <- function(data) {
                                taxa == "mougeotia" | taxa == "ulothrix" | taxa == "zygnema" |
                                  taxa == "stigeoclonium" | taxa == "oedogonium"
                                ~ "Other Green Algae",
-                               taxa == "rhopalodia" | taxa == "epithemia" ~ "Epithemia or Rhopalodia",
+                               taxa == "epithemia" ~ "Epithemia",
                                taxa == "spirogyra" ~ "Spirogyra"
     ))
   

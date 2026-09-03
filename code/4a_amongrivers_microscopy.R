@@ -1,6 +1,6 @@
 #### Comparing morphologically-identified assemblages among rivers
 ### Jordan Zabrecky
-## last edited: 06.01.2026
+## last edited: 09.01.2026
 
 # This code compares microscopy data from NT, TM, and TAC samples
 # across rivers to answer Q1. First data is transformed (sqrt).
@@ -255,13 +255,13 @@ even_broader_NT <- data_longer$nt %>%
                                   broader == "Spirogyra" ~ "Spirogyra",
                                   #broader == "Epithemia or Rhopalodia" ~ "Diatoms",
                                   # going to actually separate the diatoms like with 
-                                  broader == "Diatoms Other than Epithemia or Rhopalodia" ~ "Non N-fixing Diatoms",
-                                  broader == "Nostoc" ~ "Diazotrophic Cyanobacteria",
-                                  broader == "Anabaena or Cylindrospermum" ~ "Diazotrophic Cyanobacteria",
-                                  broader == "Other N-fixing Cyanobacteria" ~ "Diazotrophic Cyanobacteria",
+                                  broader == "Diatoms Other than Epithemia" ~ "Non N-fixing Diatoms",
+                                  broader == "Nostoc" ~ "Heterocystous Cyanobacteria",
+                                  broader == "Anabaena or Cylindrospermum" ~ "Heterocystous Cyanobacteria",
+                                  broader == "Other Heterocystous Cyanobacteria" ~ "Heterocystous Cyanobacteria",
                                   broader == "Unicellular Cyanobacteria" ~ "Coccoidal Cyanobacteria",
-                                  broader == "Microcoleus" ~ "Non-Diazotrophic Filamentous Cyanobacteria",
-                                  broader == "Other Filamentous Cyanobacteria" ~ "Non-Diazotrophic Filamentous Cyanobacteria",
+                                  broader == "Microcoleus" ~ "Non-Heterocystous Filamentous Cyanobacteria",
+                                  broader == "Other Filamentous Cyanobacteria" ~ "Non-Heterocystous Filamentous Cyanobacteria",
                                   broader == "Other Green Algae" ~ "Other Green Algae",
                                  TRUE ~ broader)) %>% 
   # merge groups for total in each broader group (i.e., reduce rows)

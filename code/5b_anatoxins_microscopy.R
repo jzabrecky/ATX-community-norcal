@@ -1,6 +1,6 @@
 #### Comparing microscopy data with regard to anatoxin concentrations
 ### Jordan Zabrecky
-## last edited: 06.01.2026
+## last edited: 09.01.2026
 
 # This script examines how communities as identified by microscopy
 # change with increasing anatoxin concentrations with PERMANOVA, PCoA,
@@ -92,7 +92,7 @@ lapply(PCoA_plots_eel, print)
 
 ## (b) Russian River
 set.seed(1)
-PCoA_list_rus <- lapply(c("TAC", "NT"), function(x) getPCoAdata(data_river[[x]]$`RUS`, start_col))
+PCoA_list_rus <- lapply(c("NT", "TAC"), function(x) getPCoAdata(data_river[[x]]$`RUS`, start_col))
 
 # making plots
 PCoA_plots_rus <- lapply(PCoA_list_rus, function(x) makePCoAplot(x, color = "atx_group", shape = "atx_group"))
@@ -219,7 +219,7 @@ set.seed(1)
 eel_nt_test_det <- multipatt(data_river$NT$`SFE-M`[,start_col:ncol(data_river$NT$`SFE-M`)], 
                      data_river$NT$`SFE-M`$atx_detected, func = "r.g", control = how(nperm = 999))
 summary(eel_nt_test_det)
-# detected: rophalodia, epithemia, anabaena
+# detected: epithemia, anabaena
 write.csv(eel_nt_test_det$sign, "./data/ISA_results/Q2_nt_microscopy_SFE_detects.csv")
 
 # atx groups (when detected)
@@ -246,7 +246,7 @@ eel_tm_test_group <- multipatt((data_river$TM$`SFE-M` %>% filter(atx_detected ==
                                 (data_river$TM$`SFE-M` %>% filter(atx_detected == "y"))$atx_group, func = "r.g", control = how(nperm = 999))
 summary(eel_tm_test_group)
 write.csv(eel_tm_test_group$sign, "./data/ISA_results/Q2_tm_microscopy_SFE_atx_groups.csv")
-# nothing!
+# leptolyngbya and geitlerinema!
 
 ## (c) SFE TAC
 
@@ -264,7 +264,7 @@ eel_tac_test_group <- multipatt((data_river$TAC$`SFE-M` %>% filter(atx_detected 
                                 (data_river$TAC$`SFE-M` %>% filter(atx_detected == "y"))$atx_group, func = "r.g", control = how(nperm = 999))
 summary(eel_tac_test_group)
 write.csv(eel_tac_test_group$sign, "./data/ISA_results/Q2_tac_microscopy_SFE_atx_groups.csv")
-# low & medium: nodularia
+# low: nodularia & non_e_diatoms
 
 ## (d) RUS NT
 
@@ -273,7 +273,7 @@ set.seed(1)
 rus_nt_test_det <- multipatt(data_river$NT$`RUS`[,start_col:ncol(data_river$NT$`RUS`)], 
                               data_river$NT$`RUS`$atx_detected, func = "r.g", control = how(nperm = 999))
 summary(rus_nt_test_det)
-# detected: phormidium_unknown, oscillatoria; not-detected: scenedesmus
+# detected: phormidium_unknown, oscillatoria
 write.csv(rus_nt_test_det$sign, "./data/ISA_results/Q2_nt_microscopy_RUS_detects.csv")
 
 # atx groups (when detected)
