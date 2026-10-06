@@ -1,6 +1,6 @@
 #### Main figure to show differences in morphologically-identified assemblages among rivers
 ### Jordan Zabrecky
-## last edited: 06.02.2026
+## last edited: 10.06.2026
 
 # This script creates a main figure to show differences in assemblages associated 
 # with nontarget, microcoleus, and anabaena samples
@@ -114,14 +114,17 @@ diversity <- lapply(diversity, function(x) x %>%
 
 fig_c <- list()
 for(i in sample_types) {
+  
   fig_c[[i]] = ggplot(data = diversity[[i]], aes(x = site_label, y = shannon_diversity, fill = site)) +
-    geom_boxplot(lwd = 0.3) +
+    stat_summary(fun = median, show.legend = FALSE, geom = "crossbar", color = "#424242", alpha = 0.6) +
+    geom_jitter(alpha = 0.5, aes(fill = site, color = site), color = "black", size = 2, shape = 21) + 
     scale_fill_manual(values = c("SAL" = "#81bbfc",
                                  "SFE-M" = "#416f16",
                                  "RUS" = "#ab9f00")) +
     labs(x = NULL, y = NULL) +
     theme(legend.position = "none", axis.text.x = element_markdown(size = 7, color = "#333333"))
 }
+
 lapply(fig_c, print)
 
 #### (3) Putting Figure Together ####
