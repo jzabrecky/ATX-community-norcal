@@ -1,4 +1,4 @@
-#### Main figure to show differences in morphologically-identified assemblages among rivers
+#### Main figure to show differences in molecularly-identified assemblages among rivers
 ### Jordan Zabrecky
 ## last edited: 10.06.2026
 

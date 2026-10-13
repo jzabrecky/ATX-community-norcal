@@ -60,8 +60,7 @@ ggsave("./figures/tiff_files/sfig_atx_rivers.tiff", dpi = 600,
        width = 11, height = 9, unit="cm")
 
 # get legend
-plot = ggplot(data = atx, aes(x = site, y = ATX_all_ug_org_mat, fill = site)) +
-  geom_boxplot(alpha = 0.8) +
+legend = ggplot(data = atx, aes(x = site, y = ATX_all_ug_org_mat, fill = site)) +
   geom_jitter(alpha = 0.5, aes(fill = site, shape = sample_type), color = "black", size = 2) + 
   scale_fill_manual(values = c("SAL" = "#81bbfc",
                                "SFE-M" = "#416f16",
@@ -71,7 +70,7 @@ plot = ggplot(data = atx, aes(x = site, y = ATX_all_ug_org_mat, fill = site)) +
   scale_y_continuous(trans=scales::pseudo_log_trans(base = 10)) +
   labs(x = NULL, y = expression(paste(mu, "g anatoxins per g OM"), sep = "")) +
   theme(legend.position = "right")
-plot
+legend
 
 # save
 ggsave("./figures/tiff_files/sfig_atx_legend.tiff", dpi = 600,

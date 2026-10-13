@@ -1,6 +1,6 @@
 #### Script of functions used in NMDS (and related) analyses
 ### Jordan Zabrecky
-## last edited: 07.02.2026
+## last edited: 10.13.2026
 
 # This script hosts functions used to create relative abundance bar plots &
 # NMDS and PCoA plots, run PERMANOVAs, and add "event_no" to sampling date which refers 
@@ -213,6 +213,15 @@ makePCoAplot <- function(data, color, shape, stat_ellipse = TRUE) {
   if(stat_ellipse == TRUE) {
     plot = plot + 
       stat_ellipse(aes(color = .data[[color]]), type = "t", linetype = 2, linewidth = 0.5)
+  }
+  
+  # keep shapes consistent across months if shape argument is "month"
+  if(shape == "month") {
+    plot = plot + scale_shape_manual(values = c("6" = 16,
+                                                "7" = 17,
+                                                "8" = 15,
+                                                "9" = 3))
+      
   }
   
   # add in site color if color argument is "site"

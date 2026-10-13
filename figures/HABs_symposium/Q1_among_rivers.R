@@ -61,10 +61,10 @@ tm_microscopy_pcoa
 
 ## Algal PCoA
 algal_pcoa <- plot_grid(tm_microscopy_pcoa + coord_flip(clip = "off") +
-                          geom_point(aes(color = site, shape = month), size = 6) +
+                          geom_point(aes(color = site, shape = month), size = 6, stroke = 2) +
                           stat_ellipse(aes(color = site), linewidth = 1.5, linetype = 2),
                         tac_microscopy_pcoa + coord_flip(clip = "off") +
-                          geom_point(aes(color = site, shape = month), size = 6) +
+                          geom_point(aes(color = site, shape = month), size = 6, stroke = 2) +
                           stat_ellipse(aes(color = site), linewidth = 1.5, linetype = 2),
                         ncol = 2, align = "hv")
 algal_pcoa
@@ -74,8 +74,8 @@ ggsave("./figures/HABs_symposium/algal_pcoa_rivers.png", dpi = 500,
        width=11.3, height=5, unit="in")
 
 # get legend!
-legend <- tac_microscopy_pcoa + coord_flip(clip = "off") +
-  geom_point(aes(color = site, shape = month), size = 6) +
+legend <- tm_microscopy_pcoa + coord_flip(clip = "off") +
+  geom_point(aes(color = site, shape = month), size = 6, stroke = 2) +
   stat_ellipse(aes(color = site)) +
   theme(legend.position = "bottom") +
   guides(
@@ -89,16 +89,16 @@ legend <- tac_microscopy_pcoa + coord_flip(clip = "off") +
 legend
 
 # save legend!
-ggsave("./figures/HABs_symposium/pcoa_rivers_legend_yellow.png",  dpi = 500,
+ggsave("./figures/HABs_symposium/pcoa_rivers_legend.png",  dpi = 500,
        width=11.3, height=5, unit="in")
 
 
 ## Bacterial PCoA
 bacteria_pcoa <- plot_grid(tm_molecular_pcoa + coord_flip(clip = "off") +
-                             geom_point(aes(color = site, shape = month), size = 6) +
+                             geom_point(aes(color = site, shape = month), size = 6, stroke = 2) +
                              stat_ellipse(aes(color = site), linewidth = 1.5, linetype = 2),
                            tac_molecular_pcoa + coord_flip(clip = "off") +
-                             geom_point(aes(color = site, shape = month), size = 6) +
+                             geom_point(aes(color = site, shape = month), size = 6, stroke = 2) +
                              stat_ellipse(aes(color = site), linewidth = 1.5, linetype = 2),
                            ncol = 2, align = "hv")
 bacteria_pcoa
