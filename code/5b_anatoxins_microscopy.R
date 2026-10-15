@@ -1,6 +1,6 @@
 #### Comparing microscopy data with regard to anatoxin concentrations
 ### Jordan Zabrecky
-## last edited: 09.01.2026
+## last edited: 10.15.2026
 
 # This script examines how communities as identified by microscopy
 # change with increasing anatoxin concentrations with PERMANOVA, PCoA,
@@ -228,7 +228,7 @@ eel_nt_test_group <- multipatt((data_river$NT$`SFE-M` %>% filter(atx_detected ==
                                (data_river$NT$`SFE-M` %>% filter(atx_detected == "y"))$atx_group, func = "r.g", control = how(nperm = 999))
 summary(eel_nt_test_group)
 write.csv(eel_nt_test_group$sign, "./data/ISA_results/Q2_nt_microscopy_SFE_atx_groups.csv")
-# high & medium: epithemia
+# high: epithemia, anabaena, scendesmus, cosmarium
 
 ## (b) SFE TM
 
@@ -237,7 +237,7 @@ set.seed(1)
 eel_tm_test_det <- multipatt(data_river$TM$`SFE-M`[,start_col:ncol(data_river$TM$`SFE-M`)], 
                              data_river$TM$`SFE-M`$atx_detected, func = "r.g", control = how(nperm = 999))
 summary(eel_tm_test_det)
-# detected: other coccoids & geitlerinema; not detected: nostoc
+# detected: coccoids & geitlerinema; not detected: nostoc
 write.csv(eel_tm_test_det$sign, "./data/ISA_results/Q2_tm_microscopy_SFE_detects.csv")
 
 # atx groups (when detected)

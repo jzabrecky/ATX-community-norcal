@@ -1,6 +1,6 @@
 #### Processing microscopy data
 ### Jordan Zabrecky
-## last edited 09.01.2026
+## last edited 10.14.2026
 
 # This code processes microscopy data from the EDI data release 
 # (averaging across slides and evaluting rsd), remove non-algal portion of sample,
@@ -15,7 +15,20 @@ lapply(c("tidyverse", "lubridate"), require, character.only = T)
 target <- read.csv("./data/EDI_data_package/microscopy_target_samples.csv")
 nontarget <- read.csv("./data/EDI_data_package/microscopy_non_target_samples.csv")
 
-#### (2) Analyzing microscopy data (w/ multiple slides) ####
+#### (2) Joining all coccoids together into one group ####
+
+# when completing microscopy, we separated out Aphanothece and Chroococcus
+# as they COULD be ATX producers, however, for this study we will just group 
+# all coccoids together to minimize confusion (especially since they are such a small
+# fraction)
+nontarget <- nontarget %>% 
+  mutate(coccoidal_cyano = other_coccoids + aphanothece + chroococcus + microcystis) %>% 
+  select(!c("other_coccoids", "aphanothece", "chroococcus", "microcystis"))
+target <- target %>% 
+  mutate(coccoidal_cyano = other_coccoids + aphanothece + chroococcus) %>% 
+  select(!c("other_coccoids", "aphanothece", "chroococcus"))
+
+#### (3) Analyzing microscopy data (w/ multiple slides) ####
 
 ## (a) target samples
 
@@ -29,7 +42,7 @@ target_multislides <- target %>%
                    rsd = (sd * 100) / mean) %>% 
   ungroup()
 view(target_multislides) # the highest are all samples where one slide had 0.1% cover
-mean(target_multislides$rsd, na.rm = TRUE) # 44.3% high but let's look at taxa 
+mean(target_multislides$rsd, na.rm = TRUE) # 41.8% high but let's look at taxa 
                                            # that have >5% mean cover
 plot(target_multislides$mean, target_multislides$rsd)
 # yup, samples with a higher mean have a lower rsd
@@ -78,7 +91,7 @@ nontarget_multislides <- nontarget %>%
                    rsd = (sd * 100) / mean) %>% 
   ungroup()
 view(nontarget_multislides) # the highest are all samples where one slide had 0.1% cover
-mean(nontarget_multislides$rsd, na.rm = TRUE) # 97.6% high but let's look at taxa 
+mean(nontarget_multislides$rsd, na.rm = TRUE) # 95.1% high but let's look at taxa 
                                               # that have >5% mean cover
 plot(nontarget_multislides$mean, nontarget_multislides$rsd)
 # less strong of a relationship with non-target samples
@@ -103,7 +116,7 @@ check_t <- which(rowSums(target_processed[4:ncol(target_processed)]) != 100)
 rowSums(target_processed[4:ncol(target_processed)])[check_t] # is 100
 rowSums(nt_processed[4:ncol(nt_processed)])[check_nt] # all are 100
 
-#### (3) Remove non-algal portion from relative abundance & recalculate ####
+#### (4) Remove non-algal portion from relative abundance & recalculate ####
 
 # function to remove non-algal portion and recalculate
 remove_non_algal <- function(df) {

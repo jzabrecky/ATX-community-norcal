@@ -1,12 +1,11 @@
 "","s.high","s.low","index","stat","p.value"
 "anabaena_and_cylindrospermum",1,0,1,0.689016628047996,0.004
 "ankistrodesmus",1,0,1,0.0963725458571453,0.756
-"aphanothece",1,0,1,0.252971363022803,0.372
 "calothrix",1,0,1,0.104299643500304,0.716
 "chantransia",NA,NA,NA,NA,NA
-"chroococcus",0,1,2,0.108989205374625,0.892
 "cladophora",1,0,1,0.140932231440671,0.624
 "closterium",NA,NA,NA,NA,NA
+"coccoidal_cyano",1,0,1,0.081418462452475,0.756
 "coelastrum",1,0,1,0.215249099428926,0.448
 "cosmarium",1,0,1,0.533273040329244,0.03
 "desmid",1,0,1,0.277350098112615,0.445
@@ -18,7 +17,6 @@
 "lacunastrum",1,0,1,0.0228725873781479,0.843
 "leptolyngbya_and_geitlerinema",1,0,1,0.350640411794449,0.202
 "microcoleus",1,0,1,0.26955258164351,0.356
-"microcystis",0,1,2,0.258198889747161,1
 "miscellaneous_oscillatoriales",0,1,2,0.000367071389571282,1
 "mougeotia",1,0,1,0.071145749005392,0.81
 "nodularia",1,0,1,0.277350098112615,0.479
@@ -27,7 +25,6 @@
 "oedogonium",1,0,1,0.0177674311740922,0.961
 "oocystis",0,1,2,0.182735171557608,1
 "oscillatoria",1,0,1,0.277350098112615,0.479
-"other_coccoids",1,0,1,0.132051129719328,0.626
 "pediastrum",1,0,1,0.277350098112615,0.48
 "phormidium_unknown",NA,NA,NA,NA,NA
 "rivularia_or_early_stage_gloeotrichia",1,0,1,0.139962263979316,0.666

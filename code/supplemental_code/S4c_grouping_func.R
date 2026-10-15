@@ -1,6 +1,6 @@
 #### Script of functions used to add broader classifications to microscopy data
 ### Jordan Zabrecky
-## last edited: 09.01.2026
+## last edited: 10.14.2026
 
 # This script hosts functions to add broader classifications to microscopy data and
 # automatically add broader classifications to molecular data based on a minimum relative
@@ -22,8 +22,7 @@ target_broader <- function(data) {
                                  taxa == "scytonema" | taxa == "gloeotrichia" | taxa == "rivularia_or_early_stage_gloeotrichia" |
                                  taxa == "tolypothrix" ~ "Other Heterocystous Cyanobacteria",
                                taxa == "nostoc" ~ "Nostoc",
-                               taxa == "chroococcus" | taxa == "other_coccoids" | taxa == "aphanothece"
-                               ~ "Unicellular Cyanobacteria",
+                               taxa == "coccoidal_cyano" ~ "Coccoidal Cyanobacteria",
                                taxa == "anabaena_and_cylindrospermum" ~ "Anabaena or Cylindrospermum",
                                taxa == "e_diatoms" ~ "Epithemia",
                                taxa == "leptolyngbya_and_geitlerinema" ~ "Geitlerinema/Leptolyngbya",
@@ -49,9 +48,7 @@ nontarget_broader <- function(data) {
                                  taxa == "tolypothrix"
                                ~ "Other Heterocystous Cyanobacteria",
                                taxa == "nostoc" ~ "Nostoc",
-                               taxa == "chroococcus" | taxa == "other_coccoids" | taxa == "aphanothece" |
-                                 taxa == "microcystis"
-                               ~ "Unicellular Cyanobacteria",
+                               taxa == "coccoidal_cyano" ~ "Coccoidal Cyanobacteria",
                                taxa == "anabaena_and_cylindrospermum" ~ "Anabaena or Cylindrospermum",
                                taxa == "oscillatoria" | taxa == "phormidium_unknown" | taxa == "lyngbya" |
                                 taxa == "miscellaneous_oscillatoriales" | taxa == "leptolyngbya_and_geitlerinema"
