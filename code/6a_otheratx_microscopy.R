@@ -1,14 +1,17 @@
 #### Identifying other anatoxin-associated taxa in microscopy target samples
 ### Jordan Zabrecky
-## last edited: 05.06.2026
+## last edited: 10.15.2026
 
 # This code identifies other anatoxin-associated taxa as listed by
-# Christensen & Khan (2019) and Wood et al. (2020) in microscopy samples
+# Wood et al. (2020), Chapman & Foss (2020), and Bernard et al. (2017) in microscopy samples
 
 #### (1) Load data and libraries ####
 
 # load libraries
 lapply(c("tidyverse"), require, character.only = T)
+
+# load list of toxic taxa from papers
+producers <- read.csv("./data/potential_toxin_producers.csv")
 
 # load microscopy data & pivot longer
 tm <- read.csv("./data/morphological/tm_algalonly_nomicro.csv") %>% 
@@ -24,16 +27,6 @@ names(data_longer) <- c("tac", "tm")
 
 #### (2) Identify other Anatoxin-Associated Taxa ####
 
-# Let's look at only other anatoxin associated taxa in all samples
-# using list from Christensen & Khan et al. (2019): Anabaena, Aphanizomenon,
-# Aphanothece, Arthospira, Cylindrospermopsis, Cylindrospermum, Gomphosphaeria,
-# Limnothrix, Lyngbya, Microcystis, Nostoc, Oscillatoria, Phormidium/Microcoleus,
-# Planktothrix, Planktolyngbia, Synechocystis, Psuedoanabaena,
-# Raphidopsis, Tychonema
-# noting that it doesn't have Geilerinema, so we should also include list
-# of ATX producers from Wood et al. (2020) which adds: Fisherella, 
-# Geitlerinema, Leptolyngbya, Microseira (formerly Lyngbya), planktothrix
-
 # see our taxa groups
 unique(tac$taxa)
 unique(tm$taxa)
@@ -45,10 +38,11 @@ atx_taxa_only <- lapply(data_longer, function(x) {
   # make dataframe with only taxa in list above 
   # (only writing what taxa we recorded from that list)
   df = x %>% 
-    filter(taxa %in% c("aphanothece", "anabaena_and_cylindrospermum",
-                       "other_coccoids", "leptolyngbya_and_geitlerinema", 
-                       "miscellaneous_oscillatoriales", "other_coccoids", "nostoc",
-                       "oscillatoria", "phormidium_unknown", "microcoleus")) %>% 
+    # filter for in potential producers list (plus ones that have multiple taxa listed)
+    filter(taxa %in% c(tolower(producers$Genus),
+                       "anabaena_and_cylindrospermum", "miscellaneous_oscillatoriales",
+                       "phormidium_unknown", "anabaena_and_cylindrospermum", 
+                       "leptolyngbya_and_geitlerinema")) %>% 
     mutate(sample_name = paste("(", month(field_date), "-", day(field_date), ") ", site_reach, sep = ""))
   
   
@@ -79,4 +73,4 @@ atx_taxa_only <- lapply(data_longer, function(x) {
 })
 
 # view results
-view(atx_taxa_only$tac$percent_samples)
+view(atx_taxa_only$tm$percent_samples)

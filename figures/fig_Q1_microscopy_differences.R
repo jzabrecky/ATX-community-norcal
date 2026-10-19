@@ -1,6 +1,6 @@
 #### Main figure to show differences in morphologically-identified assemblages among rivers
 ### Jordan Zabrecky
-## last edited: 09.01.2026
+## last edited: 10.15.2026
 
 # This script creates a main figure to show differences in morphologically-identified
 # assemblages for all sample types including an (PCoA) and relative abundance barplots
@@ -84,6 +84,7 @@ figure_data <- lapply(data_longer, function(x) {
                                      taxa == "spirogyra" ~ "*Spirogyra*",
                                      taxa == "anabaena_and_cylindrospermum" ~ "*Anabaena* / *Cylindrospermum*",
                                      taxa == "microcoleus" ~ "*Microcoleus*",
+                                     taxa == "coccoidal_cyanobacteria" ~ "Coccoidal Cyanobacteria",
                                      TRUE ~ broader),
            site_labels = case_when(site == "SFE-M" ~ "South Fork<br>Eel River",
                                    site == "SAL" ~ "Salmon<br>River",
@@ -92,7 +93,7 @@ figure_data <- lapply(data_longer, function(x) {
                                            levels = c("Diatoms (Other than *Epithemia*)", "*Epithemia*",
                                                       "*Rhopalodia*", "Other Heterocystous Cyanobacteria",
                                                       "Other Filamentous Cyanobacteria",
-                                                      "Unicellular Cyanobacteria", "*Cladophora*", 
+                                                      "Coccoidal Cyanobacteria", "*Cladophora*", 
                                                       "*Spirogyra*", "Other Green Algae", "Green Algae",
                                                       "*Anabaena* / *Cylindrospermum*", "*Microcoleus*",
                                                       "*Leptolyngbya* / *Geitlerinema*", "Unknown", "Other"))) 
@@ -141,6 +142,7 @@ target_w_target_taxa <- lapply(list(tm_w_m, tac_w_ac_g), function(x) {
                                      taxa == "spirogyra" ~ "*Spirogyra*",
                                      taxa == "anabaena_and_cylindrospermum" ~ "*Anabaena* / *Cylindrospermum*",
                                      taxa == "microcoleus" ~ "*Microcoleus*",
+                                     taxa == "coccoidal_cyanobacteria" ~ "Coccoidal Cyanobacteria",
                                      TRUE ~ broader),
            site_labels = case_when(site == "SFE-M" ~ "South Fork<br>Eel River",
                                    site == "SAL" ~ "Salmon<br>River",
@@ -149,7 +151,7 @@ target_w_target_taxa <- lapply(list(tm_w_m, tac_w_ac_g), function(x) {
                                            levels = c("Diatoms (Other than *Epithemia*)", "*Epithemia*",
                                                       "*Rhopalodia*", "Other Heterocystous Cyanobacteria",
                                                       "Other Filamentous Cyanobacteria",
-                                                      "Unicellular Cyanobacteria", "*Cladophora*", 
+                                                      "Coccoidal Cyanobacteria", "*Cladophora*", 
                                                       "*Spirogyra*", "Other Green Algae", "Green Algae",
                                                       "*Anabaena* / *Cylindrospermum*", "*Microcoleus*",
                                                       "*Leptolyngbya* / *Geitlerinema*", "Unknown", "Other"))) 

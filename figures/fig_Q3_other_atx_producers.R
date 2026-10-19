@@ -1,9 +1,9 @@
 #### Relative abundance of other ATX producers in TM and TAC samples
 ### Jordan Zabrecky
-## last edited: 05.07.2026
+## last edited: 10.16.2026
 
-# This code produces figures to answer Q4 asking what is the full suite of
-# anatoxin associated taxa within target samples?
+# This code produces figures to answer Q3 asking what is the full suite of
+# potential anatoxin-producing taxa within target samples?
 
 #### (1) Loading data ####
 
@@ -36,27 +36,38 @@ palette <- c("#FBF6B0", "#C5BD53", "#777122", "#C2DFFF", "#5E9DE0", "#205288",
 
 ## (a) microscopy
 
+# create taxa labels
+microscopy_atx_taxa$tm$percent_samples <- microscopy_atx_taxa$tm$percent_samples %>% 
+  mutate(taxa_label = case_when(taxa == "anabaena_and_cylindrospermum" ~ "*Anabaena* /<br>*Cylindrospermum*",
+                                taxa == "leptolyngbya_and_geitlerinema" ~ "*Leptolyngbya* /<br>*Geitlerinema*",
+                                taxa == "miscellaneous_oscillatoriales" ~ "Miscellaneous<br>Oscillatoriales",
+                                taxa == "oscillatoria" ~ "*Oscillatoria*",
+                                taxa == "phormidium_unknown" ~ "*Phormidium*"))
+
 # plot microcoleus
-present_morpho_tm <- ggplot(data = microscopy_atx_taxa$tm$percent_samples, aes(x = reorder(taxa, -percent_samples), y = percent_samples, fill = taxa)) +
+present_morpho_tm <- ggplot(data = microscopy_atx_taxa$tm$percent_samples, aes(x = reorder(taxa_label, -percent_samples), y = percent_samples, fill = taxa)) +
   geom_bar(stat = "identity") +
   theme(legend.position = "none") +
-  scale_fill_discrete(palette = c("#C0ED96", "#C5BD53", "#C2DFFF", "#7AB048", "#205288", "#CBC5F6", "#5E9DE0")) +
+  scale_fill_discrete(palette = c(palette[7], palette[2], palette[4], palette[6], palette[5])) +
   labs(x = NULL, y = NULL) +
-  scale_x_discrete(labels = c("Other Coccoidal<br>Cyanobacteria", "*Leptolyngbya* and<br>*Geitlerinema*", 
-                               "*Anabaena* and<br>*Cylindrospermum*", "*Nostoc*", 
-                                "Miscellaneous<br>Oscillatoriales", "*Oscillatoria*", "*Phormidium*")) +
   theme(axis.text.x = element_markdown(angle = 60, vjust = 1, hjust=1, size = 9)) +
   scale_y_continuous(limits = c(0,100))
 present_morpho_tm
 
+# create taxa labels
+microscopy_atx_taxa$tac$percent_samples <- microscopy_atx_taxa$tac$percent_samples %>% 
+  mutate(taxa_label = case_when(taxa == "leptolyngbya_and_geitlerinema" ~ "*Leptolyngbya* /<br>*Geitlerinema*",
+                                taxa == "miscellaneous_oscillatoriales" ~ "Miscellaneous<br>Oscillatoriales",
+                                taxa == "oscillatoria" ~ "*Oscillatoria*",
+                                taxa == "phormidium_unknown" ~ "*Phormidium*",
+                                taxa == "microcoleus" ~ "*Microcoleus*"))
+
 # plot anabaena
-present_morpho_tac <- ggplot(data = microscopy_atx_taxa$tac$percent_samples, aes(x = reorder(taxa, -percent_samples), y = percent_samples, fill = taxa)) +
+present_morpho_tac <- ggplot(data = microscopy_atx_taxa$tac$percent_samples, aes(x = reorder(taxa_label, -percent_samples), y = percent_samples, fill = taxa)) +
   geom_bar(stat = "identity") +
   theme(legend.position = "none") +
-  scale_fill_discrete(palette = c("#C5BD53", "#777122", "#C2DFFF", "#7AB048", "#205288", "#CBC5F6", "#5E9DE0")) +
+  scale_fill_discrete(palette = c(palette[2], palette[3], palette[4], palette[6], palette[5])) +
   labs(x = NULL, y = NULL) +
-  scale_x_discrete(labels = c("*Leptolyngbya* and<br>*Geitlerinema*", "Other Coccoidal<br>Cyanobacteria", "*Microcoleus*", 
-                              "*Oscillatoria*", "*Nostoc*", "*Phormidium*", "Miscellaneous<br>Oscillatoriales")) +
   theme(axis.text.x = element_markdown(angle = 60, vjust = 1, hjust=1, size = 9)) +
   scale_y_continuous(limits = c(0,100))
 present_morpho_tac
@@ -73,8 +84,8 @@ molecular_atx_taxa$tm$percent_samples <- molecular_atx_taxa$tm$percent_samples %
 present_micro_tm <- ggplot(data = molecular_atx_taxa$tm$percent_samples, aes(x = reorder(genus_italicized, -percent_samples), y = percent_samples, fill = genus)) +
   geom_bar(stat = "identity") +
   theme(legend.position = "none") +
-  scale_fill_discrete(palette = c("#C0ED96", "#3D631A", "#C0ED96", "#C0ED96", "#C5BD53", "#C5BD53", "#8A80CF", 
-                                  "#CBC5F6", "#7AB048", "#205288", "#5E9DE0", "#61389E", "#FBF6B0", "#CBC5F6")) +
+  scale_fill_discrete(palette = c(palette[7], palette[8], palette[9], palette[7], palette[2], palette[6], palette[5], 
+                                  palette[12], palette[1], palette[10])) +
   labs(x = NULL, y = NULL) +
   theme(axis.text.x = element_markdown(angle = 60, vjust = 1, hjust=1, size = 9)) +
   scale_y_continuous(limits = c(0,100))
@@ -84,8 +95,8 @@ present_micro_tm
 present_micro_tac <- ggplot(data = molecular_atx_taxa$tac$percent_samples, aes(x = reorder(genus_italicized, -percent_samples), y = percent_samples, fill = genus)) +
   geom_bar(stat = "identity") +
   theme(legend.position = "none") +
-  scale_fill_discrete(palette = c("#3D631A", "#C5BD53", "#C5BD53", "#8A80CF", "#777122", "#CBC5F6", "#7AB048", "#205288", 
-                                  "#5E9DE0", "#61389E", "#FBF6B0", "#CBC5F6")) +
+  scale_fill_discrete(palette = c(palette[8], palette[9], palette[2], palette[11], palette[3], palette[6], palette[5], palette[12], 
+                                  palette[1], palette[10])) +
   labs(x = NULL, y = NULL) +
   theme(axis.text.x = element_markdown(angle = 60, vjust = 1, hjust=1, size = 9)) +
   scale_y_continuous(limits = c(0,100))

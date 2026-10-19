@@ -1,6 +1,6 @@
 #### Supplemental figure of boxplots of predicted gene abundances for select functional groups
 ### Jordan Zabrecky
-## last edited: 07.03.2026
+## last edited: 10.15.2026
 
 # This script creates a supplemental figure showing the range of predicted
 # gene abundances for select genes among rivers
@@ -75,14 +75,6 @@ dunnTest(predicted_gene_abundance ~ site,
          data=data_select$nt %>% filter(functional_grouping == "thiamine"),
          method="bonferroni") # n.s. between all (will not add second bar then)
 
-# OUTLINE TO DO:
-# factor sites so that Salmon River sample is shown but is on right for TAC
-# and labels based on SAL, SFE, RUS in plot
-# follow-up NT tests
-# save plot and check line-ups
-# TAC labels & followups
-# TM labels & followups
-
 #### (2) Making Box Plots ####
 
 # set universal plot theme
@@ -93,7 +85,7 @@ theme_set(theme_bw() + theme(strip.background = element_blank(),
 
 # plot titles
 plot_titles <- list("Reach-Wide Periphyton Assemblages", "*Microcoleus* Assemblages",
-                    "*Anabaena* Assemblages")
+                    "*Anabaena*/*Cylindrospermum* Assemblages")
 names(plot_titles) <- c("nt", "tm", "tac")
 
 # significance bars (referencing kruskal results manually :) )

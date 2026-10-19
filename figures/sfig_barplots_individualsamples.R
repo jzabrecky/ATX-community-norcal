@@ -1,6 +1,6 @@
 #### Barplots for individual samples
 ### Jordan Zabrecky
-## last edited: 09.01.2026
+## last edited: 10.15.2026
 
 # This script creates bar plots for each individual sample rather than aggregating
 # by time, river, etc. One supplemental figure will be created for each
@@ -104,6 +104,7 @@ microscopy <- lapply(microscopy, function(x) {
                                      taxa == "spirogyra" ~ "*Spirogyra*",
                                      taxa == "anabaena_and_cylindrospermum" ~ "*Anabaena* / *Cylindrospermum*",
                                      taxa == "microcoleus" ~ "*Microcoleus*",
+                                     taxa == "coccoidal_cyano" ~ "Coccoidal Cyanobacteria",
                                      TRUE ~ broader)) %>% 
     mutate(figure_groups = case_when(figure_groups == "Other Heterocystous Cyanobacteria" ~ "Other Heterocystous<br>Cyanobacteria",
                                      TRUE ~ figure_groups)) %>% 
@@ -111,7 +112,7 @@ microscopy <- lapply(microscopy, function(x) {
                                            levels = c("Diatoms (Other than *Epithemia*)", "*Epithemia*",
                                                       "*Rhopalodia*", "Other Heterocystous<br>Cyanobacteria",
                                                       "Other Filamentous Cyanobacteria",
-                                                      "Unicellular Cyanobacteria", "*Cladophora*", 
+                                                      "Coccoidal Cyanobacteria", "*Cladophora*", 
                                                       "*Spirogyra*", "Other Green Algae", "Green Algae",
                                                       "*Anabaena* / *Cylindrospermum*", "*Microcoleus*",
                                                       "*Leptolyngbya* / *Geitlerinema*", "Unknown", "Other")))

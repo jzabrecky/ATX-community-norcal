@@ -1,6 +1,6 @@
 #### Supplemental figure showing assemblage differences among rivers 
 ### Jordan Zabrecky
-## last edited: 09.01.2026
+## last edited: 10.15.2026
 
 # This script creates a supplemental figure showing the PCoAs
 # and PERMANOVA results from supplemental script,
@@ -16,7 +16,8 @@ lapply(c("cowplot"), require, character.only = T)
 
 # add label to p value table
 p_table <- p_table %>% 
-  mutate(label = case_when(p_value < 0.01 ~ paste("list(italic(p) == ", format(round(p_value, 3), nsmall = 2), ", italic(F) == ", 
+  # if equals 0.05 (one case of 0.053), take 3 digits to round or less than 0.01
+  mutate(label = case_when(p_value < 0.01 | round(p_value, 2) == 0.05 ~ paste("list(italic(p) == ", format(round(p_value, 3), nsmall = 2), ", italic(F) == ", 
                        format(round(F_stat, 2)), ")",
                        sep = ""),
                        TRUE ~ paste("list(italic(p) == ", format(round(p_value, 2), nsmall = 2), ", italic(F) == ", 
@@ -74,7 +75,7 @@ sfe_TM_micro
 sfe_TAC_micro <- PCoA_plots_sfe$TAC +
   scale_color_discrete(palette = sfe_palette) +
   theme(legend.position = "none") + 
-  annotate("text", x = -.06, y = .15,
+  annotate("text", x = .05, y = .15,
            label = paste(p_table$label[which(p_table$sample_type == "TAC" &
                                                p_table$river == "SFE-M" &
                                                p_table$test == "PERMANOVA" &
@@ -88,7 +89,7 @@ sfe_TAC_micro
 rus_NT_micro <- PCoA_plots_rus$NT +
   scale_color_discrete(palette = rus_palette) +
   theme(legend.position = "none") + 
-  annotate("text", x = -0.02, y = .28,
+  annotate("text", x = -0.02, y = .31,
            label = paste(p_table$label[which(p_table$sample_type == "NT" &
                                                p_table$river == "RUS" &
                                                p_table$test == "PERMANOVA" &
