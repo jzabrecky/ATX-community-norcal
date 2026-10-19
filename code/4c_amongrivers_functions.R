@@ -199,7 +199,5 @@ for(i in 1:length(data_sqrt)) {
 }
 # only TAC had significant dispersion but its PERMANOVA was not significant, so no issues!
 
-# compare PERMANOVA with outlier for TAC Russian Removed
-
 # save results
 write.csv(p_table[-1,], "./data/PERMANOVA_results/Q1_predfunction.csv", row.names = FALSE)

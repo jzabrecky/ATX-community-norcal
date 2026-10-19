@@ -20,7 +20,7 @@ nontarget <- read.csv("./data/EDI_data_package/microscopy_non_target_samples.csv
 # when completing microscopy, we separated out Aphanothece and Chroococcus
 # as they COULD be ATX producers, however, for this study we will just group 
 # all coccoids together to minimize confusion (especially since they are such a small
-# fraction)
+# fraction and are rarely listed as potential ATX producers)
 nontarget <- nontarget %>% 
   mutate(coccoidal_cyano = other_coccoids + aphanothece + chroococcus + microcystis) %>% 
   select(!c("other_coccoids", "aphanothece", "chroococcus", "microcystis"))

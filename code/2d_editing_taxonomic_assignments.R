@@ -9,6 +9,11 @@
 
 # Referencing NCBI Taxonomy database and Strunecky et al. (2023) to do this
 
+# Note: probably ended up being more than needed as we never analyzed samples
+# at the genus level, so most important step is transfer of Tychonema to Microcoleus
+# as done by previous studies (Diez-Chiappe et al. 2025) and supported
+# by previous research in the Eel watershed (Bouma-Gregson et al. multiple)
+
 #### (1) Loading libraries & data ####
 
 # loading libraries

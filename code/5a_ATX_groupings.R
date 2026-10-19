@@ -3,7 +3,8 @@
 ## last edited: 06.01.2026
 
 # This script makes anatoxin concentrations groupings (e.g., high versus low) 
-# to use in Q2 analyses based on each sample type & river
+# to use in Q2 analyses based on each sample type & river and also log-transforms
+# ATX to compare with bacterial diversity & predicted gene abundances in linear models
 
 #### (1) Loading libraries & data ####
 
@@ -49,6 +50,8 @@ ggplot(data = atx_long %>% na.omit() %>% filter(ATX_all_ug_org_mat > 0) %>% filt
   scale_y_continuous(trans="pseudo_log")
 
 #### (3) Log-Transforming ATX ####
+
+# this is done for ATX vs. diversity and predicted gene counts
 
 # need to replace zeros with a value 
 # lowest non-zero value is 0.03, how about 0.02 as zero replacement?

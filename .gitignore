@@ -8,7 +8,7 @@
 data/molecular/
 # ignore figure folders
 figures/tiff_files/
-figures/venn_diagrams/
+figures/graveyard/venn_diagrams/
 # maybe will change above later
 # will delete this folder later, but for now hosts random images
 unknown_sample_investigation/

@@ -3,7 +3,7 @@
 ## last edited 01.25.2024
 
 # This code analyzes the triplicates and blanks of non-target data
-# to create a more processed final csv that may or may not be used
+# to create a more processed final csv that did not end up being used
 
 #### (1) Loading libraries and data ####
 

@@ -201,6 +201,8 @@ diversity_rus_tac$plot # 0.13
 summary(diversity_rus_tac$model) # no relationship
 
 # higher anatoxins when diversity is overall higher in the non-target samples!
+# note: this is tested again while being standardized for each reach 
+# in "figures/sfig_diversity.atx.R"
 
 #### (4) PCoA ####
 

@@ -203,6 +203,11 @@ names(predfunctions_rus_tac) <- unique(data_select$TM$functional_grouping)
 lapply(names(predfunctions_rus_tac), function(x) print(predfunctions_rus_tac[[x]]$plot + ggtitle(x)))
 # nothing!
 
+# note: this is tested again while being standardized for each reach 
+# in "figures/fig_Q2_ATX_vs_predgenes.R" and explored the difference
+# between doing that standardization versus not in 
+# "./code/supplementa_code/S5a_comparing_ATX_normalizations.R"
+
 #### (4) PCoA plots ####
 
 # as decided in the supplemental script, "S4e_testing_data_sqrtformations_predgenes.R",
